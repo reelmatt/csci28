@@ -14,7 +14,7 @@ by adding new features:
    [b] program will work in any size terminal window
    [c] program will work if window is resized when program is running
 
-Ouline:
+Outline:
 
 The program still has a main loop that reads the command line and processes
 files named there.  If no files are named on the command line, the program
