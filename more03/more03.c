@@ -12,8 +12,8 @@
 #define	CTL_DEV	"/dev/tty"		/* source of control commands	*/
 
 int  do_more(FILE *);
-int  how_much_more(FILE *, int);
-void print_one_line(FILE *);
+int  how_much_more(FILE *, int [2]);
+int print_one_line(FILE *, int);
 
 int main( int ac , char *av[] )
 {
@@ -32,53 +32,80 @@ int main( int ac , char *av[] )
 				result = ERROR;
 	return result;
 }
+
+
+
+
 /*  do_more -- show a page of text, then call how_much_more() for instructions
  *      args: FILE * opened to text to display
  *      rets: SUCCESS if ok, ERROR if not
  */
 int do_more( FILE *fp )
 {
-	int rows = PAGELEN;
-	int cols = 80;
-	int rows_cols[2];
-	if ( get_term_size(rows_cols) == 0 )
-	{
-		rows = rows_cols[0];
-		cols = rows_cols[1];
-	}
-		
+// 	int rows = PAGELEN;
+// 	int cols = 80;
 	
-//	printf("window rows == %d\nwindow cols == %d\n", rows_cols[0], rows_cols[1]);
+// 	if ( get_term_size(rows_cols) == 0 )
+// 	{
+// 		rows = rows_cols[0];
+// 		cols = rows_cols[1];
+// 	}
+// 		
+//	int	reply;				/* user request		*/
+//	fp_tty = fopen( CTL_DEV, "r" );		/* connect to keyboard	*/
+	
+	int rows_cols[2] = { PAGELEN, 80 };
+	
+	if ( get_term_size(rows_cols) != 0 )
+		fprintf(stderr, "Problem getting term size.\n");
 
-	int	space_left = rows ;		/* space left on screen */
-	int	reply;				/* user request		*/
-	FILE	*fp_tty;			/* stream to keyboard	*/
+	int	space_left = rows_cols[0] ;			/* space left on screen */
+	FILE* fp_tty = fopen( CTL_DEV, "r" );	/* connect to stream to keyboard	*/
 
-	fp_tty = fopen( CTL_DEV, "r" );		/* connect to keyboard	*/
+
 	while ( has_more_data( fp ) ) {		/* more input	*/
+		
 		if ( space_left <= 1 ) {		/* screen full?	*/
-			reply = how_much_more(fp_tty, rows);	/* ask user	*/
+				
+			int reply = how_much_more(fp_tty, rows_cols);	/* ask user	*/
 			if ( reply == 0 )		/*    n: done   */
 				break;
 			space_left = reply;		/* reset count	*/
-			printf("\033[7D");		//go back 7 columns (start of line)
+			printf("\033[1K\033[7D");	/* clear line, set cursor at start of line */
 		}
 		
-		print_one_line( fp );
-		space_left--;				/* count it	*/
+		//print_one_line( fp, rows_cols[1] );
+		//space_left--;				/* count it	*/
+		
+		space_left -= print_one_line(fp, rows_cols[1]);
+		
 	}
 	fclose( fp_tty );			/* disconnect keyboard	*/
 	return SUCCESS;				/* EOF => done		*/
 }
 
 /*  print_one_line(fp) -- copy data from input to stdout until \n or EOF */
-void print_one_line( FILE *fp )
+int print_one_line( FILE *fp, int cols )
 {
 	int	c;
+	int i = 0;
+	int rows = 1;
 
 	while( ( c = getc(fp) ) != EOF && c != '\n' )
+	{
 		putchar( c ) ;
+		i++;
+		
+		if(i > cols)
+		{
+			rows++;
+			i = 0;
+		}
+	}
+	
 	putchar('\n');
+	
+	return rows;
 }
 
 /*  how_much_more -- ask user how much more to show
@@ -86,18 +113,20 @@ void print_one_line( FILE *fp )
  *      rets: number of additional lines to show: 0 => all done
  *	note: space => screenful, 'q' => quit, '\n' => one line
  */
-int how_much_more(FILE *fp, int rows)
+int how_much_more(FILE *fp, int rows_cols[2])
 {
 	int	c;
 
-	printf("\033[7m more? \033[m");		/* reverse on a vt100	*/
-	//while( (c = getc(fp)) != EOF )		/* get user input	*/
-	while( (c = rawgetc(fp)) != EOF )
+	printf("\033[7m more? \033[m");		/* reverse on a vt100	*/	
+	while( (c = rawgetc(fp)) != EOF )	/* get user input	*/
 	{
+		if ( get_term_size(rows_cols) != 0 )
+			fprintf(stderr, "Problem getting term size.\n");
+	
 		if ( c == 'q' )			/* q -> N		*/
 			return 0;
 		if ( c == ' ' )			/* ' ' => next page	*/
-			return rows;		/* how many to show	*/
+			return rows_cols[0];		/* how many to show	*/
 		if ( c == '\n' )		/* Enter key => 1 line	*/
 			return 1;		
 	}
