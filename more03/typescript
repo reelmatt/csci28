@@ -1,0 +1,151 @@
+Script started on Mon 04 Feb 2019 08:39:20 AM EST
+mst611@ice4:~/csci28/more03$ make c[Kmore03
+cc -Wall -Wextra -g -c more03.c
+cc -Wall -Wextra -g -c termfuncs.c
+cc -Wall -Wextra -g  more03.o termfuncs.o -o more03
+mst611@ice4:~/csci28/more03$ ./more03 more03.c
+/*  more03.c  - version 0.3 of more
+ */
+#include <stdio.h>
+#include <stdlib.h>
+#include "termfuncs.h"
+#define  PAGELEN	24
+#define  ERROR		1
+#define  SUCCESS	0
+#define  has_more_data(x)   (!feof(x))
+#define	CTL_DEV	"/dev/tty"		/* source of control commands	*/
+
+int  do_more(FILE *);
+int  how_much_more(FILE *, int [2]);
+int print_one_line(FILE *, int);
+
+int main( int ac , char *av[] )
+{
+	FILE	*fp;			/* stream to view with more	*/
+	int	result = SUCCESS;	/* return status from main	*/
+
+	if ( ac == 1 )
+		result = do_more( stdin );
+	else
+[7m more? [m[1K[7D		while ( result == SUCCESS && --ac )
+			if ( (fp = fopen( *++av , "r" )) != NULL ) {
+				result = do_more( fp ) ; 
+				fclose( fp );
+			}
+			else
+				result = ERROR;
+	return result;
+}
+
+/*  do_more -- show a page of text, then call how_much_more() for instructions
+ *      args: FILE * opened to text to display
+ *      rets: SUCCESS if ok, ERROR if not
+ */
+int do_more( FILE *fp )
+{
+	int rows_cols[2] = { PAGELEN, 80 };		/* set defaults */
+	
+	if ( get_term_size(rows_cols) != 0 )
+		return ERROR;
+
+	int	space_left = rows_cols[0] ;			/* space left on screen */
+	FILE* fp_tty = fopen( CTL_DEV, "r" );	/* connect to stream to keyboard	*/
+[7m more? [m[1K[7D
+[7m more? [m[1K[7D	while ( has_more_data( fp ) ) 		/* more input	*/
+[7m more? [m[1K[7D	{
+[7m more? [m[1K[7D		if ( space_left <= 1 ) 			/* screen full?	*/
+[7m more? [m[1K[7D		{				
+[7m more? [m[1K[7D			int reply = how_much_more(fp_tty, rows_cols);	/* ask user	*/
+[7m more? [m[1K[7D			if ( reply == 0 )		/*    n: done   */
+				break;
+			space_left = reply;		/* reset count	*/
+			printf("\033[1K\033[7D");	/* clear line, set cursor at start of line */
+		}
+		
+		space_left -= print_one_line(fp, rows_cols[1]);	/* print line and count it */	
+	}
+	
+	fclose( fp_tty );			/* disconnect keyboard	*/
+	return SUCCESS;				/* EOF => done		*/
+}
+
+/*  print_one_line(fp, cols) -- copy data from input to stdout until \n or EOF
+ *       args: fp -- file with data
+ *             cols -- number of columns in the terminal
+ *     return: the number of, adjusted, rows that were printed to the screen
+ */
+int print_one_line( FILE *fp, int cols )
+{
+	int	c;
+	int i = 0;
+	int rows = 1;
+[7m more? [m[1K[7D
+	while( ( c = getc(fp) ) != EOF && c != '\n' )
+	{
+		putchar( c ) ;
+		i++;             /* increment for each char placed */
+		
+        /* if chars exceed cols, reset and add to row counter */
+		if(i > cols)
+		{
+			rows++;
+			i = 0;
+		}
+	}
+	
+	putchar('\n');
+	
+	return rows;
+}
+
+/*  how_much_more -- ask user how much more to show
+ *      args: none
+ *      rets: number of additional lines to show: 0 => all done
+ *	note: space => screenful, 'q' => quit, '\n' => one line
+[7m more? [m[1K[7D */
+int how_much_more(FILE *fp, int rows_cols[2])
+{
+	int	c;
+
+	printf("\033[7m more? \033[m");		/* reverse on a vt100	*/	
+	while( (c = rawgetc(fp)) != EOF )	/* get user input	*/
+	{
+		if ( get_term_size(rows_cols) != 0 )
+			fprintf(stderr, "Problem getting term size.\n");
+	
+		if ( c == 'q' )			/* q -> N		*/
+			return 0;
+		if ( c == ' ' )			/* ' ' => next page	*/
+			return rows_cols[0];		/* how many to show	*/
+		if ( c == '\n' )		/* Enter key => 1 line	*/
+			return 1;		
+	}
+	return 0;
+}
+
+mst611@ice4:~/csci28/more03$ last | more.0[K[K[K[K[K[K./more03 
+mst611   pts/1        cet-it-pat.med.h Mon Feb  4 08:30   still logged in   
+shd083   pts/0        c-76-125-155-64. Mon Feb  4 06:55   still logged in   
+nas319   pts/0        75-35-96-206.lig Mon Feb  4 06:42 - 06:42  (00:00)    
+nas319   pts/0        75-35-96-206.lig Mon Feb  4 06:24 - 06:42  (00:17)    
+shd083   pts/0        c-76-125-155-64. Mon Feb  4 05:54 - 06:20  (00:26)    
+edl926   pts/1        n219077126244.ne Sun Feb  3 19:46 - 19:47  (00:01)    
+edl926   pts/1        n219077126244.ne Sun Feb  3 18:46 - 19:01  (00:14)    
+shd083   pts/0        c-76-125-155-64. Sun Feb  3 15:07 - 20:28  (05:20)    
+shd083   pts/0        c-76-125-155-64. Sun Feb  3 12:08 - 13:58  (01:49)    
+edl926   pts/1        n219077126244.ne Sun Feb  3 04:03 - 04:59  (00:56)    
+edl926   pts/0        n219077126244.ne Sat Feb  2 21:52 - 04:20  (06:27)    
+edl926   pts/0        n219077126244.ne Sat Feb  2 21:51 - 21:52  (00:01)    
+dij372   pts/1        71-84-13-81.dhcp Sat Feb  2 16:02 - 16:07  (00:05)    
+rld122   pts/0        inet-64-112-177- Sat Feb  2 15:39 - 19:16  (03:36)    
+edl926   pts/1        n219077126244.ne Fri Feb  1 19:07 - 19:12  (00:05)    
+edl926   pts/0        n219077126244.ne Fri Feb  1 18:11 - 22:53  (04:42)    
+chs8801  pts/0        c-98-236-191-31. Fri Feb  1 14:50 - 15:48  (00:57)    
+nas319   pts/0        75-35-96-206.lig Fri Feb  1 06:46 - 06:46  (00:00)    
+
+wtmp begins Fri Feb  1 06:46:28 2019
+
+mst611@ice4:~/csci28/more03$ exit
+exit
+
+Script done on Mon 04 Feb 2019 08:40:00 AM EST

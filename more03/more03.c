@@ -63,7 +63,11 @@ int do_more( FILE *fp )
 	return SUCCESS;				/* EOF => done		*/
 }
 
-/*  print_one_line(fp) -- copy data from input to stdout until \n or EOF */
+/*  print_one_line(fp, cols) -- copy data from input to stdout until \n or EOF
+ *       args: fp -- file with data
+ *             cols -- number of columns in the terminal
+ *     return: the number of, adjusted, rows that were printed to the screen
+ */
 int print_one_line( FILE *fp, int cols )
 {
 	int	c;
@@ -73,8 +77,9 @@ int print_one_line( FILE *fp, int cols )
 	while( ( c = getc(fp) ) != EOF && c != '\n' )
 	{
 		putchar( c ) ;
-		i++;
+		i++;             /* increment for each char placed */
 		
+        /* if chars exceed cols, reset and add to row counter */
 		if(i > cols)
 		{
 			rows++;
