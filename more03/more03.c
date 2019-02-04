@@ -1,6 +1,4 @@
-/*  more02.c  - version 0.2 of more
- *	read and print 24 lines then pause for a few special commands
- *	v02: reads user control cmds from /dev/tty
+/*  more03.c  - version 0.3 of more
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -33,40 +31,24 @@ int main( int ac , char *av[] )
 	return result;
 }
 
-
-
-
 /*  do_more -- show a page of text, then call how_much_more() for instructions
  *      args: FILE * opened to text to display
  *      rets: SUCCESS if ok, ERROR if not
  */
 int do_more( FILE *fp )
 {
-// 	int rows = PAGELEN;
-// 	int cols = 80;
-	
-// 	if ( get_term_size(rows_cols) == 0 )
-// 	{
-// 		rows = rows_cols[0];
-// 		cols = rows_cols[1];
-// 	}
-// 		
-//	int	reply;				/* user request		*/
-//	fp_tty = fopen( CTL_DEV, "r" );		/* connect to keyboard	*/
-	
-	int rows_cols[2] = { PAGELEN, 80 };
+	int rows_cols[2] = { PAGELEN, 80 };		/* set defaults */
 	
 	if ( get_term_size(rows_cols) != 0 )
-		fprintf(stderr, "Problem getting term size.\n");
+		return ERROR;
 
 	int	space_left = rows_cols[0] ;			/* space left on screen */
 	FILE* fp_tty = fopen( CTL_DEV, "r" );	/* connect to stream to keyboard	*/
 
-
-	while ( has_more_data( fp ) ) {		/* more input	*/
-		
-		if ( space_left <= 1 ) {		/* screen full?	*/
-				
+	while ( has_more_data( fp ) ) 		/* more input	*/
+	{
+		if ( space_left <= 1 ) 			/* screen full?	*/
+		{				
 			int reply = how_much_more(fp_tty, rows_cols);	/* ask user	*/
 			if ( reply == 0 )		/*    n: done   */
 				break;
@@ -74,12 +56,9 @@ int do_more( FILE *fp )
 			printf("\033[1K\033[7D");	/* clear line, set cursor at start of line */
 		}
 		
-		//print_one_line( fp, rows_cols[1] );
-		//space_left--;				/* count it	*/
-		
-		space_left -= print_one_line(fp, rows_cols[1]);
-		
+		space_left -= print_one_line(fp, rows_cols[1]);	/* print line and count it */	
 	}
+	
 	fclose( fp_tty );			/* disconnect keyboard	*/
 	return SUCCESS;				/* EOF => done		*/
 }

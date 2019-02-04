@@ -1,7 +1,7 @@
 Design Document for more03
 -----------------------------------------------------------
 Code by: Matthew Thomas
-Date: 1/31/19
+Date: 2/4/19
 History: 
 -----------------------------------------------------------
 
@@ -25,11 +25,17 @@ what to do, reads a keystroke from the user.  Depending on the key pressed,
 the program quits, shows one more line of text, or shows one more screenful
 of text, then asks again.
 
+When outputting screenful, the program checks the terminal size to display the
+correct number of rows, both on the first run, and any successive prompt by the
+user. This is done through a call to get_term_size(), storing the result in an
+int array "rows_cols". If more data is to be printed, the line containing "More?"
+is cleared, the cursor is reset, and the loop runs until there is no more space left.
+
 Layering:
 
 	main ,for each file, calls:
 		do_more	-- which pages through a file calling
-			how_much_more -- to ask user how much more to show
+			how_much_more -- to ask user how much more to show, gets term size each call
 
 File Structure:
 
