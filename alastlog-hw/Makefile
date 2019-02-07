@@ -13,13 +13,13 @@
 CC = gcc -Wall -Wextra -g
 
 alastlog: alastlog.o lllib.o
-	$(CC) -o alastlog alastlog.o llib.o
+	$(CC) -o alastlog alastlog.o lllib.o
 
 alastlog.o: alastlog.c
 	$(CC) -c alastlog.c
 
-lllib.o: llib.c
-	$(CC) -c llib.c
+lllib.o: lllib.c
+	$(CC) -c lllib.c
 
 clean:
 	rm -f *.o core alastlog
