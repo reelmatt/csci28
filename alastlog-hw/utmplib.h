@@ -1,1 +1,5 @@
-/home/l/i/lib215/hw/alastlog/files/utmplib.h
+/* utmplib.h  - header file with decls of functions in utmplib.c */
+
+int utmp_open(char *);
+struct utmp *utmp_next();
+int utmp_close();
