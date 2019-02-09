@@ -55,7 +55,7 @@ int main (int ac, char *av[])
 		fprintf(stderr, "%s: cannout open %s\n", *av, "/var/log/lastlog");
 		exit(1);
 	}
-	struct passwd entry= { 0 };
+	struct passwd *entry;
 //	printf("should be open, fd was %d\n", llfd);
 	printf("%-16s %-8s %-16s %-1s\n", "Username", "Part", "From", "Latest");
 	while( read(llfd, &llbuf, sizeof(llbuf)) == sizeof(llbuf) )
