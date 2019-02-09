@@ -1,36 +1,46 @@
+Project: alastlog
+
+Purpose: A program to display a list of last logins.
+
+Outline:
+	alastlog reads a lastlog file, defaults to /var/log/lastlog, and presents
+	the contents in human-readable form, displaying the 
+	
+	alastlog 
+	
+Output:
+	The output is fixed-width fields including Username, Port, From,
+	and Latest columns. The latest login field is displayed with a time format
+	of "Mon Dec 17 11:14:39 -0500 2018", as an example.
+	
+	alastlog uses read to get data from the file and uses printf to format and
+	output results. 
+
+Arguments:
+	alastlog accepts three user options, -u, -t, and -f to specify a user, a
+	date limit on entries, and a different data file respectively. The -u option
+	requires a single username, the -t option requires a number, and the -f
+	option requires a filename/path. If the -f option is not given, alastlog
+	process the log file located at /var/log/lastlog, defined as LLOG_FILE in
+	alastlog.c
+	
+Input:
+	alastlog does not accept any user input. With the -f option, a user can
+	specify a different lastlog file to use than the default /var/log/lastlog.
+
+Data Structures:
+	
+	
+Files:
+	alastlog reads a file of lastlog records. See Arguments and Input sections
+	above.
+
+---------------------
 This file is an sample outline for a homework plan.  
 You must submit one of these.
 
-Project: dumputmp 
-
-Purpose: A program to display the contents of a utmp file in human-readable form
-
-Outline:
-	dumputmp reads the utmp file record by record and 
-        presents the contents in human-readable form.  The
-        form of output is one line per record with fixed-width fields,
-        all in text.
-        dumputmp uses read to get data from the file, and uses
-        printf to format and output results.
-
-Output:
-	The output looks like:
-           logname, tty, pid, type, text version of type, time, host
-
-Arguments:
-	dumputmp accepts one command line argument, a file to dump.
-        If no filename is given, dumputmp processes UTMP_FILE as defined
-        in utmp.h
-
-Input:
-        dumputmp does not accept any user input; the datafile is the
-        only source of input
 
 Data Structures:
         dumputmp reads and writes one record at a time.  It only needs
         to store a single record, so one variable of type struct utmp
         is used.
-
-Files:
-        dumputmp reads a file of utmp records.  See Arguments and Input
-        sections above.

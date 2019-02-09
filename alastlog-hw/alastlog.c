@@ -5,6 +5,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <sys/types.h>
+#include <pwd.h>
 #include "lllib.h"
 
 void show_time(time_t, char *);
@@ -12,7 +14,9 @@ void process(char *user, int days, char *file);
 void process_option(char *, char*, char*, int, char*);
 void read_lastlog (struct lastlog *);
 void show_llrec(struct lastlog *);
-void show_info(struct lastlog *);
+void show_info(struct lastlog *, struct passwd *);
+
+#define LLOG_FILE "/var/log/lastlog"
 
 int main (int ac, char *av[])
 {
@@ -46,18 +50,19 @@ int main (int ac, char *av[])
 	struct lastlog llbuf;
 	int llfd;
 
-	if( (llfd = open("/var/log/lastlog", O_RDONLY)) == -1 )
+	if( (llfd = open(LLOG_FILE, O_RDONLY)) == -1 )
 	{
 		fprintf(stderr, "%s: cannout open %s\n", *av, "/var/log/lastlog");
 		exit(1);
 	}
-
+	struct passwd entry= { 0 };
 //	printf("should be open, fd was %d\n", llfd);
 	printf("%-16s %-8s %-16s %-1s\n", "Username", "Part", "From", "Latest");
 	while( read(llfd, &llbuf, sizeof(llbuf)) == sizeof(llbuf) )
 	{
 //		printf("read data\n");
-		show_info(&llbuf);
+		entry = getpwent();
+		show_info(&llbuf, &entry);
 	}
 	close(llfd);
 	return 0;
@@ -70,12 +75,15 @@ int main (int ac, char *av[])
 //	return 0;
 }
 
-void show_info(struct lastlog *lp)
+void show_info(struct lastlog *lp, struct passwd *ep)
 {
 //	printf("lp ut_type is %d\n", lp->ut_type);
 //	printf("in show_info...\n");
 //	printf("%-16s %-8s %-16s %-1d\n", lp->ll_line, lp->ll_host, lp->ll_time);
-	printf("%-16.16s %-8.8s %-16.16s ", "", lp->ll_line, lp->ll_host);
+	printf("%-16.16s ", ep->pw_name);
+	printf("%-8.8s ", lp->ll_line);
+	printf("%-16.16s", lp->ll_host);
+//	printf("%-16.16s %-8.8s %-16.16s ", "", lp->ll_line, lp->ll_host);
 
 	if(lp->ll_time == 0)
 		printf("**Never logged in**");
