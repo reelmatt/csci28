@@ -16,6 +16,7 @@ void process_option(char *, char*, char*, int, char*);
 void read_lastlog (struct lastlog *);
 void show_llrec(struct lastlog *);
 void show_info(struct lastlog *, struct passwd *);
+void print_headers();
 
 #define LLOG_FILE "/var/log/lastlog"
 #define TIME_FORMAT "%a %b %d %H:%M:%S %z %Y"
@@ -64,6 +65,7 @@ void get_log(char *file, char *user, char *days)
 
 	struct lastlog *ll;
 	struct lastlog *ll_next();
+	struct passwd *entry;
 	
 	if (ll_open(file) == -1)
 	{
@@ -73,44 +75,48 @@ void get_log(char *file, char *user, char *days)
 	
 	print_headers();
 	
-	struct passwd *entry;
+
 	
-	while(ll = ll_next())
+	while( (ll = ll_next()) && (entry = getpwent()) )
 	{
-		entry = getpwent();
-		show_info(ll, entry);
+        if (user != NULL)
+        {
+            //printf("a specific user is specified, %s\n", user);
+            
+        }
+         
+        if (days != NULL)
+        {
+            time_t now;
+            double delta = difftime(time(&now), ll->ll_time);
+            
+            if ( delta < (24 * 60 * 60 * atoi(days)) )
+                show_info(ll, entry);
+            //  else
+            //   printf("not within %d days\n", atoi(days));
+
+//            printf("difference is %f\n", test);
+//            continue;
+//            time_t now = time();
+//            struct tim *mytime = ctime(&now);
+            //printf("a specific time is specified, %d\n", atoi(days));
+//            if ( ll->ll_time
+//                show_info(ll, entry);
+        }
+
+//		show_info(ll, entry);
 	}
 	
 	endpwent();
 	ll_close();
 
-/*	struct lastlog llbuf;
-	int llfd;
-
-	if( (llfd = open(file, O_RDONLY)) == -1 )
-	{
-		fprintf(stderr, "%s: cannout open %s\n", file, "/var/log/lastlog");
-		exit(1);
-	}
-	struct passwd *entry;
-    print_headers();
-
-	while( read(llfd, &llbuf, sizeof(llbuf)) == sizeof(llbuf) )
-	{
-		entry = getpwent();
-		show_info(&llbuf, entry);
-	}
-
-    endpwent();
-    close(llfd);
-    return;*/
 }
 
 void print_headers()
 {
 	printf("%-16.16s ", "Username");
 	printf("%-8.8s ", "Port");
-	printf("%-16.16s", "From");
+	printf("%-16.16s ", "From");
     printf("%s", "Latest");
     printf("\n");
     return;
@@ -118,7 +124,10 @@ void print_headers()
 
 void show_info(struct lastlog *lp, struct passwd *ep)
 {
+    
+
 	printf("%-16.16s ", ep->pw_name);
+//    printf("%-16.16s ", "");
 	printf("%-8.8s ", lp->ll_line);
 	printf("%-16.16s ", lp->ll_host);
 

@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <lastlog.h>
+#include <unistd.h>
 
 #define NRECS 16
 #define LLSIZE	(sizeof(struct lastlog))
