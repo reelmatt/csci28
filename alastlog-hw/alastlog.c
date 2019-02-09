@@ -62,7 +62,29 @@ void get_log(char *file, char *user, char *days)
 {
 	//printf("user is %s, days is %d, and file is %s\n", user, atoi(days), file);
 
-	struct lastlog llbuf;
+	struct lastlog *ll;
+	struct lastlog *ll_next();
+	
+	if (ll_open(file) == -1)
+	{
+		perror(file);
+		return;
+	}
+	
+	print_headers();
+	
+	struct passwd *entry;
+	
+	while(ll = ll_next())
+	{
+		entry = getpwent();
+		show_info(ll, entry);
+	}
+	
+	endpwent();
+	ll_close();
+
+/*	struct lastlog llbuf;
 	int llfd;
 
 	if( (llfd = open(file, O_RDONLY)) == -1 )
@@ -71,20 +93,17 @@ void get_log(char *file, char *user, char *days)
 		exit(1);
 	}
 	struct passwd *entry;
-//	printf("should be open, fd was %d\n", llfd);
-//	printf("%-16s %-8s %-16s %-1s\n", "Username", "Part", "From", "Latest");
     print_headers();
 
 	while( read(llfd, &llbuf, sizeof(llbuf)) == sizeof(llbuf) )
 	{
-//		printf("read data\n");
 		entry = getpwent();
 		show_info(&llbuf, entry);
 	}
 
     endpwent();
     close(llfd);
-    return;
+    return;*/
 }
 
 void print_headers()
@@ -122,52 +141,4 @@ void show_time(time_t time, char *fmt)
 
 	printf("%s", result);
 	return;
-}
-
-void process(char *user, int days, char *file)
-{
-	struct lastlog *ll;
-	struct lastlog *ll_next();
-
-	if (ll_open(file) == -1)
-	{
-		perror(file);
-		return;
-	}
-
-	while ( (ll = ll_next()) != NULL )
-		show_llrec(ll);
-
-	ll_close();
-	return;
-}
-
-void show_llrec(struct lastlog *lp)
-{
-	printf("%d %10s %10s\n", lp->ll_time, lp->ll_line, lp->ll_host);
-	putchar('\n');
-	return;
-}
-
-void process_option(char *option, char *value, char *user, int days, char *file)
-{
-	printf("In process_option...\n");
-	printf("option is %c\n", option[1]);
-	printf("value is %s\n", value);
-
-	if (option[1] == 'u')
-		*user = value;
-	else if (option[1] == 't')
-		days = 5;
-	else if (option[1] == 'f')
-		*file = value;
-	else
-		printf("Unknown option, try again\n");
-
-	return;
-}
-
-void read_lastlog (struct lastlog *ll)
-{
-        fread(ll, sizeof(struct lastlog), 1, stdin);
 }
