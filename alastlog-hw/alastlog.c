@@ -64,7 +64,7 @@ int main (int ac, char *av[])
 void get_log(char *file, char *user, char *days)
 {
 //	printf("user is %s and file is %s\n", user, file);
-	int headers = NO
+	int headers = NO;
 	struct lastlog *ll;
 	//struct lastlog *ll_next();
 	
@@ -80,9 +80,10 @@ void get_log(char *file, char *user, char *days)
 	while( (ll = ll_next()) )
 	{
 		printf("%-16.16s ", "");
-		printf("%-8.8s ", lp->ll_line); 
-		printf("%-16.16s ", lp->ll_host);
-		show_time(lp->ll_time, TIME_FORMAT);
+		printf("%-8.8s ", ll->ll_line); 
+		printf("%-16.16s ", ll->ll_host);
+		show_time(ll->ll_time, TIME_FORMAT);
+        printf("\n");
 	}
 
 //	struct passwd *single;
