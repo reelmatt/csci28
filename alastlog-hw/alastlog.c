@@ -64,29 +64,33 @@ int main (int ac, char *av[])
 void get_log(char *file, char *user, char *days)
 {
 //	printf("user is %s and file is %s\n", user, file);
-
+	int headers = NO
 	struct lastlog *ll;
-	struct lastlog *ll_next();
-	struct passwd *entry;
+	//struct lastlog *ll_next();
+	
 	
 	if (ll_open(file) == -1)
 	{
-        printf("Could not open file\n");
+        printf("Could not open file, %s\n", file);
 		perror(file);
 		return;
 	}
 	
-//	print_headers();
-    int headers = NO;
+
+	while( (ll = ll_next()) )
+	{
+		printf("%-16.16s ", "");
+		printf("%-8.8s ", lp->ll_line); 
+		printf("%-16.16s ", lp->ll_host);
+		show_time(lp->ll_time, TIME_FORMAT);
+	}
 
 //	struct passwd *single;
-
 //    single = getpwnam("mst611");
 //    printf("retrieved user... name is %s, uid is %d, home is %s\n", single->pw_name, single->pw_uid, single->pw_dir);
+//	struct passwd *entry = getpwent();
 
-//    return;
-    entry = getpwent();
-
+/*
 	while( (ll = ll_next()) && entry )
 	{
         if (user != NULL)
@@ -112,9 +116,9 @@ void get_log(char *file, char *user, char *days)
 
 		show_info(ll, entry);
         entry = getpwent();
-	}
+	}*/
 	
-	endpwent();
+	//endpwent();
 	ll_close();
     return;
 }
