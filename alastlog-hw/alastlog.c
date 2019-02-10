@@ -61,7 +61,7 @@ int main (int ac, char *av[])
 
 void get_log(char *file, char *user, char *days)
 {
-	//printf("user is %s, days is %d, and file is %s\n", user, atoi(days), file);
+//	printf("user is %s and file is %s\n", user, file);
 
 	struct lastlog *ll;
 	struct lastlog *ll_next();
@@ -69,6 +69,7 @@ void get_log(char *file, char *user, char *days)
 	
 	if (ll_open(file) == -1)
 	{
+        printf("Could not open file\n");
 		perror(file);
 		return;
 	}
@@ -104,7 +105,7 @@ void get_log(char *file, char *user, char *days)
 //                show_info(ll, entry);
         }
 
-//		show_info(ll, entry);
+		show_info(ll, entry);
 	}
 	
 	endpwent();
