@@ -20,6 +20,8 @@ void print_headers();
 
 #define LLOG_FILE "/var/log/lastlog"
 #define TIME_FORMAT "%a %b %d %H:%M:%S %z %Y"
+#define NO 0
+#define YES 1
 
 int main (int ac, char *av[])
 {
@@ -74,16 +76,23 @@ void get_log(char *file, char *user, char *days)
 		return;
 	}
 	
-	print_headers();
-	
+//	print_headers();
+    int headers = NO;
 
-	
-	while( (ll = ll_next()) && (entry = getpwent()) )
+//	struct passwd *single;
+
+//    single = getpwnam("mst611");
+//    printf("retrieved user... name is %s, uid is %d, home is %s\n", single->pw_name, single->pw_uid, single->pw_dir);
+
+//    return;
+    entry = getpwent();
+
+	while( (ll = ll_next()) && entry )
 	{
         if (user != NULL)
         {
-            //printf("a specific user is specified, %s\n", user);
-            
+            if (strcmp(entry->pw_name, user) != 0)
+                continue;            
         }
          
         if (days != NULL)
@@ -91,26 +100,23 @@ void get_log(char *file, char *user, char *days)
             time_t now;
             double delta = difftime(time(&now), ll->ll_time);
             
-            if ( delta < (24 * 60 * 60 * atoi(days)) )
-                show_info(ll, entry);
-            //  else
-            //   printf("not within %d days\n", atoi(days));
+            if ( delta > (24 * 60 * 60 * atoi(days)) )
+                continue;
+        }
 
-//            printf("difference is %f\n", test);
-//            continue;
-//            time_t now = time();
-//            struct tim *mytime = ctime(&now);
-            //printf("a specific time is specified, %d\n", atoi(days));
-//            if ( ll->ll_time
-//                show_info(ll, entry);
+        if (headers == NO)
+        {
+            print_headers();
+            headers = YES;
         }
 
 		show_info(ll, entry);
+        entry = getpwent();
 	}
 	
 	endpwent();
 	ll_close();
-
+    return;
 }
 
 void print_headers()
@@ -129,9 +135,38 @@ void show_info(struct lastlog *lp, struct passwd *ep)
 
 	printf("%-16.16s ", ep->pw_name);
 //    printf("%-16.16s ", "");
-	printf("%-8.8s ", lp->ll_line);
-	printf("%-16.16s ", lp->ll_host);
+//    printf("%s\t%s\t", lp->ll_line, lp->ll_host);
+/*
+    if(lp->ll_line[UT_LINESIZE] == '\0')
+*/      printf("%-8.8s ", lp->ll_line);        
+    /*   else
+    {
+        char temp[UT_LINESIZE];
+        strcpy(temp, lp->ll_line);
+        temp[UT_LINESIZE - 1] = '\0';
 
+        if(temp[UT_LINESIZE] == '\0')
+            printf("%-8.8s ", temp);
+        else
+            printf("%-s %s", "not string ", temp);
+    }
+
+    if(lp->ll_host[UT_HOSTSIZE] == '\0')
+    */   printf("%-16.16s ", lp->ll_host);
+    /*   else
+    {
+        char temp2[UT_HOSTSIZE];
+        strcpy(temp2, lp->ll_host);
+        temp2[UT_HOSTSIZE - 1] = '\0';
+        
+        if(temp2[UT_HOSTSIZE] == '\0')
+            printf("%-16.16s ", temp2);
+        else
+            printf("%-16.16s ", "not host");
+
+    }
+//        printf("%-16.16s ", "not host string");
+*/
 	if(lp->ll_time == 0)
 		printf("**Never logged in**");
 	else

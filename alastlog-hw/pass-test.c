@@ -11,7 +11,7 @@ int main()
 
 	while( pp )
 	{
-		printf("%s\n", pp->pw_name);
+		printf("%s\t%s\n", pp->pw_name, pp->pw_gecos);
 		pp = getpwent();
 	}
 

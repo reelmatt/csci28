@@ -3,7 +3,7 @@
 #include <lastlog.h>
 #include <unistd.h>
 
-#define NRECS 16
+#define NRECS 32
 #define LLSIZE	(sizeof(struct lastlog))
 #define LL_NULL ((struct lastlog *) NULL)
 
@@ -39,6 +39,7 @@ struct lastlog *ll_next()
 {
 	struct lastlog *llp;
 
+    //error was returned when ll_open was called
 	if (ll_fd == -1)
 		return LL_NULL;
 	
@@ -64,7 +65,7 @@ static int ll_reload()
 	
 	num_recs = amt_read/LLSIZE;
 	cur_rec = 0;
-	
+//    printf("IN lllib.c, ll_reload got %d records to read\n", num_recs);
 	return num_recs;
 }
 
