@@ -16,7 +16,7 @@ void process(char *user, int days, char *file);
 void process_option(char *, char*, char*, int, char*);
 void read_lastlog (struct lastlog *);
 void show_llrec(struct lastlog *);
-int show_info(struct lastlog *, struct passwd *, int);
+void show_info(struct lastlog *, struct passwd *, char *);
 void print_headers();
 struct passwd *extract_user(char *);
 void get_option(char, char **, char **, char **, char **);
@@ -60,13 +60,6 @@ int main (int ac, char *av[])
 
 void get_option(char opt, char **value, char **user, char **days, char **file)
 {
-/*
-	printf("IN GET_OPTION\n");
-	printf("user = %p\n", user);
-	printf("days = %p\n", days);
-	printf("file = %p\n", file);
-	printf("value = %p\n", value);
-*/
 	if(opt == 'u')
 		*user = *value;
 	else if (opt == 't')
@@ -74,15 +67,8 @@ void get_option(char opt, char **value, char **user, char **days, char **file)
 	else if (opt == 'f')
 		*file = *value;
 	else
-	{
 		fatal(opt, "");
-		//fprintf(stderr, "alastlog: invalid option -- '%c'\n", opt);
-		//fatal("Usage: ", "Please use options -u -t and/or -f");
-	}
 
-//	printf("assigned %s to %c\n", *value, opt);
-//	printf("user = %p\n", user);
-//	printf("user = %s\n", *user);
 	return;
 }
 
@@ -117,31 +103,6 @@ void get_log(char *file, char *user, char *days)
 	else
 		entry = extract_user(user);
 	
-	
-	/*else
-	{
-		if ( (entry = getpwname(user)) == NULL )
-		{
-			printf("alastlog: Unknown user: %s\n", user);
-			return;
-		}
-	}
-	
-	
-	//if a -u user is specified, extract single passwd struct
-	if (user != NULL)
-	{
-		if ( (entry = getpwnam(user)) == NULL )
-		{
-			printf("alastlog: Unknown user: %s\n", user);
-			return;
-		}
-	}
-	else
-	{
-		entry = getpwent();
-	}*/
-	
 	int records = NO;
 	int ll_index = -1;
 	
@@ -152,40 +113,26 @@ void get_log(char *file, char *user, char *days)
 		ll_index++;
 
 		//if UID is before current lastlog record, need to reset
-        if (ll_index > (int) entry->pw_uid)
+        if ( (int) entry->pw_uid < ll_index )
         {
 			ll_index = ll_reset(file);
-//            ll_reset(file);
-//			ll_index = -1;
         }
 		
 		//@@TO-Do, remove this edge case
 		//check if current entry in lastlog matches with /etc/passwd
+		//if the lastlog does not match /etc/passwd, try next lastlog
 		if (ll_index != (int) entry->pw_uid && entry->pw_uid < 65000)
 		{
 			continue;
 		}
+        
+		if (records == NO)
+		{
+			print_headers();
+			records = YES;
+		}
 		
-		//check time against -t flag
-		if (days != NULL)
-        {
-            time_t now;
-            double delta = difftime(time(&now), ll->ll_time);
-            
-            if ( delta > (24 * 60 * 60 * atoi(days)) )
-            {
-            	entry = getpwent();
-                continue;
-            }
-        }
-        
-//         if (records == NO)
-//         {
-//             print_headers();
-//             records = YES;
-//         }
-        
-        records = show_info(ll, entry, records);
+        show_info(ll, entry, date);
         
         //found the one user with -u, stop execution
         if( user != NULL)
@@ -194,6 +141,7 @@ void get_log(char *file, char *user, char *days)
         	entry = getpwent();
 	}
 	
+	//if opened pwent, close
 	if (user == NULL)
 		endpwent();
 	
@@ -213,25 +161,36 @@ void print_headers()
     return;
 }
 
-int show_info(struct lastlog *lp, struct passwd *ep, int records)
+void show_info(struct lastlog *lp, struct passwd *ep, char *days)
 {
-	if (records == NO)
-		print_headers();
+	//check time against -t flag
+	if (days != NULL)
+	{
+		time_t now;
+		double delta = difftime(time(&now), lp->ll_time);
+		
+		//if out of range, don't print record
+		if ( delta > (24 * 60 * 60 * atoi(days)) )
+		{
+			return;
+		}
+		else
+		{
+			printf("%-16.16s ", ep->pw_name);
+		//    printf("%-8.8d ", ep->pw_uid);
+			printf("%-8.8s ", lp->ll_line);        
+			printf("%-16.16s ", lp->ll_host);
 
+			if(lp->ll_time == 0)
+				printf("**Never logged in**");
+			else
+				show_time(lp->ll_time, TIME_FORMAT);
 
-	printf("%-16.16s ", ep->pw_name);
-//    printf("%-8.8d ", ep->pw_uid);
-	printf("%-8.8s ", lp->ll_line);        
-	printf("%-16.16s ", lp->ll_host);
+			printf("\n");
+		}
+	}
 
-	if(lp->ll_time == 0)
-		printf("**Never logged in**");
-	else
-		show_time(lp->ll_time, TIME_FORMAT);
-
-	printf("\n");
-
-	return YES;
+	return;
 }
 
 void show_time(time_t time, char *fmt)
