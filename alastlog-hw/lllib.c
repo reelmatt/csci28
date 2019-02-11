@@ -2,6 +2,7 @@
 #include <fcntl.h>
 #include <lastlog.h>
 #include <unistd.h>
+#include "lllib.h"
 
 #define NRECS 32
 #define LLSIZE	(sizeof(struct lastlog))
@@ -52,10 +53,10 @@ struct lastlog *ll_next()
 	return llp;
 }
 
-int ll_reset()
+int ll_reset(char *fname)
 {
 	ll_close();
-	ll_open();
+	return ll_open(fname);
 }
 
 /*
