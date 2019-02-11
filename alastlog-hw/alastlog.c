@@ -11,18 +11,18 @@
 #include <pwd.h>
 #include "lllib.h"
 
-int check_time(time_t, char *);
+int check_time(time_t, long *);
 void fatal_args(char *, char *);
-void get_log(char *, char *, char *);
+void get_log(char *, char *, long *);
 void show_time(time_t, char *);
 void process(char *user, int days, char *file);
-void process_option(char *, char*, char*, int, char*);
 void read_lastlog (struct lastlog *);
 void show_llrec(struct lastlog *);
-int show_info(struct lastlog *, struct passwd *, char *, int);
+int show_info(struct lastlog *, struct passwd *, long *, int);
 void print_headers();
 struct passwd *extract_user(char *);
-void get_option(char, char **, char **, char **, char **);
+void get_option(char, char **, char **, long **, char **);
+long parse_time(char *);
 
 #define LLOG_FILE "/var/log/lastlog"
 #define TIME_FORMAT "%a %b %e %H:%M:%S %z %Y"
@@ -41,7 +41,7 @@ int main (int ac, char *av[])
 {
     int i = 1;
     char *user = NULL;
-    char *days = NULL;
+    long *days = NULL;
     char *file = NULL;
  
     /*Cycle through options, any/all of -u, -t, or -f. Exit if invalid*/
@@ -77,18 +77,33 @@ int main (int ac, char *av[])
  *	  Notes: If there is an invalid option (not -utf), fatal is called
  *			 to output a message to stderr and exit with a non-zero status.
  */
-void get_option(char opt, char **value, char **user, char **days, char **file)
+void get_option(char opt, char **value, char **user, long **days, char **file)
 {
 	if(opt == 'u')
 		*user = *value;
 	else if (opt == 't')
-		*days = *value;
+		*days = parse_time(*value);
+	//	*days = *value;
 	else if (opt == 'f')
 		*file = *value;
 	else
 		fatal(opt, "");
 
 	return;
+}
+
+long parse_time(char *value)
+{
+	char *temp = NULL
+	long time = strtol(value, &temp, 10);
+	
+	if(time = 0 && strcmp(name, temp) == 0)
+	{
+		fprintf(stderr, "alastlog: invalid numeric argument '%s'\n", value);
+		exit(1);
+	}
+	
+	return time;
 }
 
 /*
@@ -140,7 +155,7 @@ struct passwd *extract_user(char *name)
  *			 user,
  *			 days, 
  */
-void get_log(char *file, char *user, char *days)
+void get_log(char *file, char *user, long *days)
 {
 	if (ll_open(file) == -1)
 	{
@@ -211,7 +226,7 @@ void print_headers()
     return;
 }
 
-int check_time(time_t entry, char *days)
+int check_time(time_t entry, long *days)
 {
 	//check time against -t flag
 	if (days != NULL)
@@ -220,7 +235,7 @@ int check_time(time_t entry, char *days)
 		double delta = difftime(time(&now), entry);
 
 		//if out of range, don't print record
-		if ( delta > (24 * 60 * 60 * atoi(days)) )
+		if ( delta > (24 * 60 * 60 * days) )
 		{  
 			return NO;
 		}
@@ -232,7 +247,7 @@ int check_time(time_t entry, char *days)
 /*
  *
  */
-int show_info(struct lastlog *lp, struct passwd *ep, char *days, int headers)
+int show_info(struct lastlog *lp, struct passwd *ep, long *days, int headers)
 {
 	if (check_time(lp->ll_time, days) == NO)
 		return headers;
