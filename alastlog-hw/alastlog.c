@@ -16,7 +16,7 @@ void process(char *user, int days, char *file);
 void process_option(char *, char*, char*, int, char*);
 void read_lastlog (struct lastlog *);
 void show_llrec(struct lastlog *);
-int show_info(struct lastlog *, struct passwd *);
+int show_info(struct lastlog *, struct passwd *, int);
 void print_headers();
 struct passwd *extract_user(char *);
 void get_option(char, char **, char **, char **, char **);
@@ -34,10 +34,6 @@ int main (int ac, char *av[])
     char *file = NULL;
  
     /*Cycle through options, any/all of -u, -t, or -f. Exit if invalid*/
-    printf("address of variables are...\n");
-	printf("user = %p\n", &user);
-	printf("days = %p\n", &days);
-	printf("file = %p\n", &file);
     while (i < ac)
     {
     	if(av[i][0] == '-' && (i + 1) < ac)
@@ -47,7 +43,7 @@ int main (int ac, char *av[])
         else
     	{
     		//fprintf(stderr, "alastlog: unexpected argument: %s\n", av[i]);
-    		fatal('', av[i]);
+    		fatal('\0', av[i]);
     	}
 
 		i += 2;
@@ -92,11 +88,11 @@ void get_option(char opt, char **value, char **user, char **days, char **file)
 
 struct passwd *extract_user(char *name)
 {
-	struct passwd *user = getpwname(name);
+	struct passwd *user = getpwnam(name);
 	
-	if (user == NULL)
+	if ( user == NULL)
 	{
-		printf("alastlog: Unknown user: %s\n", user);
+		printf("alastlog: Unknown user: %s\n", name);
 		return NULL;
 	}
 	
@@ -189,7 +185,7 @@ void get_log(char *file, char *user, char *days)
 //             records = YES;
 //         }
         
-        records = show_info(ll, entry);
+        records = show_info(ll, entry, records);
         
         //found the one user with -u, stop execution
         if( user != NULL)
@@ -251,11 +247,11 @@ void show_time(time_t time, char *fmt)
 
 void fatal(char opt, char *arg)
 {
-	if(opt == '')
-		fprintf(stderr, "alastlog: invalid option -- '%c'\n", opt);
-	else
+	if(opt == '\0')
 		fprintf(stderr, "alastlog: unexpected argument: %s\n", arg);
-		
+	else
+		fprintf(stderr, "alastlog: invalid option -- '%c'\n", opt);
+
 	fprintf(stderr, "Usage: alastlog [options]\n\nOptions:\n");
 	fprintf(stderr, "\t-u LOGIN\tprint lastlog record for user LOGIN\n");
 	fprintf(stderr, "\t-t DAYS\t\tprint only records more recent than DAYS\n");
