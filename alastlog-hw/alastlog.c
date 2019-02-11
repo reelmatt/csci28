@@ -100,7 +100,10 @@ void get_log(char *file, char *user, char *days)
 		ll_index++;
 
         if (ll_index > (int) entry->pw_uid)
-            printf("reset lastlog position\n");
+        {
+        	printf("resetting lastlog position...\n");
+            ll_reset();
+        }
 		
 		//check if current entry in lastlog matches with /etc/passwd
 		if (ll_index != (int) entry->pw_uid && entry->pw_uid < 65000)

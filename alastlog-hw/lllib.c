@@ -52,6 +52,12 @@ struct lastlog *ll_next()
 	return llp;
 }
 
+int ll_reset()
+{
+	ll_close();
+	ll_open();
+}
+
 /*
  * ll_reload:
  *
