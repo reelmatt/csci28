@@ -82,7 +82,8 @@ void get_log(char *file, char *user, char *days)
 		printf("%-16.16s ", "");
 		printf("%-8.8s ", ll->ll_line); 
 		printf("%-16.16s ", ll->ll_host);
-		show_time(ll->ll_time, TIME_FORMAT);
+		printf("%d", ll->ll_time);
+//		show_time(ll->ll_time, TIME_FORMAT);
         printf("\n");
 	}
 
