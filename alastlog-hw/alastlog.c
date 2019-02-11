@@ -11,6 +11,7 @@
 #include <pwd.h>
 #include "lllib.h"
 
+int check_time(char *);
 void fatal(char, char *);
 void get_log(char *, char *, char *);
 void show_time(time_t, char *);
@@ -28,6 +29,14 @@ void get_option(char, char **, char **, char **, char **);
 #define NO 0
 #define YES 1
 
+/*
+ *	main()
+ *		Process command-line arguments, if any, and then call get_log()
+ *		to open the lastlog file (LLOG_FILE by default), with corresponding
+ *      args, NULL if not specified.
+ *
+ *		Returns 0 on success, exits 1 and prints message to stderr on failure.
+ */
 int main (int ac, char *av[])
 {
     int i = 1;
@@ -39,16 +48,11 @@ int main (int ac, char *av[])
     while (i < ac)
     {
     	if(av[i][0] == '-' && (i + 1) < ac)
-        {
             get_option(av[i][1], &av[i + 1], &user, &days, &file);
-    	}
         else
-    	{
-    		//fprintf(stderr, "alastlog: unexpected argument: %s\n", av[i]);
     		fatal('\0', av[i]);
-    	}
 
-		i += 2;
+		i += 2;				//go past the -X option, and its value
 	}
 
     //If no file specified with -f, use LLOG_FILE
@@ -60,6 +64,19 @@ int main (int ac, char *av[])
 	return 0;
 }
 
+/*
+ *	get_option()
+ *	Purpose: process command line options
+ *	  Input: opt, the char following the '-' flag
+ *			 value, the argument following the [-utf] flag
+ *			 user, pointer to store specified user
+ *			 days, pointer to store specified time restriction
+ *			 file, pointer to store specified file
+ *	 Return: None. This function passes through pointers from main
+ *			 to store the variables.
+ *	  Notes: If there is an invalid option (not -utf), fatal is called
+ *			 to output a message to stderr and exit with a non-zero status.
+ */
 void get_option(char opt, char **value, char **user, char **days, char **file)
 {
 	if(opt == 'u')
@@ -74,67 +91,72 @@ void get_option(char opt, char **value, char **user, char **days, char **file)
 	return;
 }
 
+/*
+ *	extract_user()
+ *	Purpose: obtain a passwd struct for a given username/UID
+ *	  Input: name, the name/UID that was specified following -u
+ *	 Return: a pointer to the passwd struct for the given name/UID.
+ *	 Errors: If getpwnam() fails, the function tries to parse the
+ *			 name into a UID. If it is determined to not be a number,
+ *			 an invalid message is output to stderr. If successful,
+ *			 but getpwuid() fails, then the "name" specified is
+ *			 unknown, and we exit.
+ */
 struct passwd *extract_user(char *name)
 {
 	struct passwd *user = NULL;
 	
+	//Try getting user by name first
 	if ( (user = getpwnam(name)) == NULL)
 	{
-//        printf("getpwnam() failed...\n");
-
         char *temp = NULL;
         long uid = strtol(name, &temp, 10);
+        
+        //If strtol returns 0 and copied all chars to temp, it failed
         if (uid == 0 && strcmp(name, temp) == 0)
         {
-            printf("invalid user ID conversion, remainder is %s\n", temp);
+        	fprintf(stderr, "alastlog: invalid username/UID: %s\n", temp);
             exit (1);
-            //return NULL;
         }
-
-
+        
+        //We were able to parse out a UID, try getting user with that
         if ( (user = getpwuid(uid)) == NULL)
         {
-
-            //          printf("getpwuid() failed...\n");
-            printf("alastlog: Unknown user: %s\n", name);
+			fprintf(stderr, "alastlog: Unknown user: %s\n", name);
             exit(1);
-//return NULL;
         }
 	}
 	
 	return user;
 }
 
+/*
+ *	get_log()
+ *	Purpose: 
+ *	  Input: file,
+ *			 user,
+ *			 days, 
+ */
 void get_log(char *file, char *user, char *days)
 {
 	if (ll_open(file) == -1)
 	{
-        printf("Could not open file, %s\n", file);
+		fprintf(stderr, "Could not open file, %s\n", file);
 		perror(file);
 		exit(1);
 	}
 
-	struct lastlog *ll;				//store lastlog rec
 	struct passwd *entry = NULL;	//store pw rec
-	
-	//get specific user, or first entry
 	if (user == NULL)
-    {
-//        printf("user is NULL, access /etc/passwd\n");
-        entry = getpwent();
-    }
+        entry = getpwent();			//get first user in /etc/passwd
 	else
-    {	
-        //      printf("user is specified, value is %s\n", user);
-        entry = extract_user(user);
-	}
+        entry = extract_user(user);	//get specified user
 
-    //tracking variables
 	int headers = NO;
 	int ll_index = -1;
+	struct lastlog *ll;				//store lastlog rec
 	
-	//cycle through valid passwd structs
-	//either a single one with -u, or until end of /etc/passwd
+	//iterate through passwd structs and the lastlog file
 	while ( entry && (ll = ll_next()) )
 	{
 		ll_index++;
@@ -155,12 +177,6 @@ void get_log(char *file, char *user, char *days)
 			continue;
 		}
         
-/*		if (records == NO)
-		{
-			print_headers();
-			records = YES;
-		}
-*/		
         headers = show_info(ll, entry, days, headers);
         
         //found the one user with -u, stop execution
@@ -179,6 +195,9 @@ void get_log(char *file, char *user, char *days)
     return;
 }
 
+/*
+ *	print_headers() - output formatted lastlog headers
+ */
 void print_headers()
 {
 	printf("%-16.16s ", "Username");
@@ -190,10 +209,9 @@ void print_headers()
     return;
 }
 
-int show_info(struct lastlog *lp, struct passwd *ep, char *days, int headers)
+int check_time(char *days)
 {
 	//check time against -t flag
-//	printf("in show_info, days is %s\n", days);
 	if (days != NULL)
 	{
 		time_t now;
@@ -201,16 +219,38 @@ int show_info(struct lastlog *lp, struct passwd *ep, char *days, int headers)
 
 		//if out of range, don't print record
 		if ( delta > (24 * 60 * 60 * atoi(days)) )
-		{
-            
+		{  
+			return NO;
+		}
+	}
+	
+	return YES;
+}
+
+/*
+ *
+ */
+int show_info(struct lastlog *lp, struct passwd *ep, char *days, int headers)
+{
+/*	//check time against -t flag
+	if (days != NULL)
+	{
+		time_t now;
+		double delta = difftime(time(&now), lp->ll_time);
+
+		//if out of range, don't print record
+		if ( delta > (24 * 60 * 60 * atoi(days)) )
+		{  
 			return headers;
 		}
 	}
-
+*/
+	if (check_time == NO)
+		return headers;
+		
     if (headers == NO)
         print_headers();
-
-
+        
 	printf("%-16.16s ", ep->pw_name);
 //    printf("%-8.8d ", ep->pw_uid);
 	printf("%-8.8s ", lp->ll_line);        
@@ -226,6 +266,12 @@ int show_info(struct lastlog *lp, struct passwd *ep, char *days, int headers)
 	return YES;
 }
 
+/*
+ *	show_time()
+ *	Purpose: format a time and print it
+ *	  Notes: copied, with slight modifications, from the who2.c code from
+ *			 lecture #2.
+ */
 void show_time(time_t time, char *fmt)
 {
 	struct tm *tp = localtime(&time);
@@ -237,6 +283,10 @@ void show_time(time_t time, char *fmt)
 	return;
 }
 
+/*
+ *	fatal()
+ *	Purpose: helper function to output error messages for bad input.
+ */
 void fatal(char opt, char *arg)
 {
 	if(opt == '\0')
