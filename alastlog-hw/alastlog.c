@@ -209,13 +209,13 @@ void print_headers()
     return;
 }
 
-int check_time(char *days)
+int check_time(time_t entry, char *days)
 {
 	//check time against -t flag
 	if (days != NULL)
 	{
 		time_t now;
-		double delta = difftime(time(&now), lp->ll_time);
+		double delta = difftime(time(&now), entry);
 
 		//if out of range, don't print record
 		if ( delta > (24 * 60 * 60 * atoi(days)) )
