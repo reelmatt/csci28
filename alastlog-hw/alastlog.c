@@ -11,7 +11,7 @@
 #include <pwd.h>
 #include "lllib.h"
 
-int check_time(char *);
+int check_time(time_t, char *);
 void fatal(char, char *);
 void get_log(char *, char *, char *);
 void show_time(time_t, char *);
@@ -245,7 +245,7 @@ int show_info(struct lastlog *lp, struct passwd *ep, char *days, int headers)
 		}
 	}
 */
-	if (check_time == NO)
+	if (check_time(lp->ll_time, days) == NO)
 		return headers;
 		
     if (headers == NO)
