@@ -98,11 +98,14 @@ void get_log(char *file, char *user, char *days)
 	while ( entry && (ll = ll_next()) )
 	{
 		ll_index++;
+
+        if (ll_index > (int) entry->pw_uid)
+            printf("reset lastlog position\n");
 		
 		//check if current entry in lastlog matches with /etc/passwd
-		if (ll_index != entry->pw_uid)
+		if (ll_index != (int) entry->pw_uid && entry->pw_uid < 65000)
 		{
-		
+            printf("ll_index does not match UID, index is %d\tUID is %d\n", ll_index, entry->pw_uid);
 			continue;
 		}
 		
@@ -205,6 +208,7 @@ void print_headers()
 void show_info(struct lastlog *lp, struct passwd *ep)
 {
 	printf("%-16.16s ", ep->pw_name);
+    printf("%-8.8d ", ep->pw_uid);
 	printf("%-8.8s ", lp->ll_line);        
 	printf("%-16.16s ", lp->ll_host);
 
