@@ -18,7 +18,7 @@ void read_lastlog (struct lastlog *);
 void show_llrec(struct lastlog *);
 void show_info(struct lastlog *, struct passwd *);
 void print_headers();
-void get_option(char, char *, char *, char *, char *);
+void get_option(char, char **, char **, char **, char **);
 
 #define LLOG_FILE "/var/log/lastlog"
 #define TIME_FORMAT "%a %b %e %H:%M:%S %z %Y"
@@ -31,13 +31,19 @@ int main (int ac, char *av[])
     char *user = NULL;
     char *days = NULL;
     char *file = NULL;
-    
+ 
     /*Cycle through options, any/all of -u, -t, or -f. Exit if invalid*/
+    printf("address of variables are...\n");
+	printf("user = %p\n", &user);
+	printf("days = %p\n", &days);
+	printf("file = %p\n", &file);
     while (i < ac)
     {
     	if(av[i][0] == '-' && (i + 1) < ac)
-    		get_option(av[i][1], av[i + 1], user, days, file);
-    	else
+        {
+            get_option(av[i][1], &av[i + 1], &user, &days, &file);
+    	}
+        else
     	{
     		fprintf(stderr, "alastlog: unexpected argument: %s\n", av[i]);
     		fatal();
@@ -65,7 +71,7 @@ int main (int ac, char *av[])
 	}
 
 	printf("user is %s, days is %s, and file is %s\n", user, days, file);
-	return 0;
+	//return 0;
 
     //If no file specified with -f, use LLOG_FILE
     if (file == NULL)
@@ -76,19 +82,31 @@ int main (int ac, char *av[])
 	return 0;
 }
 
-void get_option(char opt, char *value, char *user, char *days, char *file)
+void get_option(char opt, char **value, char **user, char **days, char **file)
 {
-	if(option == 'u')
-		user = value;
-	else if (option == 't')
-		days = value;
-	else if (option == 'f')
-		file = value;
+/*
+	printf("IN GET_OPTION\n");
+	printf("user = %p\n", user);
+	printf("days = %p\n", days);
+	printf("file = %p\n", file);
+	printf("value = %p\n", value);
+*/
+	if(opt == 'u')
+		*user = *value;
+	else if (opt == 't')
+		*days = *value;
+	else if (opt == 'f')
+		*file = *value;
 	else
 	{
 		fprintf(stderr, "alastlog: invalid option -- '%c'\n", opt);
 		fatal("Usage: ", "Please use options -u -t and/or -f");
 	}
+
+//	printf("assigned %s to %c\n", *value, opt);
+//	printf("user = %p\n", user);
+//	printf("user = %s\n", *user);
+	return;
 }
 
 void get_log(char *file, char *user, char *days)
@@ -217,7 +235,7 @@ void show_time(time_t time, char *fmt)
 void fatal()
 {
 	fprintf(stderr, "Usage: alastlog [options]\n\nOptions:\n");
-	fprintf(stderr, "\t-u LOGIN\t\tprint lastlog record for user LOGIN\n");
+	fprintf(stderr, "\t-u LOGIN\tprint lastlog record for user LOGIN\n");
 	fprintf(stderr, "\t-t DAYS\t\tprint only records more recent than DAYS\n");
 	fprintf(stderr, "\t-f FILE\t\tread data from specified FILE\n\n");
 
