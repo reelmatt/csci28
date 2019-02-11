@@ -9,15 +9,16 @@
 #include <pwd.h>
 #include "lllib.h"
 
-void fatal();
+void fatal(char, char *);
 void get_log(char *, char *, char *);
 void show_time(time_t, char *);
 void process(char *user, int days, char *file);
 void process_option(char *, char*, char*, int, char*);
 void read_lastlog (struct lastlog *);
 void show_llrec(struct lastlog *);
-void show_info(struct lastlog *, struct passwd *);
+int show_info(struct lastlog *, struct passwd *);
 void print_headers();
+struct passwd *extract_user(char *);
 void get_option(char, char **, char **, char **, char **);
 
 #define LLOG_FILE "/var/log/lastlog"
@@ -45,33 +46,12 @@ int main (int ac, char *av[])
     	}
         else
     	{
-    		fprintf(stderr, "alastlog: unexpected argument: %s\n", av[i]);
-    		fatal();
+    		//fprintf(stderr, "alastlog: unexpected argument: %s\n", av[i]);
+    		fatal('', av[i]);
     	}
-    	
-    	/*
-		if(av[i][0] == '-' && (i + 1) < ac && av[i+1][0] != '-')
-		{
-			if(av[i][1] == 'u')
-                user = av[i+1];
-			else if(av[i][1] == 't')
-				days = av[i+1];
-			else if (av[i][1] == 'f')
-                file = av[i+1];
-            else
-            {
-                fprintf(stderr, "alastlog: invalid option -- '%c'\n", av[i][1]);
-            	fatal("Usage: ", "Please use options -u -t and/or -f");
-            }
-		}
-		else
-			fatal("Usage: ", "Please use options -u -t and/or -f");*/
 
 		i += 2;
 	}
-
-	printf("user is %s, days is %s, and file is %s\n", user, days, file);
-	//return 0;
 
     //If no file specified with -f, use LLOG_FILE
     if (file == NULL)
@@ -99,8 +79,9 @@ void get_option(char opt, char **value, char **user, char **days, char **file)
 		*file = *value;
 	else
 	{
-		fprintf(stderr, "alastlog: invalid option -- '%c'\n", opt);
-		fatal("Usage: ", "Please use options -u -t and/or -f");
+		fatal(opt, "");
+		//fprintf(stderr, "alastlog: invalid option -- '%c'\n", opt);
+		//fatal("Usage: ", "Please use options -u -t and/or -f");
 	}
 
 //	printf("assigned %s to %c\n", *value, opt);
@@ -109,21 +90,47 @@ void get_option(char opt, char **value, char **user, char **days, char **file)
 	return;
 }
 
+struct passwd *extract_user(char *name)
+{
+	struct passwd *user = getpwname(name);
+	
+	if (user == NULL)
+	{
+		printf("alastlog: Unknown user: %s\n", user);
+		return NULL;
+	}
+	
+	return user;
+}
+
 void get_log(char *file, char *user, char *days)
 {
-//	printf("user is %s and file is %s\n", user, file);
-	int headers = NO;
-	struct lastlog *ll;
-	
-	
 	if (ll_open(file) == -1)
 	{
         printf("Could not open file, %s\n", file);
 		perror(file);
 		return;
 	}
+
+	struct lastlog *ll;				//store lastlog rec
+	struct passwd *entry = NULL;	//store pw rec
 	
-	struct passwd *entry = NULL;
+	
+	if (user == NULL)
+		entry = getpwent();
+	else
+		entry = extract_user(user);
+	
+	
+	/*else
+	{
+		if ( (entry = getpwname(user)) == NULL )
+		{
+			printf("alastlog: Unknown user: %s\n", user);
+			return;
+		}
+	}
+	
 	
 	//if a -u user is specified, extract single passwd struct
 	if (user != NULL)
@@ -137,8 +144,9 @@ void get_log(char *file, char *user, char *days)
 	else
 	{
 		entry = getpwent();
-	}
+	}*/
 	
+	int records = NO;
 	int ll_index = -1;
 	
 	//cycle through valid passwd structs
@@ -147,17 +155,18 @@ void get_log(char *file, char *user, char *days)
 	{
 		ll_index++;
 
+		//if UID is before current lastlog record, need to reset
         if (ll_index > (int) entry->pw_uid)
         {
-//        	printf("resetting lastlog position...\n");
-            ll_reset(file);
-		ll_index = -1;
+			ll_index = ll_reset(file);
+//            ll_reset(file);
+//			ll_index = -1;
         }
 		
+		//@@TO-Do, remove this edge case
 		//check if current entry in lastlog matches with /etc/passwd
 		if (ll_index != (int) entry->pw_uid && entry->pw_uid < 65000)
 		{
-//            printf("ll_index does not match UID, index is %d\tUID is %d\n", ll_index, entry->pw_uid);
 			continue;
 		}
 		
@@ -168,16 +177,19 @@ void get_log(char *file, char *user, char *days)
             double delta = difftime(time(&now), ll->ll_time);
             
             if ( delta > (24 * 60 * 60 * atoi(days)) )
+            {
+            	entry = getpwent();
                 continue;
+            }
         }
         
-        if (headers == NO)
-        {
-            print_headers();
-            headers = YES;
-        }
+//         if (records == NO)
+//         {
+//             print_headers();
+//             records = YES;
+//         }
         
-        show_info(ll, entry);
+        records = show_info(ll, entry);
         
         //found the one user with -u, stop execution
         if( user != NULL)
@@ -201,11 +213,16 @@ void print_headers()
 	printf("%-16.16s ", "From");
     printf("%s", "Latest");
     printf("\n");
+
     return;
 }
 
-void show_info(struct lastlog *lp, struct passwd *ep)
+int show_info(struct lastlog *lp, struct passwd *ep, int records)
 {
+	if (records == NO)
+		print_headers();
+
+
 	printf("%-16.16s ", ep->pw_name);
 //    printf("%-8.8d ", ep->pw_uid);
 	printf("%-8.8s ", lp->ll_line);        
@@ -218,7 +235,7 @@ void show_info(struct lastlog *lp, struct passwd *ep)
 
 	printf("\n");
 
-	return;
+	return YES;
 }
 
 void show_time(time_t time, char *fmt)
@@ -232,8 +249,13 @@ void show_time(time_t time, char *fmt)
 	return;
 }
 
-void fatal()
+void fatal(char opt, char *arg)
 {
+	if(opt == '')
+		fprintf(stderr, "alastlog: invalid option -- '%c'\n", opt);
+	else
+		fprintf(stderr, "alastlog: unexpected argument: %s\n", arg);
+		
 	fprintf(stderr, "Usage: alastlog [options]\n\nOptions:\n");
 	fprintf(stderr, "\t-u LOGIN\tprint lastlog record for user LOGIN\n");
 	fprintf(stderr, "\t-t DAYS\t\tprint only records more recent than DAYS\n");
