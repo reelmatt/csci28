@@ -66,7 +66,6 @@ void get_log(char *file, char *user, char *days)
 //	printf("user is %s and file is %s\n", user, file);
 	int headers = NO;
 	struct lastlog *ll;
-	//struct lastlog *ll_next();
 	
 	
 	if (ll_open(file) == -1)
@@ -76,9 +75,74 @@ void get_log(char *file, char *user, char *days)
 		return;
 	}
 	
-
+	struct passwd *entry = NULL;
+	
+	//if a -u user is specified, extract single passwd struct
+	if (user != NULL)
+	{
+		if ( (entry = getpwnam(user)) == NULL )
+		{
+			printf("alastlog: Unknown user: %s\n", user);
+			return;
+		}
+	}
+	else
+	{
+		entry = getpwent();
+	}
+	
+	int ll_index = -1;
+	
+	//cycle through valid passwd structs
+	//either a single one with -u, or until end of /etc/passwd
+	while ( entry && (ll = ll_next()) )
+	{
+		ll_index++;
+		
+		//check if current entry in lastlog matches with /etc/passwd
+		if (ll_index != entry->pw_uid)
+		{
+		
+			continue;
+		}
+		
+		//check time against -t flag
+		if (days != NULL)
+        {
+            time_t now;
+            double delta = difftime(time(&now), ll->ll_time);
+            
+            if ( delta > (24 * 60 * 60 * atoi(days)) )
+                continue;
+        }
+        
+        if (headers == NO)
+        {
+            print_headers();
+            headers = YES;
+        }
+        
+        show_info(ll, entry);
+        
+        //found the one user with -u, stop execution
+        if( user != NULL)
+        	return;
+        else
+        	entry = getpwent();
+	}
+	
+	
+/*
+	//iterate through the lastlog database
 	while( (ll = ll_next()) )
 	{
+	
+		
+
+		show_info(ll, entry);
+        entry = getpwent();
+        current_uid++;
+        
 		printf("%-16.16s ", "");
 		printf("%-8.8s ", ll->ll_line); 
 		printf("%-16.16s ", ll->ll_host);
@@ -86,7 +150,7 @@ void get_log(char *file, char *user, char *days)
 //		show_time(ll->ll_time, TIME_FORMAT);
         printf("\n");
 	}
-
+*/
 //	struct passwd *single;
 //    single = getpwnam("mst611");
 //    printf("retrieved user... name is %s, uid is %d, home is %s\n", single->pw_name, single->pw_uid, single->pw_dir);
@@ -120,7 +184,10 @@ void get_log(char *file, char *user, char *days)
         entry = getpwent();
 	}*/
 	
-	//endpwent();
+	if (user == NULL)
+		endpwent();
+	
+	
 	ll_close();
     return;
 }
@@ -137,42 +204,10 @@ void print_headers()
 
 void show_info(struct lastlog *lp, struct passwd *ep)
 {
-    
-
 	printf("%-16.16s ", ep->pw_name);
-//    printf("%-16.16s ", "");
-//    printf("%s\t%s\t", lp->ll_line, lp->ll_host);
-/*
-    if(lp->ll_line[UT_LINESIZE] == '\0')
-*/      printf("%-8.8s ", lp->ll_line);        
-    /*   else
-    {
-        char temp[UT_LINESIZE];
-        strcpy(temp, lp->ll_line);
-        temp[UT_LINESIZE - 1] = '\0';
+	printf("%-8.8s ", lp->ll_line);        
+	printf("%-16.16s ", lp->ll_host);
 
-        if(temp[UT_LINESIZE] == '\0')
-            printf("%-8.8s ", temp);
-        else
-            printf("%-s %s", "not string ", temp);
-    }
-
-    if(lp->ll_host[UT_HOSTSIZE] == '\0')
-    */   printf("%-16.16s ", lp->ll_host);
-    /*   else
-    {
-        char temp2[UT_HOSTSIZE];
-        strcpy(temp2, lp->ll_host);
-        temp2[UT_HOSTSIZE - 1] = '\0';
-        
-        if(temp2[UT_HOSTSIZE] == '\0')
-            printf("%-16.16s ", temp2);
-        else
-            printf("%-16.16s ", "not host");
-
-    }
-//        printf("%-16.16s ", "not host string");
-*/
 	if(lp->ll_time == 0)
 		printf("**Never logged in**");
 	else
