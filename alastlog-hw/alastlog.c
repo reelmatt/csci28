@@ -129,27 +129,6 @@ struct passwd *extract_user(char *name)
             exit(1);
         }
 	}
-	/*
-	//Try getting user by name first
-	if ( (user = getpwnam(name)) == NULL)
-	{
-        char *temp = NULL;
-        long uid = strtol(name, &temp, 10);
-        
-        //If strtol returns 0 and copied all chars to temp, it failed
-        if (uid == 0 && strcmp(name, temp) == 0)
-        {
-        	fprintf(stderr, "alastlog: invalid username/UID: %s\n", temp);
-            exit (1);
-        }
-        
-        //We were able to parse out a UID, try getting user with that
-        if ( (user = getpwuid(uid)) == NULL)
-        {
-			fprintf(stderr, "alastlog: Unknown user: %s\n", name);
-            exit(1);
-        }
-	}*/
 	
 	return user;
 }
@@ -172,13 +151,6 @@ void get_log(char *file, char *user, char *days)
 
 	struct passwd *entry = extract_user(user);
 
-/*	struct passwd *entry = NULL;	//store pw rec
-
-	if (user == NULL)
-        entry = getpwent();			//get first user in /etc/passwd
-	else
-        entry = extract_user(user);	//get specified user
-*/
 	int headers = NO;
 	int ll_index = -1;
 	struct lastlog *ll;				//store lastlog rec
@@ -187,6 +159,10 @@ void get_log(char *file, char *user, char *days)
 	while ( entry && (ll = ll_next()) )
 	{
 		ll_index++;
+
+        if (check_time(lp->ll_time, days) == NO)
+            continue;
+
 
 		//if UID is before current lastlog record, need to reset
         if ( (int) entry->pw_uid < ll_index )
