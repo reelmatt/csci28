@@ -153,6 +153,13 @@ struct passwd *extract_user(char *name)
 	return user;
 }
 
+/*void logcmp(struct passwd *pw, struct lastlog *lp, long days, char *user, int p)
+{
+	if ( (int) pw->pw_uid < lp->ll_index )
+		ll_reset(file);
+	return;
+}*/
+
 /*
  *	get_log()
  *	Purpose: 
@@ -178,11 +185,11 @@ void get_log(char *file, char *user, long days)
 	//iterate through passwd structs and the lastlog file
 	while ( entry && (ll = ll_next()) )
 	{
-		ll_index++;
-
-        if (check_time(ll->ll_time, days) == NO)
-            continue;
-
+	//	ll_index++;
+		
+		check_records(entry, ll, days, user, headers, ++ll_index);
+		
+	
 
 		//if UID is before current lastlog record, need to reset
         if ( (int) entry->pw_uid < ll_index )
@@ -197,8 +204,13 @@ void get_log(char *file, char *user, long days)
 		//if the lastlog does not match /etc/passwd, try next lastlog
 		if (ll_index != (int) entry->pw_uid && entry->pw_uid < 65000)
 		{
-			continue;
+			continue;		//get next lastlog record
 		}
+
+        if (check_time(ll->ll_time, days) == NO)
+            continue;
+
+
         
         headers = show_info(ll, entry, days, headers);
         
