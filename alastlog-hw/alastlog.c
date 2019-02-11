@@ -12,7 +12,7 @@
 #include "lllib.h"
 
 int check_time(time_t, char *);
-void fatal(char, char *);
+void fatal_args(char *, char *);
 void get_log(char *, char *, char *);
 void show_time(time_t, char *);
 void process(char *user, int days, char *file);
@@ -106,6 +106,30 @@ struct passwd *extract_user(char *name)
 {
 	struct passwd *user = NULL;
 	
+	if(name == NULL)							//return first user entry
+		return getpwent();
+	else if ( (user = getpwnam(name)) != NULL)	//name was a username
+		return user;
+	else										//try name as a UID
+	{
+		char *temp = NULL;
+        long uid = strtol(name, &temp, 10);
+        
+        //If strtol returns 0 and copied all chars to temp, it failed
+        if (uid == 0 && strcmp(name, temp) == 0)
+        {
+        	fprintf(stderr, "alastlog: invalid username/UID: %s\n", temp);
+            exit (1);
+        }
+        
+        //We were able to parse out a UID, try getting user with that
+        if ( (user = getpwuid(uid)) == NULL)
+        {
+			fprintf(stderr, "alastlog: Unknown user: %s\n", name);
+            exit(1);
+        }
+	}
+	/*
 	//Try getting user by name first
 	if ( (user = getpwnam(name)) == NULL)
 	{
@@ -125,7 +149,7 @@ struct passwd *extract_user(char *name)
 			fprintf(stderr, "alastlog: Unknown user: %s\n", name);
             exit(1);
         }
-	}
+	}*/
 	
 	return user;
 }
@@ -146,12 +170,15 @@ void get_log(char *file, char *user, char *days)
 		exit(1);
 	}
 
-	struct passwd *entry = NULL;	//store pw rec
+	struct passwd *entry = extract_user(user);
+
+/*	struct passwd *entry = NULL;	//store pw rec
+
 	if (user == NULL)
         entry = getpwent();			//get first user in /etc/passwd
 	else
         entry = extract_user(user);	//get specified user
-
+*/
 	int headers = NO;
 	int ll_index = -1;
 	struct lastlog *ll;				//store lastlog rec
@@ -189,8 +216,7 @@ void get_log(char *file, char *user, char *days)
 	//if opened pwent, close
 	if (user == NULL)
 		endpwent();
-	
-	
+		
 	ll_close();
     return;
 }
@@ -232,19 +258,6 @@ int check_time(time_t entry, char *days)
  */
 int show_info(struct lastlog *lp, struct passwd *ep, char *days, int headers)
 {
-/*	//check time against -t flag
-	if (days != NULL)
-	{
-		time_t now;
-		double delta = difftime(time(&now), lp->ll_time);
-
-		//if out of range, don't print record
-		if ( delta > (24 * 60 * 60 * atoi(days)) )
-		{  
-			return headers;
-		}
-	}
-*/
 	if (check_time(lp->ll_time, days) == NO)
 		return headers;
 		
@@ -252,7 +265,6 @@ int show_info(struct lastlog *lp, struct passwd *ep, char *days, int headers)
         print_headers();
         
 	printf("%-16.16s ", ep->pw_name);
-//    printf("%-8.8d ", ep->pw_uid);
 	printf("%-8.8s ", lp->ll_line);        
 	printf("%-16.16s ", lp->ll_host);
 
