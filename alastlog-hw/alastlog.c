@@ -9,6 +9,7 @@
 #include <pwd.h>
 #include "lllib.h"
 
+void fatal();
 void get_log(char *, char *, char *);
 void show_time(time_t, char *);
 void process(char *user, int days, char *file);
@@ -17,6 +18,7 @@ void read_lastlog (struct lastlog *);
 void show_llrec(struct lastlog *);
 void show_info(struct lastlog *, struct passwd *);
 void print_headers();
+void get_option(char, char *, char *, char *, char *);
 
 #define LLOG_FILE "/var/log/lastlog"
 #define TIME_FORMAT "%a %b %e %H:%M:%S %z %Y"
@@ -30,11 +32,18 @@ int main (int ac, char *av[])
     char *days = NULL;
     char *file = NULL;
     
-    /*Cycle through command-line args to store any options user specifies.
-      Known options are -u, -t, and -f. Each option requires an arg following
-      it.*/
+    /*Cycle through options, any/all of -u, -t, or -f. Exit if invalid*/
     while (i < ac)
     {
+    	if(av[i][0] == '-' && (i + 1) < ac)
+    		get_option(av[i][1], av[i + 1], user, days, file);
+    	else
+    	{
+    		fprintf(stderr, "alastlog: unexpected argument: %s\n", av[i]);
+    		fatal();
+    	}
+    	
+    	/*
 		if(av[i][0] == '-' && (i + 1) < ac && av[i+1][0] != '-')
 		{
 			if(av[i][1] == 'u')
@@ -44,13 +53,19 @@ int main (int ac, char *av[])
 			else if (av[i][1] == 'f')
                 file = av[i+1];
             else
-                printf("Unknown option. Please try again.\n");
+            {
+                fprintf(stderr, "alastlog: invalid option -- '%c'\n", av[i][1]);
+            	fatal("Usage: ", "Please use options -u -t and/or -f");
+            }
 		}
 		else
-			printf("usage: ./alastlog [-utf] [file]\n");
+			fatal("Usage: ", "Please use options -u -t and/or -f");*/
 
 		i += 2;
 	}
+
+	printf("user is %s, days is %s, and file is %s\n", user, days, file);
+	return 0;
 
     //If no file specified with -f, use LLOG_FILE
     if (file == NULL)
@@ -59,6 +74,21 @@ int main (int ac, char *av[])
         get_log(file, user, days);
 
 	return 0;
+}
+
+void get_option(char opt, char *value, char *user, char *days, char *file)
+{
+	if(option == 'u')
+		user = value;
+	else if (option == 't')
+		days = value;
+	else if (option == 'f')
+		file = value;
+	else
+	{
+		fprintf(stderr, "alastlog: invalid option -- '%c'\n", opt);
+		fatal("Usage: ", "Please use options -u -t and/or -f");
+	}
 }
 
 void get_log(char *file, char *user, char *days)
@@ -138,59 +168,6 @@ void get_log(char *file, char *user, char *days)
         	entry = getpwent();
 	}
 	
-	
-/*
-	//iterate through the lastlog database
-	while( (ll = ll_next()) )
-	{
-	
-		
-
-		show_info(ll, entry);
-        entry = getpwent();
-        current_uid++;
-        
-		printf("%-16.16s ", "");
-		printf("%-8.8s ", ll->ll_line); 
-		printf("%-16.16s ", ll->ll_host);
-		printf("%d", ll->ll_time);
-//		show_time(ll->ll_time, TIME_FORMAT);
-        printf("\n");
-	}
-*/
-//	struct passwd *single;
-//    single = getpwnam("mst611");
-//    printf("retrieved user... name is %s, uid is %d, home is %s\n", single->pw_name, single->pw_uid, single->pw_dir);
-//	struct passwd *entry = getpwent();
-
-/*
-	while( (ll = ll_next()) && entry )
-	{
-        if (user != NULL)
-        {
-            if (strcmp(entry->pw_name, user) != 0)
-                continue;            
-        }
-         
-        if (days != NULL)
-        {
-            time_t now;
-            double delta = difftime(time(&now), ll->ll_time);
-            
-            if ( delta > (24 * 60 * 60 * atoi(days)) )
-                continue;
-        }
-
-        if (headers == NO)
-        {
-            print_headers();
-            headers = YES;
-        }
-
-		show_info(ll, entry);
-        entry = getpwent();
-	}*/
-	
 	if (user == NULL)
 		endpwent();
 	
@@ -235,4 +212,14 @@ void show_time(time_t time, char *fmt)
 
 	printf("%s", result);
 	return;
+}
+
+void fatal()
+{
+	fprintf(stderr, "Usage: alastlog [options]\n\nOptions:\n");
+	fprintf(stderr, "\t-u LOGIN\t\tprint lastlog record for user LOGIN\n");
+	fprintf(stderr, "\t-t DAYS\t\tprint only records more recent than DAYS\n");
+	fprintf(stderr, "\t-f FILE\t\tread data from specified FILE\n\n");
+
+	exit(1);
 }
