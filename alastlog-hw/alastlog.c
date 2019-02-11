@@ -11,17 +11,17 @@
 #include <pwd.h>
 #include "lllib.h"
 
-int check_time(time_t, long *);
-void fatal_args(char *, char *);
-void get_log(char *, char *, long *);
+int check_time(time_t, long );
+void fatal(char, char *);
+void get_log(char *, char *, long);
 void show_time(time_t, char *);
 void process(char *user, int days, char *file);
 void read_lastlog (struct lastlog *);
 void show_llrec(struct lastlog *);
-int show_info(struct lastlog *, struct passwd *, long *, int);
+int show_info(struct lastlog *, struct passwd *, long, int);
 void print_headers();
 struct passwd *extract_user(char *);
-void get_option(char, char **, char **, long **, char **);
+void get_option(char, char **, char **, long *, char **);
 long parse_time(char *);
 
 #define LLOG_FILE "/var/log/lastlog"
@@ -41,9 +41,10 @@ int main (int ac, char *av[])
 {
     int i = 1;
     char *user = NULL;
-    long *days = NULL;
+    long days = -1;
     char *file = NULL;
  
+//    printf("address of days is %p\n", &days);
     /*Cycle through options, any/all of -u, -t, or -f. Exit if invalid*/
     while (i < ac)
     {
@@ -55,6 +56,8 @@ int main (int ac, char *av[])
 		i += 2;				//go past the -X option, and its value
 	}
 
+//    printf("testing args, days was parsed as %lu\n", days);
+    //   return 0;
     //If no file specified with -f, use LLOG_FILE
     if (file == NULL)
         get_log(LLOG_FILE, user, days);
@@ -77,8 +80,9 @@ int main (int ac, char *av[])
  *	  Notes: If there is an invalid option (not -utf), fatal is called
  *			 to output a message to stderr and exit with a non-zero status.
  */
-void get_option(char opt, char **value, char **user, long **days, char **file)
+void get_option(char opt, char **value, char **user, long *days, char **file)
 {
+    //  printf("in get_option, address of days is %p\n", days);
 	if(opt == 'u')
 		*user = *value;
 	else if (opt == 't')
@@ -89,15 +93,16 @@ void get_option(char opt, char **value, char **user, long **days, char **file)
 	else
 		fatal(opt, "");
 
+//    printf("parsed days is %lu\n", *days);
 	return;
 }
 
 long parse_time(char *value)
 {
-	char *temp = NULL
+	char *temp = NULL;
 	long time = strtol(value, &temp, 10);
 	
-	if(time = 0 && strcmp(name, temp) == 0)
+	if(time == 0 && strcmp(value, temp) == 0)
 	{
 		fprintf(stderr, "alastlog: invalid numeric argument '%s'\n", value);
 		exit(1);
@@ -155,7 +160,7 @@ struct passwd *extract_user(char *name)
  *			 user,
  *			 days, 
  */
-void get_log(char *file, char *user, long *days)
+void get_log(char *file, char *user, long days)
 {
 	if (ll_open(file) == -1)
 	{
@@ -175,7 +180,7 @@ void get_log(char *file, char *user, long *days)
 	{
 		ll_index++;
 
-        if (check_time(lp->ll_time, days) == NO)
+        if (check_time(ll->ll_time, days) == NO)
             continue;
 
 
@@ -226,17 +231,19 @@ void print_headers()
     return;
 }
 
-int check_time(time_t entry, long *days)
+int check_time(time_t entry, long days)
 {
 	//check time against -t flag
-	if (days != NULL)
+	if (days != -1)
 	{
 		time_t now;
 		double delta = difftime(time(&now), entry);
+        long day_seconds = 24 * 60 * 60;
 
 		//if out of range, don't print record
-		if ( delta > (24 * 60 * 60 * days) )
+		if ( delta > (day_seconds * days) )
 		{  
+            //      printf("delta is %f\tuser is %lu\n", delta, (day_seconds * days));
 			return NO;
 		}
 	}
@@ -247,7 +254,7 @@ int check_time(time_t entry, long *days)
 /*
  *
  */
-int show_info(struct lastlog *lp, struct passwd *ep, long *days, int headers)
+int show_info(struct lastlog *lp, struct passwd *ep, long days, int headers)
 {
 	if (check_time(lp->ll_time, days) == NO)
 		return headers;
