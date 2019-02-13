@@ -44,8 +44,9 @@ int main (int ac, char *av[])
     long days = -1;
     char *file = NULL;
  
-//    printf("address of days is %p\n", &days);
-    /*Cycle through options, any/all of -u, -t, or -f. Exit if invalid*/
+    /* Cycle through options, any/all of -u, -t, or -f. Exit if invalid.
+     * get_option is only called when there is at least one more arg left
+     * in addition to the '-' option, the (i + 1) < ac part in the if. */
     while (i < ac)
     {
     	if(av[i][0] == '-' && (i + 1) < ac)
@@ -56,8 +57,6 @@ int main (int ac, char *av[])
 		i += 2;				//go past the -X option, and its value
 	}
 
-//    printf("testing args, days was parsed as %lu\n", days);
-    //   return 0;
     //If no file specified with -f, use LLOG_FILE
     if (file == NULL)
         get_log(LLOG_FILE, user, days);
@@ -97,6 +96,14 @@ void get_option(char opt, char **value, char **user, long *days, char **file)
 	return;
 }
 
+/*
+ *	parse_time()
+ *	Purpose: translate a DAY value into a corresponding time value
+ *	  Input: value, the -t option the user entered
+ *	 Return: the day value converted into a long
+ *	 Errors: if the value is not a number, strtol will fail and the
+ *			 program should exit
+ */
 long parse_time(char *value)
 {
 	char *temp = NULL;
@@ -160,6 +167,7 @@ struct passwd *extract_user(char *name)
 	return;
 }*/
 
+
 /*
  *	get_log()
  *	Purpose: 
@@ -189,7 +197,7 @@ void get_log(char *file, char *user, long days)
 		
 		check_records(entry, ll, days, user, headers, ++ll_index);
 		
-	
+		ll_seek(entry->pw_uid);
 
 		//if UID is before current lastlog record, need to reset
         if ( (int) entry->pw_uid < ll_index )

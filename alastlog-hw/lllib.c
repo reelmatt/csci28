@@ -4,13 +4,14 @@
 #include <unistd.h>
 #include "lllib.h"
 
-#define NRECS 32
+#define NRECS 512
 #define LLSIZE	(sizeof(struct lastlog))
 #define LL_NULL ((struct lastlog *) NULL)
 
 static char llbuf[NRECS * LLSIZE];	//buffer storage
 static int num_recs;				//num in buffer
 static int cur_rec;					//next rec to read
+static int furthest_rec;			//the highest record available
 static int ll_fd = -1;				//file descriptor
 
 static int ll_reload();
@@ -28,8 +29,24 @@ int ll_open(char *fname)
 	ll_fd = open(fname, O_RDONLY);
 	num_recs = 0;
 	cur_rec = 0;
+	furthest_rec = 0;
 	
 	return ll_fd;
+}
+
+/*
+ *
+ */
+int ll_seek(int rec)
+{
+	if (rec > furthest_rec)
+		printf("need to get more recs\n");
+	else if (rec < (furthes_rec - NRECS))
+		printf("need to rewind, rec not in buf\n");
+	else
+		printf("in buffer, but need to access it\n");
+		
+	return 0;
 }
 
 /*
@@ -70,9 +87,11 @@ static int ll_reload()
 	if (amt_read < 0)
 		amt_read = -1;
 	
+
 	num_recs = amt_read/LLSIZE;
 	cur_rec = 0;
-//    printf("IN lllib.c, ll_reload got %d records to read\n", num_recs);
+	furthest_rec += num_recs;
+
 	return num_recs;
 }
 
