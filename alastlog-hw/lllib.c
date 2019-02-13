@@ -41,7 +41,7 @@ int ll_seek(int rec)
 {
 	if (rec > furthest_rec)
 		printf("need to get more recs\n");
-	else if (rec < (furthes_rec - NRECS))
+	else if (rec < (furthest_rec - NRECS))
 		printf("need to rewind, rec not in buf\n");
 	else
 		printf("in buffer, but need to access it\n");

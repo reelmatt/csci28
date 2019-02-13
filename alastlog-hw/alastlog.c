@@ -193,9 +193,9 @@ void get_log(char *file, char *user, long days)
 	//iterate through passwd structs and the lastlog file
 	while ( entry && (ll = ll_next()) )
 	{
-	//	ll_index++;
+		ll_index++;
 		
-		check_records(entry, ll, days, user, headers, ++ll_index);
+//		check_records(entry, ll, days, user, headers, ++ll_index);
 		
 		ll_seek(entry->pw_uid);
 
