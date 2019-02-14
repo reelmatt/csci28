@@ -81,7 +81,7 @@ int ll_seek(int rec)
 		
 		buf_start = rec;
 		
-        int num_read = ll_reload();
+//        int num_read = ll_reload();
 
         if (ll_reload() == 0)
             return -1;
