@@ -38,7 +38,8 @@ int ll_open(char *fname)
 
 void debug(int a, int b, int c, int d, int e)
 {
-	printf("\nrec is %d, cur_rec is %d, num_recs is %d, start is %d, end is %d\n",
+	printf("DEBUGGING current values\n");
+	printf("rec is %d, cur_rec is %d, num_recs is %d, start is %d, end is %d\n",
 		   a, b, c, d, e);
 }
 
@@ -56,7 +57,7 @@ int ll_seek(int rec)
 		return -1;
 
 	//ll_read will get the correct record, no seeking required
-	if (rec == cur_rec || rec > 65000)
+	if (rec == cur_rec)
 		return 0;
 	
 	if (rec > buf_start && rec < buf_end)
@@ -70,6 +71,9 @@ int ll_seek(int rec)
 
 			if ( lseek(ll_fd, offset, SEEK_CUR) == -1 )
 				return -1;
+			
+			printf("Buffered past the end\n");	
+			
 		}
 		else
 		{
@@ -83,10 +87,12 @@ int ll_seek(int rec)
 		
 //        int num_read = ll_reload();
 
-        if (ll_reload() == 0)
+        if (ll_reload() <= 0)
             return -1;
         else
             buf_end = buf_start + num_recs;
+            
+        debug(rec, cur_rec, num_recs, buf_start, buf_end);	
 	}
 	
 	
@@ -166,8 +172,8 @@ struct lastlog *ll_read()
         }
     }
 	
+	printf("\t\treading buffer at position %lu\n", (cur_rec * LLSIZE));
 	struct lastlog *llp = (struct lastlog *) &llbuf[cur_rec * LLSIZE];
-//	printf("\t\treading buffer at position %lu\n", (cur_rec * LLSIZE));
 	cur_rec++;
 
 	return llp;
