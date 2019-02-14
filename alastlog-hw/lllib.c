@@ -56,19 +56,25 @@ int ll_seek(int rec)
 	if (rec > 65000)
     {
         printf("this is the nobody record...\n");
-        if ( lseek(ll_fd, 0, SEEK_CUR) == -1)
-            return -1;
+//         if ( lseek(ll_fd, 0, SEEK_CUR) == -1)
+//             return -1;
 
         return 0;
 //return 0;
     }
+    else if (rec > 512)
+    {
+    	printf("this is outside the initial buffer... skip for now\n");
+    	return 0;
+    }
     
-	printf("\nrec requested is %d, cur_rec is %d, num_recs is %d, start is %d, end is %d\n",
-           rec, cur_rec, num_recs, buf_start, buf_end);
-	
+
 	if (rec > buf_end)
 	{
 		printf("get new, higher, batch\n");
+		printf("\nrec is %d, cur_rec is %d, num_recs is %d, start is %d, end is %d\n",
+		   rec, cur_rec, num_recs, buf_start, buf_end);
+	
 		off_t offset = rec * LLSIZE; //add rec bytes to the SEEK_CUR position
 		
 		if ( lseek(ll_fd, offset, SEEK_CUR) == -1 )
@@ -80,6 +86,8 @@ int ll_seek(int rec)
 	else if (rec < buf_start)
 	{
 		printf("get new, lower, batch (rewind)\n");
+		printf("\nrec is %d, cur_rec is %d, num_recs is %d, start is %d, end is %d\n",
+		   rec, cur_rec, num_recs, buf_start, buf_end);
 		off_t offset = rec * LLSIZE; //move rec bytes away from start, or SEEK_SET
 		
 		if ( lseek(ll_fd, offset, SEEK_SET) == -1 )
@@ -90,7 +98,7 @@ int ll_seek(int rec)
 	}
 	else
 	{
-		printf("in current buffer\n");
+		//printf("in current buffer\n");
 		off_t offset = (rec - cur_rec) * LLSIZE;  //add or remove bytes to SEEK_CUR pos
 		
 		if ( lseek(ll_fd, offset, SEEK_CUR) == -1 )
@@ -99,42 +107,7 @@ int ll_seek(int rec)
 		//buf_start and buf_end DO NOT CHANGE
 	}
 	
-	//int furthest_rec = read_rec + num_recs;
 
-	//rec == rec_I_want
-	
-
-/*
-	if (rec > num_recs)
-	{
-
-		off_t offset = (rec - cur_rec) * LLSIZE;
-		
-		//offset from CUR position
-		if ( lseek(ll_fd, offset, SEEK_CUR) == -1 )
-			return -1;
-			
-		ll_reload();
-		
-		
-		//OFFSET == (rec_I_want - current_rec) * LLSIZE;
-	}
-	else if (rec < (furthest_rec - NRECS))
-	{
-		printf("need to rewind, rec not in buf and appears earlier\n");
-		
-		off_t offset = rec * LLSIZE;
-
-		if ( lseek(ll_fd, offset, SEEK_SET) == -1 )
-			return -1;
-		
-		cur_rec = 0;
-		num_recs = 0;
-		ll_reload();
-		//OFFSET == rec * LLSIZE; <-- lseek moves pointer to beginning + OFFSET
-	}
-	else
-	{*/
 
 /*@@working code for one initial buffer
     if ( rec < num_recs )
@@ -153,9 +126,7 @@ int ll_seek(int rec)
 		cur_rec = rec;
      }
 */	
-	
-//	furthest_rec = rec + amt_read; //<-- amt_read from ll_seek()
-	
+		
 	return 0;
 }
 
@@ -186,6 +157,7 @@ struct lastlog *ll_read()
     }
 	
 	struct lastlog *llp = (struct lastlog *) &llbuf[cur_rec * LLSIZE];
+	printf("\t\treading buffer at position %lu\n", (cur_rec * LLSIZE));
 	cur_rec++;
 
 	return llp;
