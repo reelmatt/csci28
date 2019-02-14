@@ -179,7 +179,6 @@ void get_log(char *file, char *user, long days)
 {
 	if (ll_open(file) == -1)
 	{
-		fprintf(stderr, "Could not open file, %s\n", file);
 		perror(file);
 		exit(1);
 	}
@@ -187,19 +186,12 @@ void get_log(char *file, char *user, long days)
 	struct passwd *entry = extract_user(user);
 
 	int headers = NO;
-	int ll_index = -1;
 	struct lastlog *ll;				//store lastlog rec
 	
 	//iterate through passwd structs and the lastlog file
-
-	//while ( entry && (ll = ll_next()) )
-
-//	while ( entry && ll_index < 65 )
 	while (entry)
 	{
-		ll_index++;
-		
-        //set position in buffer, reloading as necessary
+        //set position in buffer, rebuffering as necessary
 		if ( ll_seek(entry->pw_uid) == -1 )
 			printf("THERE WAS AN ERROR WITH ll_seek()\n");
 
@@ -208,26 +200,6 @@ void get_log(char *file, char *user, long days)
 		ll = ll_read();
 		
 		
-		
-//		check_records(entry, ll, days, user, headers, ++ll_index);
-		
-
-		//if UID is before current lastlog record, need to reset
-/*        if ( (int) entry->pw_uid < ll_index )
-        {
-//            printf("need to reset lastlog...\n");
-            ll_reset(file);			
-            ll_index = -1;
-        }
-*/		
-		//@@TO-Do, remove this edge case
-		//check if current entry in lastlog matches with /etc/passwd
-		//if the lastlog does not match /etc/passwd, try next lastlog
-/*		if (ll_index != (int) entry->pw_uid && entry->pw_uid < 65000)
-		{
-			continue;		//get next lastlog record
-		}
-*/
 /*        if (check_time(ll->ll_time, days) == NO)
             continue;
 */
