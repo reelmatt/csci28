@@ -160,14 +160,6 @@ struct passwd *extract_user(char *name)
 	return user;
 }
 
-/*void logcmp(struct passwd *pw, struct lastlog *lp, long days, char *user, int p)
-{
-	if ( (int) pw->pw_uid < lp->ll_index )
-		ll_reset(file);
-	return;
-}*/
-
-
 /*
  *	get_log()
  *	Purpose: 
@@ -183,28 +175,22 @@ void get_log(char *file, char *user, long days)
 		exit(1);
 	}
 
-	struct passwd *entry = extract_user(user);
-
-	int headers = NO;
+	struct passwd *entry;			//store passwd rec
 	struct lastlog *ll;				//store lastlog rec
+	int headers = NO;				//have headers been printed
 	
-	//iterate through passwd structs and the lastlog file
-	while (entry)
+	if(user == NULL)
+		entry = getpwent();			//open the passwd database to iterate
+	else
+		entry = extract_user(user);	//get passwd record for singler user
+
+	while (entry)					//while we still have a passwd entry
 	{
-        //set position in buffer, rebuffering as necessary
 		if ( ll_seek(entry->pw_uid) == -1 )
-			printf("THERE WAS AN ERROR WITH ll_seek()\n");
+			fprintf(stderr, "There was a problem with ll_seek()\n");
 
-        //then read in the record once correct position is set
-//		ll = ll_next();			
-		ll = ll_read();
-		
-		
-/*        if (check_time(ll->ll_time, days) == NO)
-            continue;
-*/
-
-        
+        //then read in the record once correct position is set		
+		ll = ll_read();        
         headers = show_info(ll, entry, days, headers);
         
         //found the one user with -u, stop execution
@@ -214,11 +200,8 @@ void get_log(char *file, char *user, long days)
         	entry = getpwent();
 	}
 	
-	//if opened pwent, close
-	if (user == NULL)
-		endpwent();
-		
-	ll_close();
+	endpwent();						//if a user was specified, already returned
+	ll_close();						//close the fd associated with lastlog
     return;
 }
 
@@ -248,7 +231,7 @@ int check_time(time_t entry, long days)
 		//if out of range, don't print record
 		if ( delta > (day_seconds * days) )
 		{  
-            //      printf("delta is %f\tuser is %lu\n", delta, (day_seconds * days));
+            //printf("delta is %f\tuser is %lu\n", delta, (day_seconds * days));
 			return NO;
 		}
 	}
