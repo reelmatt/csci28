@@ -11,7 +11,8 @@
 static char llbuf[NRECS * LLSIZE];	//buffer storage
 static int num_recs;				//num in buffer
 static int cur_rec;					//next rec to read
-static int furthest_rec;			//the highest record available
+static int buf_start;				//starting index of buffer
+static int buf_end;					//ending index of buffer
 static int ll_fd = -1;				//file descriptor
 
 static int ll_reload();
@@ -29,8 +30,10 @@ int ll_open(char *fname)
 	ll_fd = open(fname, O_RDONLY);
 	num_recs = 0;
 	cur_rec = 0;
-	furthest_rec = 0;
-	
+//	highest_rec = 0;
+	buf_start = 0;
+	buf_end = 0;
+		
 	return ll_fd;
 }
 
@@ -46,21 +49,59 @@ int ll_seek(int rec)
 	if (ll_fd == -1)
 		return -1;
 
+	//ll_read will get the correct record, no seeking required
+	if (rec == cur_rec)
+		return 0;
+	
+	if (rec > 65000)
+    {
+        printf("this is the nobody record...\n");
+        //return 0;
+    }
+    
+	printf("rec requested is %d, cur_rec is %d, num_recs is %d, furthest is %d\n",
+               rec, cur_rec, num_recs, furthest_rec);
+	
+	if (rec > buf_end)
+	{
+		printf("get new, higher, batch\n");
+		off_t offset = rec * LLSIZE; //add rec bytes to the SEEK_CUR position
+		
+		if ( lseek(ll_fd, offset, SEEK_CUR) == -1 )
+			return -1;
+		
+		buf_start = rec;
+
+	}
+	else if (rec < buf_start)
+	{
+		printf("get new, lower, batch (rewind)\n");
+		off_t offset = rec * LLSIZE; //move rec bytes away from start, or SEEK_SET
+		
+		if ( lseek(ll_fd, offset, SEEK_SET) == -1 )
+			return -1;
+		
+		buf_start = rec;
+	}
+	else
+	{
+		printf("in current buffer\n");
+		off_t offset = (rec - cur_rec) * LLSIZE;  //add or remove bytes to SEEK_CUR pos
+		
+		if ( lseek(ll_fd, offset, SEEK_CUR) == -1 )
+			return -1;
+		
+		//buf_start and buf_end DO NOT CHANGE
+	}
+	
 	//int furthest_rec = read_rec + num_recs;
 
 	//rec == rec_I_want
 	
-    if (rec > 65000)
-    {
-        printf("this is the nobody record... leave for now\n");
-        return 0;
-    }
+
 /*
 	if (rec > num_recs)
 	{
-		printf("need to get more recs\n");
-        printf("rec requested is %d, cur_rec is %d, num_recs is %d, furthest is %d\n",
-               rec, cur_rec, num_recs, furthest_rec);
 
 		off_t offset = (rec - cur_rec) * LLSIZE;
 		
@@ -90,12 +131,11 @@ int ll_seek(int rec)
 	else
 	{*/
 
+/*@@working code for one initial buffer
     if ( rec < num_recs )
     {
 		printf("in buffer, but need to access it\n");
-        printf("rec requested is %d, cur_rec is %d, num_recs is %d, furthest is %d\n",
-               rec, cur_rec, num_recs, furthest_rec);
-		
+
 		off_t offset = (rec - cur_rec) * LLSIZE;
 		printf("offset is %ld offset\n", offset);
 		//offset from cur postion, could be negative
@@ -107,7 +147,7 @@ int ll_seek(int rec)
 		//OFFSET == (rec_I_want - current_rec) * LLSIZE
 		cur_rec = rec;
      }
-	
+*/	
 	
 //	furthest_rec = rec + amt_read; //<-- amt_read from ll_seek()
 	
@@ -115,25 +155,24 @@ int ll_seek(int rec)
 }
 
 /*
- *
+ * starting as a copy of ll_next()
  */
 struct lastlog *ll_read()
 {
-    struct lastlog *llp;
 	//error was returned when ll_open was called
 	if (ll_fd == -1)
 		return LL_NULL;
+	
+	//if next to read == num in buffer AND reload doesn't get any more
+	//ll_reload() will ALWAYS be called, UNLESS next to read != num in buffer
+	//at open though, both are equal to 0 and reload WILL run
+	if(cur_rec == num_recs && ll_reload() == 0)
+		return LL_NULL;
 
-//if nothing in buffer, get something there	
-    if(cur_rec == num_recs && ll_reload() == 0)
-        return LL_NULL;
+	
+	struct lastlog *llp = (struct lastlog *) &llbuf[cur_rec * LLSIZE];
+	//cur_rec++;
 
-	llp = (struct lastlog *) &llbuf[cur_rec * LLSIZE];
-//	cur_rec++;
-    printf("in ll_read, read from position %lu\n", (cur_rec * LLSIZE));
-//    printf("test host...\t%16.16s\n", llp->ll_host);
-
-//    printf("exiting ll_read...\n");
 	return llp;
 }
 
