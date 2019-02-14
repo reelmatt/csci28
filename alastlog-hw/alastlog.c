@@ -191,13 +191,25 @@ void get_log(char *file, char *user, long days)
 	struct lastlog *ll;				//store lastlog rec
 	
 	//iterate through passwd structs and the lastlog file
-	while ( entry && (ll = ll_next()) )
+
+	//while ( entry && (ll = ll_next()) )
+	
+	while ( entry && ll_index < 400 )
 	{
 		ll_index++;
 		
+
+		if ( ll_seek(entry->pw_uid) == -1 )
+			printf("there was an error with ll_seek()\n");
+
+
+//		ll = ll_next();			
+		ll_read(&ll, 1);
+		
+		
+		
 //		check_records(entry, ll, days, user, headers, ++ll_index);
 		
-		ll_seek(entry->pw_uid);
 
 		//if UID is before current lastlog record, need to reset
         if ( (int) entry->pw_uid < ll_index )
