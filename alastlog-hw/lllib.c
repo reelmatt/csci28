@@ -62,11 +62,11 @@ int ll_seek(int rec)
         return 0;
 //return 0;
     }
-    else if (rec > 512)
-    {
-    	printf("this is outside the initial buffer... skip for now\n");
-    	return 0;
-    }
+//     else if (rec > 512)
+//     {
+//     	printf("this is outside the initial buffer... skip for now\n");
+//     	return 0;
+//     }
     
 
 	if (rec > buf_end)
@@ -76,11 +76,14 @@ int ll_seek(int rec)
 		   rec, cur_rec, num_recs, buf_start, buf_end);
 	
 		off_t offset = rec * LLSIZE; //add rec bytes to the SEEK_CUR position
-		
+		printf("ADDING %lu bytes\n", offset);
 		if ( lseek(ll_fd, offset, SEEK_CUR) == -1 )
 			return -1;
 		
 		buf_start = rec;
+		
+		//first record to read will be at start of new buffer
+		//cur_rec = 0;			<-- this is set when ll_reload() is called
         ll_reload();
 	}
 	else if (rec < buf_start)
@@ -89,7 +92,7 @@ int ll_seek(int rec)
 		printf("\nrec is %d, cur_rec is %d, num_recs is %d, start is %d, end is %d\n",
 		   rec, cur_rec, num_recs, buf_start, buf_end);
 		off_t offset = rec * LLSIZE; //move rec bytes away from start, or SEEK_SET
-		
+		printf("MOVING %lu bytes FROM START\n", offset);
 		if ( lseek(ll_fd, offset, SEEK_SET) == -1 )
 			return -1;
 		
