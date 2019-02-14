@@ -7,19 +7,12 @@ Summary:
 
   This submission contains the files:
 	README		-- this file
-	alastlog.c  -- 
-	lllib.c     --
+	alastlog.c  -- main logic to process options and display lastlog contents
+	lllib.c     -- library functions to open, close, read, and buffer lastlog
 	lllib.h     -- header file for lllib
-	Plan        --
+	Plan        -- design document for this assignment
 	typescript  -- a sample run, including the lib215 test script
 	
-    more03.c    -- my solution to the project
-    termfuncs.c -- course provided functions
-    termfuncs.h -- header file for termfuncs
-    Makefile    -- the makefile
-    Plan        -- a description of the design and operation of my code
-    typescript  -- a sample run
-
 Notes:
 	A lot of the code to implement buffering was copied from the sample files
 	provided in this assignment, utmplib.c and utmp.h. These are the same as
@@ -31,16 +24,16 @@ Notes:
 	
 
 
-I changed the return type of print_one_line from void to int to handle the case where
-one row exceeded the number of columns in the terminal. This way, if a given line printed
-across 2+ rows, it could return how much space was gobbled up to accurately update the
-"space_left" variable.
+I changed the return type of print_one_line from void to int to handle the
+case where one row exceeded the number of columns in the terminal. This way,
+if a given line printed across 2+ rows, it could return how much space was
+gobbled up to accurately update the "space_left" variable.
 
-When calling get_term_size(), I put it in a very simple if condition that printed any
-errors to stderr and did nothing else. It appears twice -- I know it is redundant but
-figured a separate function was not necessary and even more redundant. I would be curious
-what best-practice would be for how to handle an error. Should the program exit and stop
-running? Is there a concise way to call get_term_size() and check the error other than
+When calling get_term_size(), I put it in a very simple if condition that
+printed any errors to stderr and did nothing else. It appears twice -- I know
+it is redundant but figured a separate function was not necessary and even more
+redundant. I would be curious what best-practice would be for how to handle an 
+error. Should the program exit and stop running? Is there a concise way to call get_term_size() and check the error other than
 how I did so? My idea for factoring it out into a function would be a void check_term()
 function that works the same as the code as written. Would make each call one line, but
 I am not sure if that is factoring it out too far. Thoughts/advice would be welcome.

@@ -1,20 +1,64 @@
+  Author: Matthew Thomas
+    Date: 2/16/2019
+Contains: Design details for CSCI E-215 homework 1
+==================================================
+
 Project: alastlog
 
 Purpose: A program to display a list of last logins.
 
 Outline:
 	alastlog reads a lastlog file, defaults to /var/log/lastlog, and presents
-	the contents in human-readable form, displaying the 
+	the contents in human-readable form. For each entry, the Username,
+	Port (line), From (host), and Latest login time is displayed.
 	
-	alastlog 
+Input:
+	alastlog is controlled via the command line and accepts -u, -t, and -f
+	options. The usage and purpose of each is as follows:
+		[-u USER]: 	a USER name or id is specified and results are
+					restricted to that single user. Multiple users/ranges
+					are not supported.
+		[-t DAYS]:	an amount of time, in DAYS, allows you to restrict output
+					to logins that have happened within the last number of
+					days.
+		[-f FILE]:	an alternate lastlog FILE to read from. By default,
+					alastlog reads from /var/log/lastlog. Using the -f option
+					changes the default behavior.
 	
 Output:
 	The output is fixed-width fields including Username, Port, From,
 	and Latest columns. The latest login field is displayed with a time format
-	of "Mon Dec 17 11:14:39 -0500 2018", as an example.
+	of "Mon Dec 17 11:14:39 -0500 2018", for example. Columns are 16, 8, and
+	16 chars respectively.
 	
 	alastlog uses read to get data from the file and uses printf to format and
 	output results. 
+
+Data Structures:
+	The main logic exists in alastlog.c while the open, read, seek, and close
+	functions, along with buffering, exist in lllib.c
+	
+
+Program Flow:
+	1 - process user options and store any arguments in three
+		variables: user, days, and file to be used later on (if specified).
+	2 - call on get_log() with the user options. File being set to LLOG_FILE
+		by default, user set to NULL, and days set to -1.
+	3 - get_log() opens the lastlog file.
+	4 - If a "user" was specified, call on getpwnam() or getpwuid() to retrieve
+		a single passwd struct. If none specified, call getpwent() to begin
+		iterating through the all passwd database entries.
+	5 - For all (1+) passwd entries, call ll_seek() to move a pointer to the
+		correct place to read. If nothing has been read yet, or the requested
+		passwd entry is outside the current buffer, this uses the system call
+		lseek() to manipulate the pointer to the file descriptor. If the
+		request is for an entry currently in the buffer, it adjusts the cur_rec
+		variable accordingly.
+	6 - If there was an error (e.g. requested a range outside the lastlog file)
+		then the lastlog pointer, ll, is set to NULL. Otherwise, ll_read() is
+		called, and it returns a pointer to the requested struct lastlog entry.
+	7 - 
+
 
 Arguments:
 	alastlog accepts three user options, -u, -t, and -f to specify a user, a
@@ -24,11 +68,9 @@ Arguments:
 	process the log file located at /var/log/lastlog, defined as LLOG_FILE in
 	alastlog.c
 	
-Input:
-	alastlog does not accept any user input. With the -f option, a user can
-	specify a different lastlog file to use than the default /var/log/lastlog.
 
-Data Structures:
+
+
 	
 	
 Files:
