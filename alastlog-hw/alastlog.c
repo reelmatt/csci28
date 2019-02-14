@@ -187,7 +187,10 @@ void get_log(char *file, char *user, long days)
 	while (entry)					//while we still have a passwd entry
 	{
 		if ( ll_seek(entry->pw_uid) == -1 )						//error
+		{
 			fprintf(stderr, "There was a problem with ll_seek()\n");
+			ll = NULL;
+		}
 		else
 			ll = ll_read();										//okay to read
 
@@ -245,7 +248,7 @@ int check_time(time_t entry, long days)
  */
 int show_info(struct lastlog *lp, struct passwd *ep, long days, int headers)
 {
-	if (check_time(lp->ll_time, days) == NO)
+	if (lp == NULL || check_time(lp->ll_time, days) == NO)
 		return headers;
 		
     if (headers == NO)
