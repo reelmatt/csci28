@@ -186,11 +186,12 @@ void get_log(char *file, char *user, long days)
 
 	while (entry)					//while we still have a passwd entry
 	{
-		if ( ll_seek(entry->pw_uid) == -1 )
+		if ( ll_seek(entry->pw_uid) == -1 )						//error
 			fprintf(stderr, "There was a problem with ll_seek()\n");
+		else
+			ll = ll_read();										//okay to read
 
-        //then read in the record once correct position is set		
-		ll = ll_read();        
+    
         headers = show_info(ll, entry, days, headers);
         
         //found the one user with -u, stop execution
