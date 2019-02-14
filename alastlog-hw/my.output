@@ -1,5 +1,5 @@
 Username         Port     From             Latest
-root             pts/0    deimos.soc.harva Wed Jan 30 11:19:50 -0500 2019
+root             pts/4    deimos.soc.harva Wed Feb 13 12:37:46 -0500 2019
 daemon                                     **Never logged in**
 bin                                        **Never logged in**
 sys                                        **Never logged in**
@@ -836,7 +836,7 @@ friend                                     **Never logged in**
 nseling                                    **Never logged in**
 vdibrova                                   **Never logged in**
 wwellman                                   **Never logged in**
-lib153           pts/2    pool-173-76-107- Mon Dec 14 22:52:42 -0500 2015
+lib153                                     **Never logged in**
 libst171                                   **Never logged in**
 fairbank                                   **Never logged in**
 atlantic                                   **Never logged in**
@@ -848,14 +848,14 @@ chetham                                    **Never logged in**
 micro                                      **Never logged in**
 tconley                                    **Never logged in**
 kenen                                      **Never logged in**
-vanderk                                    **Never logged in**
+vanderk          pts/11   207.210.130.125  Mon Jul 21 17:57:15 -0400 2014
 schmelz                                    **Never logged in**
 elkins                                     **Never logged in**
 imaging                                    **Never logged in**
 tnbisson                                   **Never logged in**
 huaca                                      **Never logged in**
 navia                                      **Never logged in**
-frankel          pts/1    65.112.10.247    Wed Sep 24 19:08:06 -0400 2014
+frankel                                    **Never logged in**
 jalt                                       **Never logged in**
 opatters                                   **Never logged in**
 sshoemak                                   **Never logged in**
@@ -871,7 +871,7 @@ kafadar                                    **Never logged in**
 lamill                                     **Never logged in**
 yenching                                   **Never logged in**
 hpcws                                      **Never logged in**
-perserv                                    **Never logged in**
+perserv          pts/2    65.112.10.62     Tue Mar 21 09:03:34 -0400 2017
 jmsheph                                    **Never logged in**
 scarson                                    **Never logged in**
 history                                    **Never logged in**
@@ -887,7 +887,7 @@ adm230                                     **Never logged in**
 southafr                                   **Never logged in**
 irons                                      **Never logged in**
 miller16                                   **Never logged in**
-vidra                                      **Never logged in**
+vidra            pts/2    65.112.8.131     Tue Feb  5 20:03:02 -0500 2019
 yong                                       **Never logged in**
 mmcg                                       **Never logged in**
 pf-abst                                    **Never logged in**
@@ -900,7 +900,7 @@ brach                                      **Never logged in**
 burchst                                    **Never logged in**
 boose                                      **Never logged in**
 trjehn                                     **Never logged in**
-dunster          pts/0    pool-72-74-134-2 Mon Aug 24 20:08:24 -0400 2015
+dunster                                    **Never logged in**
 eliot                                      **Never logged in**
 mather                                     **Never logged in**
 quincy                                     **Never logged in**
@@ -941,7 +941,7 @@ killough                                   **Never logged in**
 mchiang                                    **Never logged in**
 mcbhelp                                    **Never logged in**
 pcohen                                     **Never logged in**
-libcse10         pts/0    c-71-192-161-6.h Wed Aug 13 18:00:24 -0400 2014
+libcse10                                   **Never logged in**
 maffeo                                     **Never logged in**
 libst111                                   **Never logged in**
 engelwar                                   **Never logged in**
@@ -956,7 +956,7 @@ ethics                                     **Never logged in**
 ealc                                       **Never logged in**
 classics                                   **Never logged in**
 cabot                                      **Never logged in**
-cabref                                     **Never logged in**
+cabref           pts/9    mcnat126-103.med Mon Feb 16 15:44:55 -0500 2015
 eas                                        **Never logged in**
 lib1126                                    **Never logged in**
 daviscrs                                   **Never logged in**
@@ -969,7 +969,7 @@ hvc                                        **Never logged in**
 mss                                        **Never logged in**
 fop                                        **Never logged in**
 reserves                                   **Never logged in**
-cafrica          pts/2    173-166-71-205-n Tue May 13 09:52:47 -0400 2014
+cafrica                                    **Never logged in**
 parents                                    **Never logged in**
 hylilla                                    **Never logged in**
 hylillb                                    **Never logged in**
@@ -992,8 +992,8 @@ hilillb                                    **Never logged in**
 korbib                                     **Never logged in**
 htc                                        **Never logged in**
 tlane                                      **Never logged in**
-libs1            pts/1    157.130.220.250  Fri Nov 16 18:05:28 -0500 2018
-libs111          pts/1    65.112.8.137     Mon Jul 30 10:04:43 -0400 2018
+libs1                                      **Never logged in**
+libs111                                    **Never logged in**
 transit                                    **Never logged in**
 nielsen2                                   **Never logged in**
 cftse                                      **Never logged in**
@@ -1047,7 +1047,7 @@ jmilke                                     **Never logged in**
 holloway         pts/1    labrat3.int.seas Mon Aug 27 12:47:44 -0400 2018
 icgtest                                    **Never logged in**
 fraenkel                                   **Never logged in**
-jjackson         pts/0    65.112.10.123    Tue Jan 22 14:54:51 -0500 2019
+jjackson         pts/0    65.112.10.137    Mon Feb 11 17:15:13 -0500 2019
 gaudet                                     **Never logged in**
 rouqui                                     **Never logged in**
 gambone                                    **Never logged in**

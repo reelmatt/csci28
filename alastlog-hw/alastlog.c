@@ -193,8 +193,9 @@ void get_log(char *file, char *user, long days)
 	//iterate through passwd structs and the lastlog file
 
 	//while ( entry && (ll = ll_next()) )
-	
-	while ( entry && ll_index < 65 )
+
+//	while ( entry && ll_index < 65 )
+	while (entry)
 	{
 		ll_index++;
 		
@@ -321,7 +322,7 @@ void show_time(time_t time, char *fmt)
 
 	strftime(result, 100, fmt, tp);
 
-	printf("%-40.40s", result);
+	printf("%s", result);
 	return;
 }
 

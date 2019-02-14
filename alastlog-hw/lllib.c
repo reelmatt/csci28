@@ -55,7 +55,7 @@ int ll_seek(int rec)
 	
 	if (rec > 65000)
     {
-        printf("this is the nobody record...\n");
+//        printf("this is the nobody record...\n");
 //         if ( lseek(ll_fd, 0, SEEK_CUR) == -1)
 //             return -1;
 
@@ -71,12 +71,12 @@ int ll_seek(int rec)
 
 	if (rec > buf_end)
 	{
-		printf("get new, higher, batch\n");
-		printf("\nrec is %d, cur_rec is %d, num_recs is %d, start is %d, end is %d\n",
-		   rec, cur_rec, num_recs, buf_start, buf_end);
+//		printf("get new, higher, batch\n");
+//		printf("\nrec is %d, cur_rec is %d, num_recs is %d, start is %d, end is %d\n",
+//		   rec, cur_rec, num_recs, buf_start, buf_end);
 	
-		off_t offset = rec * LLSIZE; //add rec bytes to the SEEK_CUR position
-		printf("ADDING %lu bytes\n", offset);
+		off_t offset = (rec - buf_end) * LLSIZE; //add rec bytes to the SEEK_CUR position
+//		printf("ADDING %lu bytes\n", offset);
 		if ( lseek(ll_fd, offset, SEEK_CUR) == -1 )
 			return -1;
 		
@@ -84,28 +84,56 @@ int ll_seek(int rec)
 		
 		//first record to read will be at start of new buffer
 		//cur_rec = 0;			<-- this is set when ll_reload() is called
-        ll_reload();
+        int num_read = ll_reload();
+
+        if (num_read == 0)
+        {
+            return -1;
+        }
+        else
+        {
+            buf_end = buf_start + num_read;
+        }
+    
+
+
+
+//        ll_reload();
 	}
 	else if (rec < buf_start)
 	{
-		printf("get new, lower, batch (rewind)\n");
-		printf("\nrec is %d, cur_rec is %d, num_recs is %d, start is %d, end is %d\n",
-		   rec, cur_rec, num_recs, buf_start, buf_end);
+//		printf("get new, lower, batch (rewind)\n");
+//		printf("\nrec is %d, cur_rec is %d, num_recs is %d, start is %d, end is %d\n",
+//		   rec, cur_rec, num_recs, buf_start, buf_end);
 		off_t offset = rec * LLSIZE; //move rec bytes away from start, or SEEK_SET
-		printf("MOVING %lu bytes FROM START\n", offset);
+//		printf("MOVING %lu bytes FROM START\n", offset);
 		if ( lseek(ll_fd, offset, SEEK_SET) == -1 )
 			return -1;
 		
 		buf_start = rec;
-        ll_reload();
+        int num_read = ll_reload();
+
+        if (num_read == 0)
+        {
+            return -1;
+        }
+        else
+        {
+            buf_end = buf_start + num_read;
+        }
+
 	}
 	else
 	{
-		printf("in current buffer\n");
-		off_t offset = (rec - cur_rec) * LLSIZE;  //add or remove bytes to SEEK_CUR pos
-		cur_rec = rec;
-		if ( lseek(ll_fd, offset, SEEK_CUR) == -1 )
-			return -1;
+        //in current buffer, so NO SEEKING required
+        //just update vars to match appropriate places
+//		printf("in current buffer\n");
+//		off_t offset = (rec - cur_rec) * LLSIZE;  //add or remove bytes to SEEK_CUR pos
+//        off_t offset = (rec - buf_start) * LLSIZE; //change for ansible case
+//		cur_rec = rec;
+        cur_rec = rec - buf_start;
+//		if ( lseek(ll_fd, offset, SEEK_CUR) == -1 )
+//			return -1;
 		
 		//buf_start and buf_end DO NOT CHANGE
 	}
@@ -160,7 +188,7 @@ struct lastlog *ll_read()
     }
 	
 	struct lastlog *llp = (struct lastlog *) &llbuf[cur_rec * LLSIZE];
-	printf("\t\treading buffer at position %lu\n", (cur_rec * LLSIZE));
+//	printf("\t\treading buffer at position %lu\n", (cur_rec * LLSIZE));
 	cur_rec++;
 
 	return llp;
