@@ -56,11 +56,15 @@ int ll_seek(int rec)
 	if (rec > 65000)
     {
         printf("this is the nobody record...\n");
-        //return 0;
+        if ( lseek(ll_fd, 0, SEEK_CUR) == -1)
+            return -1;
+
+        return 0;
+//return 0;
     }
     
-	printf("rec requested is %d, cur_rec is %d, num_recs is %d, furthest is %d\n",
-               rec, cur_rec, num_recs, furthest_rec);
+	printf("\nrec requested is %d, cur_rec is %d, num_recs is %d, start is %d, end is %d\n",
+           rec, cur_rec, num_recs, buf_start, buf_end);
 	
 	if (rec > buf_end)
 	{
@@ -71,7 +75,7 @@ int ll_seek(int rec)
 			return -1;
 		
 		buf_start = rec;
-
+        ll_reload();
 	}
 	else if (rec < buf_start)
 	{
@@ -82,6 +86,7 @@ int ll_seek(int rec)
 			return -1;
 		
 		buf_start = rec;
+        ll_reload();
 	}
 	else
 	{
@@ -166,12 +171,22 @@ struct lastlog *ll_read()
 	//if next to read == num in buffer AND reload doesn't get any more
 	//ll_reload() will ALWAYS be called, UNLESS next to read != num in buffer
 	//at open though, both are equal to 0 and reload WILL run
-	if(cur_rec == num_recs && ll_reload() == 0)
-		return LL_NULL;
+	if(cur_rec == num_recs)
+    {
+        int num_read = ll_reload();
 
+        if (num_read == 0)
+        {
+            return LL_NULL;
+        }
+        else
+        {
+            buf_end = buf_start + num_read;
+        }
+    }
 	
 	struct lastlog *llp = (struct lastlog *) &llbuf[cur_rec * LLSIZE];
-	//cur_rec++;
+	cur_rec++;
 
 	return llp;
 }
@@ -189,8 +204,7 @@ struct lastlog *ll_next()
 		return LL_NULL;
 	
 	if(cur_rec == num_recs && ll_reload() == 0)
-		return LL_NULL;
-
+        return LL_NULL;
     
 	llp = (struct lastlog *) &llbuf[cur_rec * LLSIZE];
 	cur_rec++;
