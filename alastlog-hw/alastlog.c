@@ -194,7 +194,7 @@ void get_log(char *file, char *user, long days)
 
 	//while ( entry && (ll = ll_next()) )
 	
-	while ( entry && ll_index < 40 )
+	while ( entry && ll_index < 65 )
 	{
 		ll_index++;
 		

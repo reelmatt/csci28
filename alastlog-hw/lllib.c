@@ -100,7 +100,7 @@ int ll_seek(int rec)
 	{
 		printf("in current buffer\n");
 		off_t offset = (rec - cur_rec) * LLSIZE;  //add or remove bytes to SEEK_CUR pos
-		cur_rec = 0;
+		cur_rec = rec;
 		if ( lseek(ll_fd, offset, SEEK_CUR) == -1 )
 			return -1;
 		
