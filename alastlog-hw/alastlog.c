@@ -248,24 +248,40 @@ int check_time(time_t entry, long days)
  */
 int show_info(struct lastlog *lp, struct passwd *ep, long days, int headers)
 {
-	if (lp == NULL || check_time(lp->ll_time, days) == NO)
+	if (check_time(lp->ll_time, days) == NO)
 		return headers;
 		
     if (headers == NO)
         print_headers();
-        
+    
+    printf("%-16.16s ", check_string(ep->pw_name, UT_NAMESIZE));
+	printf("%-8.8s ", check_string(lp->ll_line, UT_LINESIZE));
+	printf("%-16.16s ", check_string(lp->ll_host, UT_HOSTSIZE));
+    /*
 	printf("%-16.16s ", ep->pw_name);
 	printf("%-8.8s ", lp->ll_line);        
 	printf("%-16.16s ", lp->ll_host);
-
-	if(lp->ll_time == 0)
+*/
+	if(lp == NULL || lp->ll_time == 0)
 		printf("**Never logged in**");
 	else
 		show_time(lp->ll_time, TIME_FORMAT);
 
+
+
 	printf("\n");
 
 	return YES;
+}
+
+char * check_string(char *str, int size)
+{
+	if (str == NULL)
+		return NULL;
+	else if (str[size - 1] != '\0')
+		*str[size - 1] = '\0';
+
+	return str;
 }
 
 /*
