@@ -194,17 +194,17 @@ void get_log(char *file, char *user, long days)
 
 	//while ( entry && (ll = ll_next()) )
 	
-	while ( entry && ll_index < 400 )
+	while ( entry && ll_index < 40 )
 	{
 		ll_index++;
 		
-
+        //set position in buffer, reloading as necessary
 		if ( ll_seek(entry->pw_uid) == -1 )
-			printf("there was an error with ll_seek()\n");
+			printf("THERE WAS AN ERROR WITH ll_seek()\n");
 
-
+        //then read in the record once correct position is set
 //		ll = ll_next();			
-		ll_read(&ll, 1);
+		ll = ll_read();
 		
 		
 		
@@ -212,24 +212,24 @@ void get_log(char *file, char *user, long days)
 		
 
 		//if UID is before current lastlog record, need to reset
-        if ( (int) entry->pw_uid < ll_index )
+/*        if ( (int) entry->pw_uid < ll_index )
         {
 //            printf("need to reset lastlog...\n");
             ll_reset(file);			
             ll_index = -1;
         }
-		
+*/		
 		//@@TO-Do, remove this edge case
 		//check if current entry in lastlog matches with /etc/passwd
 		//if the lastlog does not match /etc/passwd, try next lastlog
-		if (ll_index != (int) entry->pw_uid && entry->pw_uid < 65000)
+/*		if (ll_index != (int) entry->pw_uid && entry->pw_uid < 65000)
 		{
 			continue;		//get next lastlog record
 		}
-
-        if (check_time(ll->ll_time, days) == NO)
+*/
+/*        if (check_time(ll->ll_time, days) == NO)
             continue;
-
+*/
 
         
         headers = show_info(ll, entry, days, headers);
@@ -321,7 +321,7 @@ void show_time(time_t time, char *fmt)
 
 	strftime(result, 100, fmt, tp);
 
-	printf("%s", result);
+	printf("%-40.40s", result);
 	return;
 }
 

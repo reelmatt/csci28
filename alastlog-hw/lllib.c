@@ -50,10 +50,19 @@ int ll_seek(int rec)
 
 	//rec == rec_I_want
 	
-	if (rec > furthest_rec)
+    if (rec > 65000)
+    {
+        printf("this is the nobody record... leave for now\n");
+        return 0;
+    }
+/*
+	if (rec > num_recs)
 	{
 		printf("need to get more recs\n");
-		off_t offset = (rec - current_rec) * LLSIZE;
+        printf("rec requested is %d, cur_rec is %d, num_recs is %d, furthest is %d\n",
+               rec, cur_rec, num_recs, furthest_rec);
+
+		off_t offset = (rec - cur_rec) * LLSIZE;
 		
 		//offset from CUR position
 		if ( lseek(ll_fd, offset, SEEK_CUR) == -1 )
@@ -79,23 +88,28 @@ int ll_seek(int rec)
 		//OFFSET == rec * LLSIZE; <-- lseek moves pointer to beginning + OFFSET
 	}
 	else
-	{
+	{*/
+
+    if ( rec < num_recs )
+    {
 		printf("in buffer, but need to access it\n");
+        printf("rec requested is %d, cur_rec is %d, num_recs is %d, furthest is %d\n",
+               rec, cur_rec, num_recs, furthest_rec);
 		
-		off_t offset = (rec - current_rec) * LLSIZE;
-		
+		off_t offset = (rec - cur_rec) * LLSIZE;
+		printf("offset is %ld offset\n", offset);
 		//offset from cur postion, could be negative
 		if ( lseek(ll_fd, offset, SEEK_CUR) == -1 )
 			return -1;
 		
-		
+        
 		//NO NEED TO CALL RELOAD, record already in buffer
 		//OFFSET == (rec_I_want - current_rec) * LLSIZE
-		//cur_rec = rec_I_want;
-	}
+		cur_rec = rec;
+     }
 	
 	
-	furthest_rec = rec + amt_read; //<-- amt_read from ll_seek()
+//	furthest_rec = rec + amt_read; //<-- amt_read from ll_seek()
 	
 	return 0;
 }
@@ -103,16 +117,24 @@ int ll_seek(int rec)
 /*
  *
  */
-void ll_read(struct lastlog **lp, int nitems)
+struct lastlog *ll_read()
 {
+    struct lastlog *llp;
 	//error was returned when ll_open was called
 	if (ll_fd == -1)
 		return LL_NULL;
-	
-	*lp = (struct lastlog *) &llbuf[cur_rec * LLSIZE];
-	cur_rec++;
 
-	return;
+//if nothing in buffer, get something there	
+    if(cur_rec == num_recs && ll_reload() == 0)
+        return LL_NULL;
+
+	llp = (struct lastlog *) &llbuf[cur_rec * LLSIZE];
+//	cur_rec++;
+    printf("in ll_read, read from position %lu\n", (cur_rec * LLSIZE));
+//    printf("test host...\t%16.16s\n", llp->ll_host);
+
+//    printf("exiting ll_read...\n");
+	return llp;
 }
 
 /*
@@ -129,7 +151,8 @@ struct lastlog *ll_next()
 	
 	if(cur_rec == num_recs && ll_reload() == 0)
 		return LL_NULL;
-		
+
+    
 	llp = (struct lastlog *) &llbuf[cur_rec * LLSIZE];
 	cur_rec++;
 

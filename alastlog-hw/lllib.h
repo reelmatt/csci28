@@ -7,3 +7,4 @@ struct lastlog *ll_next();
 int ll_close();
 int ll_reset(char *);
 int ll_seek(int);
+struct lastlog *ll_read();
