@@ -72,7 +72,7 @@ int ll_seek(int rec)
 			if ( lseek(ll_fd, offset, SEEK_CUR) == -1 )
 				return -1;
 			
-			printf("Buffered past the end\n");	
+//			printf("Buffered past the end\n");	
 			
 		}
 		else
@@ -92,7 +92,7 @@ int ll_seek(int rec)
         else
             buf_end = buf_start + num_recs;
             
-        debug(rec, cur_rec, num_recs, buf_start, buf_end);	
+//        debug(rec, cur_rec, num_recs, buf_start, buf_end);	
 	}
 	
 	
@@ -172,7 +172,7 @@ struct lastlog *ll_read()
         }
     }
 	
-	printf("\t\treading buffer at position %lu\n", (cur_rec * LLSIZE));
+//	printf("\t\treading buffer at position %lu\n", (cur_rec * LLSIZE));
 	struct lastlog *llp = (struct lastlog *) &llbuf[cur_rec * LLSIZE];
 	cur_rec++;
 

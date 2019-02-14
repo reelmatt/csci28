@@ -23,6 +23,7 @@ void print_headers();
 struct passwd *extract_user(char *);
 void get_option(char, char **, char **, long *, char **);
 long parse_time(char *);
+char * check_string(char *, int);
 
 #define LLOG_FILE "/var/log/lastlog"
 #define TIME_FORMAT "%a %b %e %H:%M:%S %z %Y"
@@ -188,7 +189,7 @@ void get_log(char *file, char *user, long days)
 	{
 		if ( ll_seek(entry->pw_uid) == -1 )						//error
 		{
-			fprintf(stderr, "There was a problem with ll_seek()\n");
+			//fprintf(stderr, "There was a problem with ll_seek()\n");
 			ll = NULL;
 		}
 		else
@@ -248,20 +249,33 @@ int check_time(time_t entry, long days)
  */
 int show_info(struct lastlog *lp, struct passwd *ep, long days, int headers)
 {
-	if (check_time(lp->ll_time, days) == NO)
-		return headers;
-		
+    //if the lp is not NULL and time is OK, continue
+	if (lp)
+    {
+        if (check_time(lp->ll_time, days) == NO)
+            return headers;
+    }
+    else if (check_time(0, days) == NO)
+    {
+        return headers;
+    }
+
     if (headers == NO)
         print_headers();
-    
-    printf("%-16.16s ", check_string(ep->pw_name, UT_NAMESIZE));
-	printf("%-8.8s ", check_string(lp->ll_line, UT_LINESIZE));
-	printf("%-16.16s ", check_string(lp->ll_host, UT_HOSTSIZE));
-    /*
-	printf("%-16.16s ", ep->pw_name);
-	printf("%-8.8s ", lp->ll_line);        
-	printf("%-16.16s ", lp->ll_host);
-*/
+
+    printf("%-16.16s ", ep->pw_name);
+
+    if (lp)
+    {
+        printf("%-8.8s ", check_string(lp->ll_line, UT_LINESIZE));
+        printf("%-16.16s ", check_string(lp->ll_host, UT_HOSTSIZE));
+    }
+    else
+    {
+        printf("%-8.8s ", "");        
+        printf("%-16.16s ", "");
+    }
+
 	if(lp == NULL || lp->ll_time == 0)
 		printf("**Never logged in**");
 	else
@@ -276,10 +290,13 @@ int show_info(struct lastlog *lp, struct passwd *ep, long days, int headers)
 
 char * check_string(char *str, int size)
 {
+//    printf("\nin check_string, str is %s\n", str);
 	if (str == NULL)
-		return NULL;
+		return "";
 	else if (str[size - 1] != '\0')
-		*str[size - 1] = '\0';
+		str[size - 1] = '\0';
+//    else
+//        printf("the str already is terminated!\n");
 
 	return str;
 }
