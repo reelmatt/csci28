@@ -19,11 +19,12 @@ static int ll_reload();
 void debug(int, int, int, int, int);
 
 /*
- * ll_open:
- *		opens the filename given for read access.
- * Returns:
- *		int of file descriptor on success
- *		-1 on error
+ *	ll_open()
+ *	Purpose: opens the filename given for read access.
+ *	 Return: int of file descriptor on success
+ *			 -1 on error
+ *	   Note: copied (with minor modifications), from utmplib.c file. Provided
+ *			 in assignment files, also used in lecture 02.
  */
 int ll_open(char *fname)
 {
@@ -63,36 +64,23 @@ int ll_seek(int rec)
 		cur_rec = rec - buf_start;
 	else
 	{
-		off_t offset = rec * LLSIZE;
+//		off_t offset = rec * LLSIZE;
+	
+		off_t offset = (rec / NRECS) * LLSIZE;
 		
 		if ( lseek(ll_fd, offset, SEEK_SET) == -1 )
 				return -1;
 		
-		buf_start = rec;
+//		buf_start = rec;
+		
+		//integer division will round to nearest multiple of NRECS
+		//i.e. rec #600 -> buf_start = (600 / 512) = 1 * 512 = 512
+		buf_start = (rec / NRECS) * NRECS;
 		
         if (ll_reload() <= 0)
             return -1;
         else
             buf_end = buf_start + num_recs;
-		
-		/*
-		if (rec > buf_end)	//record requested is past the end of the buffer
-		{
-			//lseek pointer already at buf_end, add bytes to SEEK_CUR pos
-			//off_t offset = (rec - buf_end) * LLSIZE;
-
-			off_t offset = rec * LLSIZE;
-
-		}
-		else				//record requested if before the start of the buffer
-		{
-			//move rec bytes away from start, or SEEK_SET
-			off_t offset = rec * LLSIZE; 
-
-// 			if ( lseek(ll_fd, offset, SEEK_SET) == -1 )
-// 				return -1;
-		}*/
-        
 	}	
 	return 0;
 }
@@ -123,7 +111,6 @@ struct lastlog *ll_read()
         }
     }
 	
-//	printf("\t\treading buffer at position %lu\n", (cur_rec * LLSIZE));
 	struct lastlog *llp = (struct lastlog *) &llbuf[cur_rec * LLSIZE];
 	cur_rec++;
 
@@ -131,8 +118,10 @@ struct lastlog *ll_read()
 }
 
 /*
- * ll_reload:
- *
+ *	ll_reload()
+ *	Purpose: read in NRECS to buffer
+ *	   Note: copied (with minor modifications), from utmplib.c file. Provided
+ *			 in assignment files, also used in lecture 02.
  */
 static int ll_reload()
 {
@@ -142,17 +131,17 @@ static int ll_reload()
 	if (amt_read < 0)
 		amt_read = -1;
 	
-
 	num_recs = amt_read/LLSIZE;
 	cur_rec = 0;
-	//furthest_rec += num_recs;
 
 	return num_recs;
 }
 
 /*
- * ll_close:
- *		close the open file
+ *	ll_close()
+ *	Purpose: close the open file
+ *	   Note: copied (with minor modifications), from utmplib.c file. Provided
+ *			 in assignment files, also used in lecture 02.
  */
 int ll_close()
 {
