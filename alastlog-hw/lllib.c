@@ -54,38 +54,44 @@ int ll_seek(int rec)
 	//error was returned when ll_open was called, no file to seek
 	if (ll_fd == -1)
 		return -1;
-	
+
 	//ll_read will get the correct record, no seeking required
 	if (rec == cur_rec)
+	{
+		printf("rec == cur_rec, no seeking. They are %d and %d\n", rec, cur_rec);
 		return 0;
+	}
 
 	//if rec is outside the current buffer seek to new position
 	if (rec < buf_start || rec > (buf_start + num_recs))
 	{
 //		off_t offset = rec * LLSIZE;
-	
+
 		off_t offset = (rec / NRECS) * LLSIZE;	//set to multiple of buffer size
-		
+
 		if ( lseek(ll_fd, offset, SEEK_SET) == -1 )
 				return -1;
-		
+
 //		buf_start = rec;
-		
+
 		//integer division will round to nearest multiple of NRECS
 		//i.e. rec #600 -> buf_start = (600 / 512) = 1 * 512 = 512
 		buf_start = (rec / NRECS) * NRECS;
-		
+
         if (ll_reload() <= 0)
             return -1;
         //else
         //    buf_end = buf_start + num_recs;
-         
-          debug(rec, cur_rec, num_recs, start, end); 
-        
+	  cur_rec = rec - buf_start;
+
+          debug(rec, cur_rec, num_recs, buf_start, (buf_start + num_recs));
+
 	}
-	
-	cur_rec = rec - buf_start;
-		
+	else
+	{
+		cur_rec = rec - buf_start;
+		printf("in current buffer, rec is %d, cur_rec is %d\n", rec, cur_rec);
+	}
 	return 0;
 }
 
@@ -120,7 +126,7 @@ struct lastlog *ll_read()
         }
 */
     }
-	
+	printf("ll_read, position is %d\n", cur_rec);
 	struct lastlog *llp = (struct lastlog *) &llbuf[cur_rec * LLSIZE];
 	cur_rec++;
 
