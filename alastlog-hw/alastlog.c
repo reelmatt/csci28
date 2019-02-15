@@ -134,9 +134,7 @@ struct passwd *extract_user(char *name)
 {
 	struct passwd *user = NULL;
 	
-	if(name == NULL)							//return first user entry
-		return getpwent();
-	else if ( (user = getpwnam(name)) != NULL)	//name was a username
+	if ( (user = getpwnam(name)) != NULL)		//name was a username
 		return user;
 	else										//try name as a UID
 	{
@@ -146,7 +144,7 @@ struct passwd *extract_user(char *name)
         //If strtol returns 0 and copied all chars to temp, it failed
         if (uid == 0 && strcmp(name, temp) == 0)
         {
-        	fprintf(stderr, "alastlog: invalid username/UID: %s\n", temp);
+        	fprintf(stderr, "alastlog: invalid user: %s\n", temp);
             exit (1);
         }
         
@@ -163,50 +161,49 @@ struct passwd *extract_user(char *name)
 
 /*
  *	get_log()
- *	Purpose: 
- *	  Input: file,
- *			 user,
- *			 days, 
+ *	Purpose: Print out lastlog records, filtered as appropriate by user options
+ *	  Input: file, lastlog to read from (LLOG_FILE by default)
+ *			 user, specific username/UID to display record for
+ *			 days, restrict output to logins within given number of days
+ *	 Output: formatted headers and entries, through calling show_info
+ *	 Errors: If there was a problem opening the lastlog file (ll_open) or
+ *			 a problem extracting a provided user (extract_user), the program
+ *			 will print a message to stderr and exit.
  */
 void get_log(char *file, char *user, long days)
 {
-	if (ll_open(file) == -1)
+	if (ll_open(file) == -1)					//open lastlog file
 	{
 		perror(file);
 		exit(1);
 	}
 
-	struct passwd *entry;			//store passwd rec
-	struct lastlog *ll;				//store lastlog rec
-	int headers = NO;				//have headers been printed
+	struct passwd *entry;						//store passwd rec
+	struct lastlog *ll;							//store lastlog rec
+	int headers = NO;							//have headers been printed
 	
 	if(user == NULL)
-		entry = getpwent();			//open the passwd database to iterate
+		entry = getpwent();						//open passwd db to iterate
 	else
-		entry = extract_user(user);	//get passwd record for singler user
+		entry = extract_user(user);				//get passwd rec for single user
 
-	while (entry)					//while we still have a passwd entry
+	while (entry)								//still have a passwd entry
 	{
-		if ( ll_seek(entry->pw_uid) == -1 )						//error
-		{
-			//fprintf(stderr, "There was a problem with ll_seek()\n");
-			ll = NULL;
-		}
+		if ( ll_seek(entry->pw_uid) == -1 )		//get the correct pos in buffer
+			ll = NULL;							//error
 		else
-			ll = ll_read();										//okay to read
+			ll = ll_read();						//okay to read
 
-    
         headers = show_info(ll, entry, days, headers);
-        
-        //found the one user with -u, stop execution
+          
         if( user != NULL)
-        	return;
+        	return;								//found the user with -u, return
         else
-        	entry = getpwent();
+        	entry = getpwent();					//go until end of passwd db
 	}
 	
-	endpwent();						//if a user was specified, already returned
-	ll_close();						//close the fd associated with lastlog
+	endpwent();									//if user specified, not called
+	ll_close();									//close lastlog file
     return;
 }
 
@@ -224,21 +221,26 @@ void print_headers()
     return;
 }
 
+/*
+ *	check_time()
+ *	Purpose: see if the lastlogin time has occurred within the last days
+ *	  Input: entry, the lastlogin time
+ *			 days, specified by the user with the -t option
+ *	 Return: NO, if login happened later than "days" ago
+ *			 YES, if login has happened within the given # of "days"
+ */
 int check_time(time_t entry, long days)
 {
-	//check time against -t flag
+	//check if a time was given with the -t flag
 	if (days != -1)
 	{
 		time_t now;
-		double delta = difftime(time(&now), entry);
-        long day_seconds = 24 * 60 * 60;
+		double delta = difftime(time(&now), entry);	//secs b/w now and lastlogin
+        long day_seconds = 24 * 60 * 60;			//number of seconds in a day
 
-		//if out of range, don't print record
+		//login happened before DAYS ago, out of range
 		if ( delta > (day_seconds * days) )
-		{  
-            //printf("delta is %f\tuser is %lu\n", delta, (day_seconds * days));
 			return NO;
-		}
 	}
 	
 	return YES;

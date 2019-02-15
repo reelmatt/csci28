@@ -50,8 +50,6 @@ void debug(int a, int b, int c, int d, int e)
  */
 int ll_seek(int rec)
 {
-	//debug(rec, cur_rec, num_recs, buf_start, buf_end);
-	
 	//error was returned when ll_open was called, no file to seek
 	if (ll_fd == -1)
 		return -1;
@@ -59,90 +57,44 @@ int ll_seek(int rec)
 	//ll_read will get the correct record, no seeking required
 	if (rec == cur_rec)
 		return 0;
-	
+
+	//if rec is within the current buffer, update cur_rec index to read	
 	if (rec > buf_start && rec < buf_end)
 		cur_rec = rec - buf_start;
 	else
 	{
-		if (rec > buf_end)
+		
+		if (rec > buf_end)	//record requested is past the end of the buffer
 		{
-			//lseek pointer already at buf_end, add
-			off_t offset = (rec - buf_end) * LLSIZE; //add rec bytes to SEEK_CUR pos
+			//lseek pointer already at buf_end, add bytes to SEEK_CUR pos
+			//off_t offset = (rec - buf_end) * LLSIZE;
 
-			if ( lseek(ll_fd, offset, SEEK_CUR) == -1 )
-				return -1;
-			
-//			printf("Buffered past the end\n");	
+			off_t offset = rec * LLSIZE;
+
+// 			if ( lseek(ll_fd, offset, SEEK_CUR) == -1 )
+// 				return -1;
 			
 		}
-		else
+		else				//record requested if before the start of the buffer
 		{
-			off_t offset = rec * LLSIZE; //move rec bytes away from start, or SEEK_SET
+			//move rec bytes away from start, or SEEK_SET
+			off_t offset = rec * LLSIZE; 
 
-			if ( lseek(ll_fd, offset, SEEK_SET) == -1 )
-				return -1;
+// 			if ( lseek(ll_fd, offset, SEEK_SET) == -1 )
+// 				return -1;
 		}
+		
+		if ( lseek(ll_fd, offset, SEEK_SET) == -1 )
+				return -1;
 		
 		buf_start = rec;
 		
-//        int num_read = ll_reload();
-
         if (ll_reload() <= 0)
             return -1;
         else
             buf_end = buf_start + num_recs;
             
-//        debug(rec, cur_rec, num_recs, buf_start, buf_end);	
-	}
-	
-	
-/*	
-	//record requested is past the end of the current buffer
-	if (rec > buf_end)
-	{
-		//lseek pointer already at buf_end, add
-		off_t offset = (rec - buf_end) * LLSIZE; //add rec bytes to the SEEK_CUR position
-
-		if ( lseek(ll_fd, offset, SEEK_CUR) == -1 )
-			return -1;
-		
-		buf_start = rec;
-		
-        int num_read = ll_reload();
-
-        if (ll_reload() == 0)
-            return -1;
-        else
-            buf_end = buf_start + num_recs;
-	}
-	//record requested is before the start of the current buffer
-	else if (rec < buf_start)
-	{
-		off_t offset = rec * LLSIZE; //move rec bytes away from start, or SEEK_SET
-
-		if ( lseek(ll_fd, offset, SEEK_SET) == -1 )
-			return -1;
-		
-		buf_start = rec;
-        int num_read = ll_reload();
-
-        if (num_read == 0)
-        {
-            return -1;
-        }
-        else
-        {
-            buf_end = buf_start + num_read;
-        }
-	}
-	//record requested is located in the current buffer, no seeking required
-	else
-	{
-        cur_rec = rec - buf_start;     //just update vars to match appropriate places
-		
-		//buf_start, buf_end, and num_recs DO NOT CHANGE because buffer stays the same
-	}
-*/		
+	}	
 	return 0;
 }
 
@@ -178,33 +130,6 @@ struct lastlog *ll_read()
 
 	return llp;
 }
-
-/*
- * ll_next:
- *
- */
-struct lastlog *ll_next()
-{
-	struct lastlog *llp;
-
-    //error was returned when ll_open was called
-	if (ll_fd == -1)
-		return LL_NULL;
-	
-	if(cur_rec == num_recs && ll_reload() == 0)
-        return LL_NULL;
-    
-	llp = (struct lastlog *) &llbuf[cur_rec * LLSIZE];
-	cur_rec++;
-
-	return llp;
-}
-
-// int ll_reset(char *fname)
-// {
-// 	ll_close();
-// 	return ll_open(fname);
-// }
 
 /*
  * ll_reload:

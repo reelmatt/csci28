@@ -62,11 +62,8 @@ Program Flow:
 
 Arguments:
 	alastlog accepts three user options, -u, -t, and -f to specify a user, a
-	date limit on entries, and a different data file respectively. The -u option
-	requires a single username, the -t option requires a number, and the -f
-	option requires a filename/path. If the -f option is not given, alastlog
-	process the log file located at /var/log/lastlog, defined as LLOG_FILE in
-	alastlog.c
+	date limit on entries, and a different data file respectively. See the
+	Input section for more details.
 	
 
 
