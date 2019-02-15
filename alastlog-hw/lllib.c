@@ -79,7 +79,10 @@ int ll_seek(int rec)
 		buf_start = (rec / NRECS) * NRECS;
 
         if (ll_reload() <= 0)
+        {
+        	printf("reload failed\n");
             return -1;
+        }
         //else
         //    buf_end = buf_start + num_recs;
 	  cur_rec = rec - buf_start;
@@ -144,6 +147,7 @@ static int ll_reload()
 	//where to read from is set first by ll_open, then by ll_seek
 	int amt_read = read(ll_fd, llbuf, (NRECS*LLSIZE));
 	
+	printf("ll_reload: amt_read is %d\n", amt_read);
 	if (amt_read < 0)
 		amt_read = -1;
 	
