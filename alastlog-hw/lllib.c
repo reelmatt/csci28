@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include "lllib.h"
 
-#define NRECS 512
+#define NRECS 16
 #define LLSIZE	(sizeof(struct lastlog))
 #define LL_NULL ((struct lastlog *) NULL)
 
@@ -63,12 +63,12 @@ int ll_seek(int rec)
 	}
 
 	//if rec is outside the current buffer seek to new position
-	if (rec < buf_start || rec > (buf_start + num_recs))
+	if (rec < buf_start || rec > (buf_start + num_recs - 1))
 	{
 //		off_t offset = rec * LLSIZE;
 
 		off_t offset = (rec / NRECS) * LLSIZE;	//set to multiple of buffer size
-
+		printf("offset is %lu\n", offset);
 		if ( lseek(ll_fd, offset, SEEK_SET) == -1 )
 				return -1;
 
@@ -87,7 +87,7 @@ int ll_seek(int rec)
         //    buf_end = buf_start + num_recs;
 	  cur_rec = rec - buf_start;
 
-          debug(rec, cur_rec, num_recs, buf_start, (buf_start + num_recs));
+          debug(rec, cur_rec, num_recs, buf_start, (buf_start + num_recs - 1));
 
 	}
 	else
