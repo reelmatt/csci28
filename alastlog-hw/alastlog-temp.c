@@ -190,7 +190,10 @@ void get_log(char *file, char *user, long days)
 	while (entry)								//still have a passwd entry
 	{
 		if ( ll_seek(entry->pw_uid) == -1 )		//get the correct pos in buffer
+		{
 			ll = NULL;							//error
+			printf("PROBLEM WITH LLSEEK (nobody?)\n");
+		}
 		else
 			ll = ll_read();						//okay to read
 

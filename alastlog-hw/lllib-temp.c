@@ -4,14 +4,14 @@
 #include <unistd.h>
 #include "lllib.h"
 
-#define NRECS 512
+#define NRECS 16
 #define LLSIZE	(sizeof(struct lastlog))
 #define LL_NULL ((struct lastlog *) NULL)
 
 static char llbuf[NRECS * LLSIZE];	//buffer storage
 static int num_recs;				//num in buffer
 static int cur_rec;					//next rec to read
-static int buf_start;				//starting index of buffer
+static int buf_start;				//absolute starting index of buffer
 static int buf_end;					//ending index of buffer
 static int ll_fd = -1;				//file descriptor
 
@@ -19,11 +19,12 @@ static int ll_reload();
 void debug(int, int, int, int, int);
 
 /*
- * ll_open:
- *		opens the filename given for read access.
- * Returns:
- *		int of file descriptor on success
- *		-1 on error
+ *	ll_open()
+ *	Purpose: opens the filename given for read access.
+ *	 Return: int of file descriptor on success
+ *			 -1 on error
+ *	   Note: copied (with minor modifications), from utmplib.c file. Provided
+ *			 in assignment files, also used in lecture 02.
  */
 int ll_open(char *fname)
 {
@@ -32,13 +33,13 @@ int ll_open(char *fname)
 	cur_rec = 0;
 	buf_start = 0;
 	buf_end = 0;
-		
+
 	return ll_fd;
 }
 
 void debug(int a, int b, int c, int d, int e)
 {
-	printf("DEBUGGING current values\n");
+//	printf("DEBUGGING current values\n");
 	printf("rec is %d, cur_rec is %d, num_recs is %d, start is %d, end is %d\n",
 		   a, b, c, d, e);
 }
@@ -56,44 +57,44 @@ int ll_seek(int rec)
 
 	//ll_read will get the correct record, no seeking required
 	if (rec == cur_rec)
-		return 0;
-
-	//if rec is within the current buffer, update cur_rec index to read	
-	if (rec > buf_start && rec < buf_end)
-		cur_rec = rec - buf_start;
-	else
 	{
-		off_t offset = rec * LLSIZE;
-		
+		printf("rec == cur_rec, no seeking. They are %d and %d\n", rec, cur_rec);
+		return 0;
+	}
+
+	//if rec is outside the current buffer seek to new position
+	if (rec < buf_start || rec > (buf_start + num_recs - 1))
+	{
+//		off_t offset = rec * LLSIZE;
+
+		off_t offset = (rec / NRECS) * LLSIZE;	//set to multiple of buffer size
+		printf("offset is %lu\n", offset);
 		if ( lseek(ll_fd, offset, SEEK_SET) == -1 )
 				return -1;
-		
-		buf_start = rec;
-		
+
+//		buf_start = rec;
+
+		//integer division will round to nearest multiple of NRECS
+		//i.e. rec #600 -> buf_start = (600 / 512) = 1 * 512 = 512
+		buf_start = (rec / NRECS) * NRECS;
+
         if (ll_reload() <= 0)
+        {
+        	printf("reload failed\n");
             return -1;
-        else
-            buf_end = buf_start + num_recs;
-		
-		/*
-		if (rec > buf_end)	//record requested is past the end of the buffer
-		{
-			//lseek pointer already at buf_end, add bytes to SEEK_CUR pos
-			//off_t offset = (rec - buf_end) * LLSIZE;
+        }
+        //else
+        //    buf_end = buf_start + num_recs;
+	  cur_rec = rec - buf_start;
 
-			off_t offset = rec * LLSIZE;
+          debug(rec, cur_rec, num_recs, buf_start, (buf_start + num_recs - 1));
 
-		}
-		else				//record requested if before the start of the buffer
-		{
-			//move rec bytes away from start, or SEEK_SET
-			off_t offset = rec * LLSIZE; 
-
-// 			if ( lseek(ll_fd, offset, SEEK_SET) == -1 )
-// 				return -1;
-		}*/
-        
-	}	
+	}
+	else
+	{
+		cur_rec = rec - buf_start;
+		printf("in current buffer, rec is %d, cur_rec is %d\n", rec, cur_rec);
+	}
 	return 0;
 }
 
@@ -106,12 +107,17 @@ struct lastlog *ll_read()
 	if (ll_fd == -1)
 		return LL_NULL;
 	
+	//first time being called, load up buffer
+	if (buf_start == 0 && num_recs == 0)
+		ll_reload();
+	
 	//if next to read == num in buffer AND reload doesn't get any more
 	//ll_reload() will ALWAYS be called, UNLESS next to read != num in buffer
 	//at open though, both are equal to 0 and reload WILL run
-	if(cur_rec == num_recs)
+	if(cur_rec == num_recs && ll_reload() == 0)
     {
-        int num_read = ll_reload();
+    	return LL_NULL;
+/*        int num_read = ll_reload();
 
         if (num_read == 0)
         {
@@ -121,9 +127,9 @@ struct lastlog *ll_read()
         {
             buf_end = buf_start + num_read;
         }
+*/
     }
-	
-//	printf("\t\treading buffer at position %lu\n", (cur_rec * LLSIZE));
+	printf("ll_read, position is %d\n", cur_rec);
 	struct lastlog *llp = (struct lastlog *) &llbuf[cur_rec * LLSIZE];
 	cur_rec++;
 
@@ -131,28 +137,31 @@ struct lastlog *ll_read()
 }
 
 /*
- * ll_reload:
- *
+ *	ll_reload()
+ *	Purpose: read in NRECS to buffer
+ *	   Note: copied (with minor modifications), from utmplib.c file. Provided
+ *			 in assignment files, also used in lecture 02.
  */
 static int ll_reload()
 {
 	//where to read from is set first by ll_open, then by ll_seek
 	int amt_read = read(ll_fd, llbuf, (NRECS*LLSIZE));
 	
-	if (amt_read < 0)
+	printf("ll_reload: amt_read is %d\n", amt_read);
+	if (amt_read < 0 || amt_read != (NRECS*LLSIZE))
 		amt_read = -1;
 	
-
 	num_recs = amt_read/LLSIZE;
-	cur_rec = 0;
-	//furthest_rec += num_recs;
+	//cur_rec = 0;
 
 	return num_recs;
 }
 
 /*
- * ll_close:
- *		close the open file
+ *	ll_close()
+ *	Purpose: close the open file
+ *	   Note: copied (with minor modifications), from utmplib.c file. Provided
+ *			 in assignment files, also used in lecture 02.
  */
 int ll_close()
 {
@@ -164,3 +173,4 @@ int ll_close()
 		
 	return value;
 }
+
