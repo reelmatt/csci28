@@ -63,26 +63,7 @@ int ll_seek(int rec)
 		cur_rec = rec - buf_start;
 	else
 	{
-		
-		if (rec > buf_end)	//record requested is past the end of the buffer
-		{
-			//lseek pointer already at buf_end, add bytes to SEEK_CUR pos
-			//off_t offset = (rec - buf_end) * LLSIZE;
-
-			off_t offset = rec * LLSIZE;
-
-// 			if ( lseek(ll_fd, offset, SEEK_CUR) == -1 )
-// 				return -1;
-			
-		}
-		else				//record requested if before the start of the buffer
-		{
-			//move rec bytes away from start, or SEEK_SET
-			off_t offset = rec * LLSIZE; 
-
-// 			if ( lseek(ll_fd, offset, SEEK_SET) == -1 )
-// 				return -1;
-		}
+		off_t offset = rec * LLSIZE;
 		
 		if ( lseek(ll_fd, offset, SEEK_SET) == -1 )
 				return -1;
@@ -93,7 +74,25 @@ int ll_seek(int rec)
             return -1;
         else
             buf_end = buf_start + num_recs;
-            
+		
+		/*
+		if (rec > buf_end)	//record requested is past the end of the buffer
+		{
+			//lseek pointer already at buf_end, add bytes to SEEK_CUR pos
+			//off_t offset = (rec - buf_end) * LLSIZE;
+
+			off_t offset = rec * LLSIZE;
+
+		}
+		else				//record requested if before the start of the buffer
+		{
+			//move rec bytes away from start, or SEEK_SET
+			off_t offset = rec * LLSIZE; 
+
+// 			if ( lseek(ll_fd, offset, SEEK_SET) == -1 )
+// 				return -1;
+		}*/
+        
 	}	
 	return 0;
 }
