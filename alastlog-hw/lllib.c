@@ -30,16 +30,16 @@ int ll_open(char *fname)
 {
 	ll_fd = open(fname, O_RDONLY);
 	num_recs = 0;
-	cur_rec = -1;
+	cur_rec = 0;
 	buf_start = 0;
 	buf_end = 0;
-		
+
 	return ll_fd;
 }
 
 void debug(int a, int b, int c, int d, int e)
 {
-	printf("DEBUGGING current values\n");
+//	printf("DEBUGGING current values\n");
 	printf("rec is %d, cur_rec is %d, num_recs is %d, start is %d, end is %d\n",
 		   a, b, c, d, e);
 }
@@ -148,7 +148,7 @@ static int ll_reload()
 	int amt_read = read(ll_fd, llbuf, (NRECS*LLSIZE));
 	
 	printf("ll_reload: amt_read is %d\n", amt_read);
-	if (amt_read < 0)
+	if (amt_read < 0 || amt_read != (NRECS*LLSIZE))
 		amt_read = -1;
 	
 	num_recs = amt_read/LLSIZE;

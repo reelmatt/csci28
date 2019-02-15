@@ -30,8 +30,8 @@ cl-builder                                 **Never logged in**
 oracle                                     **Never logged in**
 pe-puppet                                  **Never logged in**
 snmp                                       **Never logged in**
-ansible_ro       pts/2    10.137.242.18    Thu Oct 25 10:44:47 -0400 2018
-ansible_rw       pts/1    10.137.242.110   Fri Feb 15 01:01:06 -0500 2019
+ansible_ro                                 **Never logged in**
+ansible_rw                                 **Never logged in**
 hgates                                     **Never logged in**
 huang10                                    **Never logged in**
 auth                                       **Never logged in**
@@ -58,7 +58,7 @@ help-dev                                   **Never logged in**
 burns                                      **Never logged in**
 tham                                       **Never logged in**
 lemon                                      **Never logged in**
-moss                                       **Never logged in**
+moss             pts/7    65.112.8.204     Mon Feb 27 10:42:56 -0500 2017
 hounddev                                   **Never logged in**
 barthelm                                   **Never logged in**
 testnoc                                    **Never logged in**
@@ -173,7 +173,7 @@ shuang                                     **Never logged in**
 smfield                                    **Never logged in**
 jtweiss                                    **Never logged in**
 pmatz                                      **Never logged in**
-phan                                       **Never logged in**
+phan             pts/11   65.112.10.38     Wed May  4 10:17:18 -0400 2016
 denby                                      **Never logged in**
 mcneill                                    **Never logged in**
 sayers                                     **Never logged in**
@@ -184,7 +184,7 @@ ckent                                      **Never logged in**
 tmacdon                                    **Never logged in**
 rtuck                                      **Never logged in**
 tdingman                                   **Never logged in**
-saivetz                                    **Never logged in**
+saivetz          pts/15   65.112.8.134     Wed May  4 16:27:03 -0400 2016
 higonnet                                   **Never logged in**
 amblair                                    **Never logged in**
 coelho                                     **Never logged in**
@@ -403,7 +403,7 @@ widener                                    **Never logged in**
 lrc                                        **Never logged in**
 celtic                                     **Never logged in**
 hclits                                     **Never logged in**
-jcouncil                                   **Never logged in**
+jcouncil         pts/6    65.112.10.93     Tue Apr  4 16:12:19 -0400 2017
 healthpl                                   **Never logged in**
 mwt                                        **Never logged in**
 vsdb                                       **Never logged in**
@@ -558,7 +558,7 @@ mchapin                                    **Never logged in**
 kuno                                       **Never logged in**
 jliander                                   **Never logged in**
 gking                                      **Never logged in**
-pgerst                                     **Never logged in**
+pgerst           pts/2    136.24.81.148    Sun Feb 11 20:57:54 -0500 2018
 shleifer                                   **Never logged in**
 machinis                                   **Never logged in**
 mcneil                                     **Never logged in**
@@ -570,7 +570,7 @@ jwilliam                                   **Never logged in**
 winthrop                                   **Never logged in**
 vernon                                     **Never logged in**
 macfarq                                    **Never logged in**
-dperkins         pts/2    10.137.242.18    Thu Oct 25 10:44:47 -0400 2018
+dperkins                                   **Never logged in**
 dharris                                    **Never logged in**
 wckirby                                    **Never logged in**
 hearst                                     **Never logged in**
@@ -592,7 +592,7 @@ dean                                       **Never logged in**
 lowell                                     **Never logged in**
 todd                                       **Never logged in**
 sowen                                      **Never logged in**
-mccavana                                   **Never logged in**
+mccavana         pts/17   73.61.16.164     Sat Apr 28 17:58:11 -0400 2018
 neugebor                                   **Never logged in**
 etowne                                     **Never logged in**
 samitch                                    **Never logged in**
@@ -780,7 +780,7 @@ cathas                                     **Never logged in**
 lacross                                    **Never logged in**
 memorgan                                   **Never logged in**
 ljflynn                                    **Never logged in**
-stephen                                    **Never logged in**
+stephen          pts/0    65.112.10.175    Wed Feb  6 00:03:42 -0500 2019
 gabriels                                   **Never logged in**
 thernstr                                   **Never logged in**
 zawalich                                   **Never logged in**
@@ -947,7 +947,7 @@ libst111                                   **Never logged in**
 engelwar                                   **Never logged in**
 hcl1                                       **Never logged in**
 hcl2                                       **Never logged in**
-hcl3                                       **Never logged in**
+hcl3             pts/0    65.112.8.134     Thu Mar 22 15:31:37 -0400 2018
 hcl4                                       **Never logged in**
 engdept                                    **Never logged in**
 asiactr                                    **Never logged in**
@@ -970,7 +970,7 @@ mss                                        **Never logged in**
 fop                                        **Never logged in**
 reserves                                   **Never logged in**
 cafrica                                    **Never logged in**
-parents                                    **Never logged in**
+parents          pts/2    vpn-209-18.vpncl Fri Mar  2 14:02:09 -0500 2018
 hylilla                                    **Never logged in**
 hylillb                                    **Never logged in**
 widilla                                    **Never logged in**
@@ -1043,7 +1043,7 @@ eichler                                    **Never logged in**
 aabarker                                   **Never logged in**
 photocol                                   **Never logged in**
 casill                                     **Never logged in**
-jmilke                                     **Never logged in**
+jmilke           pts/6    ice3.fas.harvard Wed May  3 17:48:00 -0400 2017
 holloway                                   **Never logged in**
 icgtest                                    **Never logged in**
 fraenkel                                   **Never logged in**
@@ -1075,7 +1075,7 @@ stat171                                    **Never logged in**
 hst1642b                                   **Never logged in**
 gercb                                      **Never logged in**
 fa285                                      **Never logged in**
-celt225a                                   **Never logged in**
+celt225a         pts/0    150.100.252.42   Wed Jul 12 01:24:17 -0400 2017
 celt182                                    **Never logged in**
 gerdb                                      **Never logged in**
 celt184                                    **Never logged in**
@@ -1089,7 +1089,7 @@ cs124                                      **Never logged in**
 phil12                                     **Never logged in**
 lb33                                       **Never logged in**
 hlit97                                     **Never logged in**
-eng101           pts/2    10.137.242.18    Thu Oct 25 10:44:47 -0400 2018
+eng101                                     **Never logged in**
 ec2010a                                    **Never logged in**
 ec2010b                                    **Never logged in**
 ec2010c                                    **Never logged in**
@@ -1098,7 +1098,7 @@ cs152                                      **Never logged in**
 ling112a                                   **Never logged in**
 ling112b                                   **Never logged in**
 mr33                                       **Never logged in**
-cs165                                      **Never logged in**
+cs165            pts/0    c-71-232-47-27.h Tue Jan  1 12:35:09 -0500 2019
 ves11abr                                   **Never logged in**
 scia17                                     **Never logged in**
 psy11                                      **Never logged in**
@@ -1139,7 +1139,7 @@ math1a                                     **Never logged in**
 math1b                                     **Never logged in**
 es51                                       **Never logged in**
 phil103                                    **Never logged in**
-class164                                   **Never logged in**
+class164         pts/0    vpn-209-55.vpncl Fri Feb 16 14:24:41 -0500 2018
 chi111r                                    **Never logged in**
 lac14                                      **Never logged in**
 lac18                                      **Never logged in**
@@ -1180,7 +1180,7 @@ stat220                                    **Never logged in**
 ec1723                                     **Never logged in**
 bio217                                     **Never logged in**
 bio95hfc                                   **Never logged in**
-bio95hfe                                   **Never logged in**
+bio95hfe         pts/5    65.112.8.194     Wed Nov 28 18:15:29 -0500 2018
 bio95hff                                   **Never logged in**
 bio95hfh                                   **Never logged in**
 bio95hfj                                   **Never logged in**
@@ -1226,7 +1226,7 @@ cs261                                      **Never logged in**
 cs265                                      **Never logged in**
 es100hf                                    **Never logged in**
 ling152                                    **Never logged in**
-ak141r                                     **Never logged in**
+ak141r           pts/0    c-71-232-23-165. Tue Jun 12 14:13:34 -0400 2018
 gov2322                                    **Never logged in**
 gov2326                                    **Never logged in**
 soc251                                     **Never logged in**
@@ -1251,7 +1251,7 @@ san214                                     **Never logged in**
 eng90rs                                    **Never logged in**
 gov90er                                    **Never logged in**
 eng292                                     **Never logged in**
-phys264                                    **Never logged in**
+phys264          pts/0    192.54.222.12    Tue Jun 27 11:31:59 -0400 2017
 hsci97a                                    **Never logged in**
 astro1                                     **Never logged in**
 gov90gc                                    **Never logged in**
@@ -1274,7 +1274,7 @@ hst1407b                                   **Never logged in**
 fr70a                                      **Never logged in**
 hsa14                                      **Never logged in**
 phil230                                    **Never logged in**
-hsa15                                      **Never logged in**
+hsa15            pts/6    65.112.8.14      Fri Mar 24 01:52:21 -0400 2017
 ec2530b                                    **Never logged in**
 phil243                                    **Never logged in**
 imun201                                    **Never logged in**
@@ -1330,7 +1330,7 @@ gov1343                                    **Never logged in**
 fr47b                                      **Never logged in**
 fa179z                                     **Never logged in**
 chlit210                                   **Never logged in**
-hist1953         pts/2    10.137.242.18    Thu Oct 25 10:44:47 -0400 2018
+hist1953                                   **Never logged in**
 chlit214                                   **Never logged in**
 apm107                                     **Never logged in**
 gov1361                                    **Never logged in**
@@ -1449,7 +1449,7 @@ ss98cs                                     **Never logged in**
 stat104                                    **Never logged in**
 lab78                                      **Never logged in**
 hist90a                                    **Never logged in**
-hist90c                                    **Never logged in**
+hist90c          pts/24   vpn-4-153.vpncli Mon Feb 22 00:06:56 -0500 2016
 hist90d                                    **Never logged in**
 hist90e                                    **Never logged in**
 hist90f                                    **Never logged in**
@@ -1458,7 +1458,7 @@ ec2086r                                    **Never logged in**
 stat110                                    **Never logged in**
 stat111                                    **Never logged in**
 frenchax                                   **Never logged in**
-mcb268                                     **Never logged in**
+mcb268           pts/0    192.54.222.12    Tue Jun 27 11:31:59 -0400 2017
 celt114                                    **Never logged in**
 fa229                                      **Never logged in**
 dram30                                     **Never logged in**
@@ -1515,7 +1515,7 @@ jacome                                     **Never logged in**
 biel                                       **Never logged in**
 koneill                                    **Never logged in**
 aloise                                     **Never logged in**
-aera                                       **Never logged in**
+aera             pts/16   rrcs-98-100-54-2 Tue May 10 13:37:03 -0400 2016
 bruzzese                                   **Never logged in**
 biol_172                                   **Never logged in**
 biol_110                                   **Never logged in**
@@ -1557,7 +1557,7 @@ jap104a                                    **Never logged in**
 jlyons                                     **Never logged in**
 carmosin                                   **Never logged in**
 lohoweb                                    **Never logged in**
-lohoroom         pts/1    10.137.242.110   Fri Feb 15 01:01:06 -0500 2019
+lohoroom                                   **Never logged in**
 loprete                                    **Never logged in**
 campbell                                   **Never logged in**
 agmyers                                    **Never logged in**
@@ -1591,7 +1591,7 @@ trenc                                      **Never logged in**
 enjacobs                                   **Never logged in**
 steen1                                     **Never logged in**
 cgs                                        **Never logged in**
-admiss                                     **Never logged in**
+admiss           pts/6    65.112.10.93     Tue Apr  4 16:12:19 -0400 2017
 sfpcc                                      **Never logged in**
 mwerbel                                    **Never logged in**
 fasit                                      **Never logged in**
@@ -1616,7 +1616,7 @@ gset570                                    **Never logged in**
 mmunson                                    **Never logged in**
 mmitzenm                                   **Never logged in**
 mcynn                                      **Never logged in**
-year2k                                     **Never logged in**
+year2k           pts/0    pool-173-73-212- Fri May 11 12:12:39 -0400 2018
 chem40                                     **Never logged in**
 morse                                      **Never logged in**
 exttest                                    **Never logged in**
@@ -1640,7 +1640,7 @@ falibres                                   **Never logged in**
 falibref                                   **Never logged in**
 falibcir                                   **Never logged in**
 faviscol                                   **Never logged in**
-kiros                                      **Never logged in**
+kiros            pts/14   rrcs-24-39-95-24 Fri Mar 18 15:04:00 -0400 2016
 mdoming                                    **Never logged in**
 dahlman                                    **Never logged in**
 rbeeuwk                                    **Never logged in**
@@ -1679,7 +1679,7 @@ ecs1920                                    **Never logged in**
 frens27                                    **Never logged in**
 viss60                                     **Never logged in**
 anths110                                   **Never logged in**
-bios169c                                   **Never logged in**
+bios169c         pts/0    ip72-211-120-230 Sat Sep 10 08:52:03 -0400 2016
 class129                                   **Never logged in**
 mathsx                                     **Never logged in**
 astrs35                                    **Never logged in**
@@ -1701,7 +1701,7 @@ creas20d                                   **Never logged in**
 bios80                                     **Never logged in**
 engls176                                   **Never logged in**
 socis170                                   **Never logged in**
-maths21a                                   **Never logged in**
+maths21a         pts/0    65.112.8.139     Thu Mar 29 14:43:41 -0400 2018
 maths21b                                   **Never logged in**
 ecs1620                                    **Never logged in**
 govs1061                                   **Never logged in**
@@ -1811,13 +1811,13 @@ fmedeir                                    **Never logged in**
 dudley                                     **Never logged in**
 hsa13                                      **Never logged in**
 mpc                                        **Never logged in**
-troisi                                     **Never logged in**
+troisi           pts/13   65.112.8.207     Tue May  3 14:52:43 -0400 2016
 enew                                       **Never logged in**
 hpark                                      **Never logged in**
 ssiegel                                    **Never logged in**
 dloren                                     **Never logged in**
 gov3009                                    **Never logged in**
-leblanc          pts/2    10.137.242.18    Thu Oct 25 10:44:47 -0400 2018
+leblanc                                    **Never logged in**
 doughty                                    **Never logged in**
 infoproj                                   **Never logged in**
 hanken                                     **Never logged in**
@@ -1862,7 +1862,7 @@ ling124                                    **Never logged in**
 math191                                    **Never logged in**
 math192                                    **Never logged in**
 chst121                                    **Never logged in**
-chst124                                    **Never logged in**
+chst124          pts/11   65.112.8.207     Wed May  4 10:05:12 -0400 2016
 psy1654                                    **Never logged in**
 tib204b                                    **Never logged in**
 hsci272v                                   **Never logged in**
