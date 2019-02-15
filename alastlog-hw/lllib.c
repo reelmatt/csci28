@@ -80,7 +80,7 @@ int ll_seek(int rec)
         //else
         //    buf_end = buf_start + num_recs;
          
-           
+          debug(rec, cur_rec, num_recs, start, end); 
         
 	}
 	
