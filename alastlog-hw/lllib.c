@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include "lllib.h"
 
-#define NRECS 65536
+#define NRECS 512
 #define LLSIZE	(sizeof(struct lastlog))
 #define LL_NULL ((struct lastlog *) NULL)
 
@@ -13,7 +13,7 @@ static int num_recs;				//num in buffer
 static int cur_rec;					//next rec to read
 static int buf_start;				//overall starting index of buffer
 static int ll_fd = -1;				//file descriptor
-static int num_seeks;
+
 static int ll_reload();				//internal function to load buffer
 
 
@@ -31,7 +31,7 @@ int ll_open(char *fname)
 	num_recs = 0;
 	cur_rec = 0;
 	buf_start = 0;
-	num_seeks = 0;
+
 	return ll_fd;
 }
 
@@ -54,22 +54,20 @@ int ll_seek(int rec)
 	if (ll_fd == -1)
 		return -1;
 
-	if (rec == cur_rec)										//no seeking needed
+	if (rec == cur_rec)										 //no seeking needed
 		return 0;
 
-	if (rec > buf_start && rec < (buf_start + num_recs))	//in current buffer
+	if (rec > buf_start && rec < (buf_start + num_recs - 1)) //in current buf
 		cur_rec = rec - buf_start;
-	else													//outside buffer
-	{
-		//off_t offset = rec * LLSIZE;
-		
-		if ( lseek(ll_fd, (rec * LLSIZE), SEEK_SET) == -1 )	//seek to rec
+	else													 //outside buf
+	{		
+		if ( lseek(ll_fd, (rec * LLSIZE), SEEK_SET) == -1 )	 //seek to rec
 				return -1;
 		
-        if (ll_reload() <= 0)								//load up new buffer
+        if (ll_reload() <= 0)								 //load up new buf
             return -1;
 
-        buf_start = rec;									//update start pos
+        buf_start = rec;									 //update start pos
 	}	
 	
 	return 0;
@@ -125,7 +123,7 @@ static int ll_reload()
 
 	num_recs = amt_read/LLSIZE;
 	cur_rec = 0;
-	num_seeks++;
+	
 	return num_recs;
 }
 
@@ -139,7 +137,6 @@ int ll_close()
 {
 	int value = 0;
 
-	printf("closing file, num_seeks is %d\n", num_seeks);
 	//if there is no file open, do not close it
 	if (ll_fd != -1)
 		value = close(ll_fd);

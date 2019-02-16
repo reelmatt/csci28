@@ -34,10 +34,8 @@ void show_time(struct lastlog *, char *);
  *	Method: Process command-line arguments, if any, and then call get_log()
  *			to open the lastlog file (LLOG_FILE by default), with corresponding
  *			args, NULL if not specified.
- *	Return: 0 on success
- *			-1 on close() error
- *			exits 1 and prints message to stderr on other
- *				failures (see corresponding functions)
+ *	Return: 0 on success, -1 on close() error, exits 1 and prints message to
+ *			stderr on other failures (see corresponding functions).
  *	  Note: The while loop will cycle through options, any/all of -u, -t, or -f.
  *			If it is not a valid option, fatal() is called and program exits.
  *			get_option is only called when there is at least one more arg left
@@ -48,6 +46,7 @@ int main (int ac, char *av[])
     int i = 1;
 	int rv = 0;
 	
+	//initialize variables to default values, changes with user options
     struct passwd *user = NULL;
     long days = -1;
     char *file = NULL;
@@ -197,7 +196,7 @@ int get_log(char *file, struct passwd *user, long days)
 	struct lastlog *ll;							//store lastlog record
 	int headers = NO;							//have headers been printed
 	
-	if(entry == NULL)							//if -u user was specified
+	if(entry == NULL)							//if -u user was not specified
 		entry = getpwent();						//open passwd db to iterate
 
 	while (entry)								//still have a passwd entry
@@ -209,7 +208,7 @@ int get_log(char *file, struct passwd *user, long days)
 
         headers = show_info(ll, entry, days, headers);
           
-        if( user != NULL)						//a user provided with -u
+        if( user != NULL)						//a user specified with -u
         	break;								//found them, so break
         else
         	entry = getpwent();					//go until end of passwd db
