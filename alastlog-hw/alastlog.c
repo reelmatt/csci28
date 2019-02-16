@@ -11,21 +11,16 @@
 #include <pwd.h>
 #include "lllib.h"
 
-//int check_time(time_t, long);
+char * check_string(char *, int);
 int check_time(struct lastlog *, long);
+struct passwd *extract_user(char *);
 void fatal(char, char *);
 void get_log(char *, char *, long);
-void show_time(struct lastlog *, char *);
-//void show_time(time_t, char *);
-void process(char *user, int days, char *file);
-void read_lastlog (struct lastlog *);
-void show_llrec(struct lastlog *);
-int show_info(struct lastlog *, struct passwd *, long, int);
-void print_headers();
-struct passwd *extract_user(char *);
 void get_option(char, char **, char **, long *, char **);
 long parse_time(char *);
-char * check_string(char *, int);
+void print_headers();
+int show_info(struct lastlog *, struct passwd *, long, int);
+void show_time(struct lastlog *, char *);
 
 #define LLOG_FILE "/var/log/lastlog"
 #define TIME_FORMAT "%a %b %e %H:%M:%S %z %Y"
@@ -68,6 +63,163 @@ int main (int ac, char *av[])
         get_log(file, user, days);
 
 	return 0;
+}
+
+/*
+ *	check_string()
+ *	Purpose: see if the string is null terminated
+ *	  Input: a string and the size of the string
+ *	 Return: an empty string, if NULL; a null-terminated string
+ *			 otherwise (could already be null-terminated when passed in).
+ */
+char * check_string(char *str, int size)
+{
+	if (str == NULL)
+		return "";
+	else if (str[size - 1] != '\0')
+		str[size - 1] = '\0';
+
+	return str;
+}
+
+/*
+ *	check_time()
+ *	Purpose: see if the lastlogin time has occurred within the last days
+ *	  Input: entry, the lastlogin time
+ *			 days, specified by the user with the -t option
+ *	 Return: NO, if login happened later than "days" ago
+ *			 YES, if login has happened within the given # of "days"
+ */
+//int check_time(time_t entry, long days)
+int check_time(struct lastlog *lp, long days)
+{		
+	//check if a time was given with the -t flag
+	if (days != -1)
+	{
+		time_t now;
+		time_t login = (lp) ? lp->ll_time : 0;
+	
+/*		if (lp)
+			login = lp->ll_time;
+		else
+			login = 0;
+*/
+		double delta = difftime(time(&now), login);	//secs b/w now and lastlogin
+        long day_seconds = 24 * 60 * 60;			//number of seconds in a day
+
+		//login happened before DAYS ago, out of range
+		if ( delta > (day_seconds * days) )
+			return NO;
+	}
+	
+	return YES;
+}
+
+/*
+ *	extract_user()
+ *	Purpose: obtain a passwd struct for a given username/UID
+ *	  Input: name, the name/UID that was specified following -u
+ *	 Return: a pointer to the passwd struct for the given name/UID.
+ *	 Errors: If getpwnam() fails, the function tries to parse the
+ *			 name into a UID. If it is determined to not be a number,
+ *			 an invalid message is output to stderr. If successful,
+ *			 but getpwuid() fails, then the "name" specified is
+ *			 unknown, and we exit.
+ */
+struct passwd *extract_user(char *name)
+{
+	struct passwd *user = NULL;
+	
+	if ( (user = getpwnam(name)) != NULL)		//name was a username
+		return user;
+	else										//try name as a UID
+	{
+		char *temp = NULL;
+        long uid = strtol(name, &temp, 10);
+        
+        //If strtol returns 0 and copied all chars to temp, it failed
+        if (uid == 0 && strcmp(name, temp) == 0)
+        {
+        	fprintf(stderr, "alastlog: invalid user: %s\n", temp);
+            exit (1);
+        }
+        
+        //We were able to parse out a UID, try getting user with that
+        if ( (user = getpwuid(uid)) == NULL)
+        {
+			fprintf(stderr, "alastlog: Unknown user: %s\n", name);
+            exit(1);
+        }
+	}
+	
+	return user;
+}
+
+/*
+ *	fatal()
+ *	Purpose: helper function to output error messages for bad input.
+ */
+void fatal(char opt, char *arg)
+{
+	if(opt == '\0')
+		fprintf(stderr, "alastlog: unexpected argument: %s\n", arg);
+	else
+		fprintf(stderr, "alastlog: invalid option -- '%c'\n", opt);
+
+	fprintf(stderr, "Usage: alastlog [options]\n\nOptions:\n");
+	fprintf(stderr, "\t-u LOGIN\tprint lastlog record for user LOGIN\n");
+	fprintf(stderr, "\t-t DAYS\t\tprint only records more recent than DAYS\n");
+	fprintf(stderr, "\t-f FILE\t\tread data from specified FILE\n\n");
+
+	exit(1);
+}
+
+/*
+ *	get_log()
+ *	Purpose: Print out lastlog records, filtered as appropriate by user options
+ *	  Input: file, lastlog to read from (LLOG_FILE by default)
+ *			 user, specific username/UID to display record for
+ *			 days, restrict output to logins within given number of days
+ *	 Output: formatted headers and entries, through calling show_info
+ *	 Errors: If there was a problem opening the lastlog file (ll_open) or
+ *			 a problem extracting a provided user (extract_user), the program
+ *			 will print a message to stderr and exit.
+ */
+void get_log(char *file, char *user, long days)
+{
+	if (ll_open(file) == -1)					//open lastlog file
+	{
+		perror(file);
+		exit(1);
+	}
+
+	struct passwd *entry;						//store passwd rec
+	struct lastlog *ll;							//store lastlog rec
+	int headers = NO;							//have headers been printed
+	
+	if(user == NULL)
+		entry = getpwent();						//open passwd db to iterate
+	else
+		entry = extract_user(user);				//get passwd rec for single user
+
+	while (entry)								//still have a passwd entry
+	{
+		if ( ll_seek(entry->pw_uid) == -1 )		//get the correct pos in buffer
+			ll = NULL;							//error
+		else
+			ll = ll_read();						//okay to read
+
+        headers = show_info(ll, entry, days, headers);
+          
+        if( user != NULL)
+        	return;								//found the user with -u, return
+        else
+        	entry = getpwent();					//go until end of passwd db
+	}
+	
+	endpwent();									//if user specified, not called
+	ll_close();									//close lastlog file
+    return;
 }
 
 /*
@@ -120,94 +272,6 @@ long parse_time(char *value)
 }
 
 /*
- *	extract_user()
- *	Purpose: obtain a passwd struct for a given username/UID
- *	  Input: name, the name/UID that was specified following -u
- *	 Return: a pointer to the passwd struct for the given name/UID.
- *	 Errors: If getpwnam() fails, the function tries to parse the
- *			 name into a UID. If it is determined to not be a number,
- *			 an invalid message is output to stderr. If successful,
- *			 but getpwuid() fails, then the "name" specified is
- *			 unknown, and we exit.
- */
-struct passwd *extract_user(char *name)
-{
-	struct passwd *user = NULL;
-	
-	if ( (user = getpwnam(name)) != NULL)		//name was a username
-		return user;
-	else										//try name as a UID
-	{
-		char *temp = NULL;
-        long uid = strtol(name, &temp, 10);
-        
-        //If strtol returns 0 and copied all chars to temp, it failed
-        if (uid == 0 && strcmp(name, temp) == 0)
-        {
-        	fprintf(stderr, "alastlog: invalid user: %s\n", temp);
-            exit (1);
-        }
-        
-        //We were able to parse out a UID, try getting user with that
-        if ( (user = getpwuid(uid)) == NULL)
-        {
-			fprintf(stderr, "alastlog: Unknown user: %s\n", name);
-            exit(1);
-        }
-	}
-	
-	return user;
-}
-
-/*
- *	get_log()
- *	Purpose: Print out lastlog records, filtered as appropriate by user options
- *	  Input: file, lastlog to read from (LLOG_FILE by default)
- *			 user, specific username/UID to display record for
- *			 days, restrict output to logins within given number of days
- *	 Output: formatted headers and entries, through calling show_info
- *	 Errors: If there was a problem opening the lastlog file (ll_open) or
- *			 a problem extracting a provided user (extract_user), the program
- *			 will print a message to stderr and exit.
- */
-void get_log(char *file, char *user, long days)
-{
-	if (ll_open(file) == -1)					//open lastlog file
-	{
-		perror(file);
-		exit(1);
-	}
-
-	struct passwd *entry;						//store passwd rec
-	struct lastlog *ll;							//store lastlog rec
-	int headers = NO;							//have headers been printed
-	
-	if(user == NULL)
-		entry = getpwent();						//open passwd db to iterate
-	else
-		entry = extract_user(user);				//get passwd rec for single user
-
-	while (entry)								//still have a passwd entry
-	{
-		if ( ll_seek(entry->pw_uid) == -1 )		//get the correct pos in buffer
-			ll = NULL;							//error
-		else
-			ll = ll_read();						//okay to read
-
-        headers = show_info(ll, entry, days, headers);
-          
-        if( user != NULL)
-        	return;								//found the user with -u, return
-        else
-        	entry = getpwent();					//go until end of passwd db
-	}
-	
-	endpwent();									//if user specified, not called
-	ll_close();									//close lastlog file
-    return;
-}
-
-/*
  *	print_headers() - output formatted lastlog headers
  */
 void print_headers()
@@ -222,62 +286,49 @@ void print_headers()
 }
 
 /*
- *
+ *	show_info()
+ *	Purpose: display information in lastlog record, with potential time filter
+ *	  Input: lp, pointer to the lastlog record
+ *			 ep, pointer to the user's passwd entry
+ *			 days, entered with -t option (-1 if none); used to filter results
+ *			 headers, used to determine if we should print headers
+ *	 Output: fixed-width formatted columns for username, line, host, and time
+ *	 Return: YES, if an entry was printed to output
+ *			 headers, the current state of headers (either YES or NO). If a -t
+ *			 	option is specified, show_info may be called multiple times
+ *			 	without displaying output. If no users match the -t restriction,
+ *			 	no users are displayed and neither should headers.
+ *	   Note: For cases where the *lp is NULL, blank strings are printed as
+ *			 trying to access the members of the struct (i.e. lp->ll_line) would
+ *			 cause a seg fault.
  */
 int show_info(struct lastlog *lp, struct passwd *ep, long days, int headers)
 {
-/*    //if the lastlog is not NULL and time is OK, continue
-	if (lp)
-    {
-        if (check_time(lp->ll_time, days) == NO)
-            return headers;
-    }
-    else if (check_time(0, days) == NO)
-    {
-        return headers;
-    }
-    */
-    
+	//filter based on user-provided time in days, don't print if outside range
     if (check_time(lp, days) == NO)
     	return headers;
 
+	//check if we have already printed headers
     if (headers == NO)
         print_headers();
 
-    printf("%-16.16s ", ep->pw_name);
+    printf("%-16.16s ", ep->pw_name);		//print username
 
-    if (lp)
+    if (lp)									//if exists, print lastlog info
     {
         printf("%-8.8s ", check_string(lp->ll_line, UT_LINESIZE));
         printf("%-16.16s ", check_string(lp->ll_host, UT_HOSTSIZE));
     }
-    else
+    else									//would have seg-fault, print blanks
     {
         printf("%-8.8s ", "");        
         printf("%-16.16s ", "");
     }
 
-	show_time(lp, TIME_FORMAT);
-	printf("\n");
+	show_time(lp, TIME_FORMAT);				//display time, or never logged in
+	printf("\n");							//end of record, add newline
 
 	return YES;
-}
-
-/*
- *	check_string()
- *	Purpose: see if the string is null terminated
- *	  Input: a string and the size of the string
- *	 Return: an empty string, if NULL; a null-terminated string
- *			 otherwise (could already be null-terminated when passed in).
- */
-char * check_string(char *str, int size)
-{
-	if (str == NULL)
-		return "";
-	else if (str[size - 1] != '\0')
-		str[size - 1] = '\0';
-
-	return str;
 }
 
 /*
@@ -288,11 +339,11 @@ char * check_string(char *str, int size)
  */
 void show_time(struct lastlog *lp, char *fmt)
 {
-	if (lp == NULL || lp->ll_time == 0)			//user has never logged in
+	if (lp == NULL || lp->ll_time == 0)		//user has never logged in
 	{
 		printf("**Never logged in**");
 	}
-	else										//parse the time into TIME_FORMAT
+	else									//parse the time into TIME_FORMAT
 	{
 		char result[TIMESIZE];
 		time_t time = lp->ll_time;
@@ -302,56 +353,4 @@ void show_time(struct lastlog *lp, char *fmt)
 	}
 
 	return;
-}
-
-/*
- *	check_time()
- *	Purpose: see if the lastlogin time has occurred within the last days
- *	  Input: entry, the lastlogin time
- *			 days, specified by the user with the -t option
- *	 Return: NO, if login happened later than "days" ago
- *			 YES, if login has happened within the given # of "days"
- */
-//int check_time(time_t entry, long days)
-int check_time(struct lastlog *lp, long days)
-{		
-	//check if a time was given with the -t flag
-	if (days != -1)
-	{
-		time_t login;
-		time_t now;
-	
-		if (lp)
-			login = lp->ll_time;
-		else
-			login = 0;
-
-		double delta = difftime(time(&now), login);	//secs b/w now and lastlogin
-        long day_seconds = 24 * 60 * 60;			//number of seconds in a day
-
-		//login happened before DAYS ago, out of range
-		if ( delta > (day_seconds * days) )
-			return NO;
-	}
-	
-	return YES;
-}
-
-/*
- *	fatal()
- *	Purpose: helper function to output error messages for bad input.
- */
-void fatal(char opt, char *arg)
-{
-	if(opt == '\0')
-		fprintf(stderr, "alastlog: unexpected argument: %s\n", arg);
-	else
-		fprintf(stderr, "alastlog: invalid option -- '%c'\n", opt);
-
-	fprintf(stderr, "Usage: alastlog [options]\n\nOptions:\n");
-	fprintf(stderr, "\t-u LOGIN\tprint lastlog record for user LOGIN\n");
-	fprintf(stderr, "\t-t DAYS\t\tprint only records more recent than DAYS\n");
-	fprintf(stderr, "\t-f FILE\t\tread data from specified FILE\n\n");
-
-	exit(1);
 }
