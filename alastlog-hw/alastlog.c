@@ -210,12 +210,14 @@ int get_log(char *file, struct passwd *user, long days)
         headers = show_info(ll, entry, days, headers);
           
         if( user != NULL)						//a user provided with -u
-        	return 0;								//found them, so return
+        	break;								//found them, so break
         else
         	entry = getpwent();					//go until end of passwd db
 	}
 	
-	endpwent();									//if user specified, not called
+	if(user == NULL)							//if user not specified
+		endpwent();								//close link to passwd database
+		
 	return ll_close();							//close lastlog file, -1 if err
 }
 

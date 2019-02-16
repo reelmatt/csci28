@@ -60,18 +60,38 @@ Data Structures:
 	  ll_reload: Uses the system call read() to load NRECS into the buffer from
 	  			 wherever ll_seek moved the pointer to (via the offset in lseek)
 	   ll_close: Closes the open file.
+	
+	When a record is requested outside of the current buffer, ll_seek() will
+	adjust the file pointer so that ll_reload() will pull in NRECS starting with
+	the requested record. I did attempt the method suggested in posts @64 and
+	@67 on Piazza to buffer based on a multiple of NRECS, but was not able to
+	get the output correct. My debugging told me the range of records and the
+	offset I requested were correct, but the data being read in was wrong.
+	
+	To test the efficiency of my method -- loading the buffer with the requested
+	record as the first element -- I added a num_seeks variable to lllib.c to
+	see how many times the buffer was reloaded. For an NRECS set to 512, my
+	method reloaded the buffer 707 times. Compared to my not-quite-functional
+	buffering on multiples of NRECS (so the numbers might not be accurate,
+	depending on *why* my implementation was not working), that method reloaded
+	the buffer 721 times with NRECS set to 512.
+	
+	I believe the reason for the similarity in numbers, and the efficiency of
+	loading the buffer with the requested record as the first element, is due
+	to large chunks of the /etc/passwd database having sequential UIDs.
 
 Program Flow:
 	1 - Process user options and store any arguments in three
 		variables: user, days, and file to be used later on (if specified).
 		For the -u and -t, check immediately whether the user/time are valid,
 		and exit, with message to stderr, if not.
-	2 - call on get_log() with the user options. File being set to LLOG_FILE
-		by default, user set to NULL, and days set to -1.
-	3 - get_log() opens the lastlog file.
-	4 - If a "user" was specified, call on getpwnam() or getpwuid() to retrieve
-		a single passwd struct. If none specified, call getpwent() to begin
-		iterating through the all passwd database entries.
+	2 - Call on get_log() with the user options. File being set to LLOG_FILE
+		by default, user set to NULL or the requested passwd entry, and days
+		set to -1 or the number of days entered with -t.
+	3 - Open the lastlog file.
+	4 - If a "user" was not specified call getpwent() to begin iterating through
+		the all passwd database entries. Otherwise, set the entry to the user
+		pulled in from the -u option.
 	5 - For all (1+) passwd entries, call ll_seek() to move a pointer to the
 		correct place to read. If nothing has been read yet, or the requested
 		passwd entry is outside the current buffer, this uses the system call
@@ -81,8 +101,11 @@ Program Flow:
 	6 - If there was an error (e.g. requested a range outside the lastlog file)
 		then the lastlog pointer, ll, is set to NULL. Otherwise, ll_read() is
 		called, and it returns a pointer to the requested struct lastlog entry.
-	7 - 
-
+	7 - The lastlog information is then displayed, with a filter applied based
+		on the user's optional -t argument. If no users are displayed, headers
+		are also not displayed.
+	8 - When all 1+ entries are processed, call endpwent() if no user was
+		specified, and in all cases close the lastlog file.
 
 Files:
 	alastlog reads a file of lastlog records. Per the man page for lastlog,
