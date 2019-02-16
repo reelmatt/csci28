@@ -11,7 +11,8 @@
 #include <pwd.h>
 #include "lllib.h"
 
-int check_time(time_t, long );
+//int check_time(time_t, long);
+int check_time(struct lastlog *, long);
 void fatal(char, char *);
 void get_log(char *, char *, long);
 void show_time(struct lastlog *, char *);
@@ -225,7 +226,7 @@ void print_headers()
  */
 int show_info(struct lastlog *lp, struct passwd *ep, long days, int headers)
 {
-    //if the lastlog is not NULL and time is OK, continue
+/*    //if the lastlog is not NULL and time is OK, continue
 	if (lp)
     {
         if (check_time(lp->ll_time, days) == NO)
@@ -235,6 +236,10 @@ int show_info(struct lastlog *lp, struct passwd *ep, long days, int headers)
     {
         return headers;
     }
+    */
+    
+    if (check_time(lp, days) == NO)
+    	return headers;
 
     if (headers == NO)
         print_headers();
@@ -253,13 +258,6 @@ int show_info(struct lastlog *lp, struct passwd *ep, long days, int headers)
     }
 
 	show_time(lp, TIME_FORMAT);
-
-/*	if(lp == NULL || lp->ll_time == 0)
-		printf("**Never logged in**");
-	else
-		show_time(lp, TIME_FORMAT);
-		//show_time(lp->ll_time, TIME_FORMAT);
-*/
 	printf("\n");
 
 	return YES;
@@ -290,11 +288,11 @@ char * check_string(char *str, int size)
  */
 void show_time(struct lastlog *lp, char *fmt)
 {
-	if (lp == NULL || lp->ll_time == 0)
+	if (lp == NULL || lp->ll_time == 0)			//user has never logged in
 	{
 		printf("**Never logged in**");
 	}
-	else
+	else										//parse the time into TIME_FORMAT
 	{
 		char result[TIMESIZE];
 		time_t time = lp->ll_time;
@@ -314,12 +312,20 @@ void show_time(struct lastlog *lp, char *fmt)
  *	 Return: NO, if login happened later than "days" ago
  *			 YES, if login has happened within the given # of "days"
  */
-int check_time(time_t entry, long days)
-{
+//int check_time(time_t entry, long days)
+int check_time(struct lastlog *lp, long days)
+{		
 	//check if a time was given with the -t flag
 	if (days != -1)
 	{
+		time_t login;
 		time_t now;
+	
+		if (lp)
+			login = lp->ll_time;
+		else
+			login = 0;
+
 		double delta = difftime(time(&now), entry);	//secs b/w now and lastlogin
         long day_seconds = 24 * 60 * 60;			//number of seconds in a day
 
