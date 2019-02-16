@@ -132,7 +132,7 @@ struct passwd *extract_user(char *name)
 		printf("extract_user, name not specified == NULL\n");
 		return user;
 	}
-	
+
 	if ( (user = getpwnam(name)) != NULL)		//name was a username
 		return user;
 	else										//try name as a UID
@@ -196,30 +196,37 @@ void get_log(char *file, struct passwd *user, long days)
 		exit(1);
 	}
 
-//	struct passwd *entry;						//store passwd rec
+	struct passwd *entry = user;						//store passwd rec
 	struct lastlog *ll;							//store lastlog rec
 	int headers = NO;							//have headers been printed
 	
-	if(user == NULL)
-		user = getpwent();						//open passwd db to iterate
+	if(entry == NULL)
+	{
+		entry = getpwent();						//open passwd db to iterate
+//		printf("in get_log start, user is null\n");
+	}
+/*	else
+	{
+		printf("in get_log start, user is %s\n", user->pw_name);
+	}*/
 /*	else
 		entry = extract_user(user);				//get passwd rec for single user
 */
-	while (user)								//still have a passwd entry
+	while (entry)								//still have a passwd entry
 	{
-		if ( ll_seek(user->pw_uid) == -1 )		//get the correct pos in buffer
+		if ( ll_seek(entry->pw_uid) == -1 )		//get the correct pos in buffer
 			ll = NULL;							//error
 		else
 			ll = ll_read();						//okay to read
 
-        headers = show_info(ll, user, days, headers);
+        headers = show_info(ll, entry, days, headers);
           
         if( user != NULL)
         	return;								//found the user with -u, return
         else
         {
-        	printf("in get_log while, should get next pwent\n");
-        	user = getpwent();					//go until end of passwd db
+//        	printf("in get_log while, should get next pwent\n");
+        	entry = getpwent();					//go until end of passwd db
         }
 	}
 	
