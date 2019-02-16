@@ -93,26 +93,11 @@ struct lastlog *ll_read()
 	if (buf_start == 0 && num_recs == 0)
 		ll_reload();
 		
-	//if next to read == num in buffer AND reload doesn't get any more
-	//ll_reload() will ALWAYS be called, UNLESS next to read != num in buffer
-	//at open though, both are equal to 0 and reload WILL run
-/*	if(cur_rec == num_recs)
-    {
-        int num_read = ll_reload();
-
-        if (num_read == 0)
-        {
-            return LL_NULL;
-        }
-        else
-        {
-            buf_end = buf_start + num_read;
-        }
-    }*/
-    
+	//at the end of the buffer, and reload doesn't return any more
     if(cur_rec == num_recs && ll_reload() == 0)
     	return LL_NULL;
 	
+	//store the pointer to the cur_rec
 	struct lastlog *llp = (struct lastlog *) &llbuf[cur_rec * LLSIZE];
 	cur_rec++;
 

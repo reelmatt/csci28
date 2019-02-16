@@ -27,6 +27,7 @@ char * check_string(char *, int);
 
 #define LLOG_FILE "/var/log/lastlog"
 #define TIME_FORMAT "%a %b %e %H:%M:%S %z %Y"
+#define TIMESIZE 32
 #define NO 0
 #define YES 1
 
@@ -82,18 +83,15 @@ int main (int ac, char *av[])
  */
 void get_option(char opt, char **value, char **user, long *days, char **file)
 {
-    //  printf("in get_option, address of days is %p\n", days);
 	if(opt == 'u')
 		*user = *value;
 	else if (opt == 't')
-		*days = parse_time(*value);
-	//	*days = *value;
+		*days = parse_time(*value);		//check if valid time, exit if not
 	else if (opt == 'f')
 		*file = *value;
 	else
-		fatal(opt, "");
+		fatal(opt, "");					//unrecognized option, exit with error
 
-//    printf("parsed days is %lu\n", *days);
 	return;
 }
 
@@ -222,36 +220,11 @@ void print_headers()
 }
 
 /*
- *	check_time()
- *	Purpose: see if the lastlogin time has occurred within the last days
- *	  Input: entry, the lastlogin time
- *			 days, specified by the user with the -t option
- *	 Return: NO, if login happened later than "days" ago
- *			 YES, if login has happened within the given # of "days"
- */
-int check_time(time_t entry, long days)
-{
-	//check if a time was given with the -t flag
-	if (days != -1)
-	{
-		time_t now;
-		double delta = difftime(time(&now), entry);	//secs b/w now and lastlogin
-        long day_seconds = 24 * 60 * 60;			//number of seconds in a day
-
-		//login happened before DAYS ago, out of range
-		if ( delta > (day_seconds * days) )
-			return NO;
-	}
-	
-	return YES;
-}
-
-/*
  *
  */
 int show_info(struct lastlog *lp, struct passwd *ep, long days, int headers)
 {
-    //if the lp is not NULL and time is OK, continue
+    //if the lastlog is not NULL and time is OK, continue
 	if (lp)
     {
         if (check_time(lp->ll_time, days) == NO)
@@ -281,25 +254,28 @@ int show_info(struct lastlog *lp, struct passwd *ep, long days, int headers)
 	if(lp == NULL || lp->ll_time == 0)
 		printf("**Never logged in**");
 	else
-		show_time(lp->ll_time, TIME_FORMAT);
-
-
+		show_time(lp, TIME_FORMAT);
+		//show_time(lp->ll_time, TIME_FORMAT);
 
 	printf("\n");
 
 	return YES;
 }
 
+/*
+ *	check_string()
+ *	Purpose: see if the string is null terminated
+ *	  Input: a string and the size of the string
+ *	 Return: an empty string, if NULL; a null-terminated string
+ *			 otherwise (could already be null-terminated when passed in).
+ */
 char * check_string(char *str, int size)
 {
-//    printf("\nin check_string, str is %s\n", str);
 	if (str == NULL)
 		return "";
 	else if (str[size - 1] != '\0')
 		str[size - 1] = '\0';
-//    else
-//        printf("the str already is terminated!\n");
-
+		
 	return str;
 }
 
@@ -309,15 +285,42 @@ char * check_string(char *str, int size)
  *	  Notes: copied, with slight modifications, from the who2.c code from
  *			 lecture #2.
  */
-void show_time(time_t time, char *fmt)
+void show_time(struct lastlog *lp, char *fmt)
 {
-	struct tm *tp = localtime(&time);
-	char result[100];
-
-	strftime(result, 100, fmt, tp);
+	if (lp == NULL || lp->ll_time == 0)
+		printf("**Never logged in**");
+			
+	//struct tm *tp = localtime(&time);
+	char result[TIMESIZE];
+	strftime(result, TIMESIZE, fmt, lp->ll_time);
 
 	printf("%s", result);
 	return;
+}
+
+/*
+ *	check_time()
+ *	Purpose: see if the lastlogin time has occurred within the last days
+ *	  Input: entry, the lastlogin time
+ *			 days, specified by the user with the -t option
+ *	 Return: NO, if login happened later than "days" ago
+ *			 YES, if login has happened within the given # of "days"
+ */
+int check_time(time_t entry, long days)
+{
+	//check if a time was given with the -t flag
+	if (days != -1)
+	{
+		time_t now;
+		double delta = difftime(time(&now), entry);	//secs b/w now and lastlogin
+        long day_seconds = 24 * 60 * 60;			//number of seconds in a day
+
+		//login happened before DAYS ago, out of range
+		if ( delta > (day_seconds * days) )
+			return NO;
+	}
+	
+	return YES;
 }
 
 /*
