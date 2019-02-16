@@ -31,7 +31,7 @@ oracle                                     **Never logged in**
 pe-puppet                                  **Never logged in**
 snmp                                       **Never logged in**
 ansible_ro       pts/2    10.137.242.18    Thu Oct 25 10:44:47 -0400 2018
-ansible_rw       pts/1    10.137.242.110   Fri Feb 15 01:01:06 -0500 2019
+ansible_rw       pts/10   10.137.242.18    Sat Feb 16 01:01:25 -0500 2019
 hgates                                     **Never logged in**
 huang10                                    **Never logged in**
 auth                                       **Never logged in**
@@ -454,7 +454,6 @@ piaia                                      **Never logged in**
 everett                                    **Never logged in**
 fersch                                     **Never logged in**
 smalmon                                    **Never logged in**
-pbrown                                     **Never logged in**
 eheller                                    **Never logged in**
 thayes           pts/6    65.112.10.230    Wed Jan  4 09:10:24 -0500 2017
 hhutchis                                   **Never logged in**
@@ -804,7 +803,6 @@ coatswor                                   **Never logged in**
 kmcgrath                                   **Never logged in**
 lamorris                                   **Never logged in**
 ewalhout                                   **Never logged in**
-stoddard                                   **Never logged in**
 prentiss                                   **Never logged in**
 hwhuber                                    **Never logged in**
 mjscott                                    **Never logged in**
@@ -2032,3 +2030,5 @@ wthomps                                    **Never logged in**
 haa98-1                                    **Never logged in**
 rmair                                      **Never logged in**
 gset133                                    **Never logged in**
+sdrexam                                    **Never logged in**
+lafrance                                   **Never logged in**

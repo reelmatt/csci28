@@ -252,12 +252,14 @@ int show_info(struct lastlog *lp, struct passwd *ep, long days, int headers)
         printf("%-16.16s ", "");
     }
 
-	if(lp == NULL || lp->ll_time == 0)
+	show_time(lp, TIME_FORMAT);
+
+/*	if(lp == NULL || lp->ll_time == 0)
 		printf("**Never logged in**");
 	else
 		show_time(lp, TIME_FORMAT);
 		//show_time(lp->ll_time, TIME_FORMAT);
-
+*/
 	printf("\n");
 
 	return YES;
@@ -276,7 +278,7 @@ char * check_string(char *str, int size)
 		return "";
 	else if (str[size - 1] != '\0')
 		str[size - 1] = '\0';
-		
+
 	return str;
 }
 
@@ -289,13 +291,18 @@ char * check_string(char *str, int size)
 void show_time(struct lastlog *lp, char *fmt)
 {
 	if (lp == NULL || lp->ll_time == 0)
+	{
 		printf("**Never logged in**");
-			
-	//struct tm *tp = localtime(&time);
-	char result[TIMESIZE];
-	strftime(result, TIMESIZE, fmt, lp->ll_time);
+	}
+	else
+	{
+		char result[TIMESIZE];
+		time_t time = lp->ll_time;
+		strftime(result, TIMESIZE, fmt, localtime(&time));
 
-	printf("%s", result);
+		printf("%s", result);
+	}
+
 	return;
 }
 
