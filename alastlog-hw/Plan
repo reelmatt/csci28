@@ -20,7 +20,7 @@ Arguments:
 Input:
 	alastlog is controlled via the command line and accepts -u, -t, and -f
 	options. The usage and purpose of each is as follows:
-		[-u USER]: 	a USER name or id is specified and results are
+		[-u USER]: 	a USER name or ID is specified and results are
 					restricted to that single user. Multiple users/ranges
 					are not supported.
 		[-t DAYS]:	an amount of time, in DAYS, allows you to restrict output
@@ -34,7 +34,7 @@ Output:
 	The output is fixed-width fields including Username, Port, From,
 	and Latest columns. The latest login field is displayed with a time format
 	of "Mon Dec 17 11:14:39 -0500 2018", for example. Columns are 16, 8, and
-	16 chars for username, port, and from respectively. TIMESIZE is defined
+	16 chars for Username, Port, and From respectively. TIMESIZE is defined
 	as 32 chars.
 	
 	alastlog uses read() to get data from the file and uses printf to format and
@@ -51,21 +51,23 @@ Data Structures:
 				 cur_rec to that position for the next call of ll_read. If not
 				 in the buffer, call on lseek() to move the pointer in the file
 				 descriptor in advance of retrieving a new buffer. Reload the
-				 buffer with NRECS starting at the position of the requested rec
+				 buffer with NRECS starting at the position of the requested
+				 rec.
 		ll_read: If the buffer is empty when called, it loads NRECS into the
 				 buffer. If the cur_rec is at the end of the buffer, it attempts
 				 to load a new set of records into the buffer. If successful,
 				 ll_read() will return a pointer to the lastlog struct for the
 				 cur_rec.
 	  ll_reload: Uses the system call read() to load NRECS into the buffer from
-	  			 wherever ll_seek moved the pointer to (via the offset in lseek)
+	  			 wherever ll_seek moved the pointer to (via the offset
+	  			 in lseek).
 	   ll_close: Closes the open file.
 	
 	When a record is requested outside of the current buffer, ll_seek() will
 	adjust the file pointer so that ll_reload() will pull in NRECS starting with
 	the requested record. I did attempt the method suggested in posts @64 and
 	@67 on Piazza to buffer based on a multiple of NRECS, but was not able to
-	get the output correct. My debugging told me the range of records and the
+	get the correct output. My debugging told me the range of records and the
 	offset I requested were correct, but the data being read in was wrong.
 	
 	To test the efficiency of my method -- loading the buffer with the requested
@@ -85,17 +87,17 @@ Program Flow:
 		variables: user, days, and file to be used later on (if specified).
 		For the -u and -t, check immediately whether the user/time are valid,
 		and exit, with message to stderr, if not.
-	2 - Call on get_log() with the user options. File being set to LLOG_FILE
-		by default, user set to NULL or the requested passwd entry, and days
-		set to -1 or the number of days entered with -t.
+	2 - Call on get_log() with the user options. File is set to LLOG_FILE
+		by default, user is set to NULL or the requested passwd entry, and days
+		is set to -1 or the number of days entered with -t.
 	3 - Open the lastlog file.
-	4 - If a "user" was not specified call getpwent() to begin iterating through
-		the all passwd database entries. Otherwise, set the entry to the user
-		pulled in from the -u option.
+	4 - If a "user" was not specified, call getpwent() to begin iterating
+		through the all passwd database entries. Otherwise, set the entry to the
+		user pulled in from the -u option.
 	5 - For all (1+) passwd entries, call ll_seek() to move a pointer to the
 		correct place to read. If nothing has been read yet, or the requested
-		passwd entry is outside the current buffer, this uses the system call
-		lseek() to manipulate the pointer to the file descriptor. If the
+		passwd entry is outside the current buffer, the program uses the system
+		call lseek() to manipulate the pointer to the file descriptor. If the
 		request is for an entry currently in the buffer, it adjusts the cur_rec
 		variable accordingly.
 	6 - If there was an error (e.g. requested a range outside the lastlog file)
@@ -111,4 +113,4 @@ Files:
 	alastlog reads a file of lastlog records. Per the man page for lastlog,
 	entries are sorted by their order in /etc/passwd and that is how
 	alastlog works as well. See Arguments and Input sections
-	above for more info above location of the lastlog file.
+	above for more info about location of the lastlog file.

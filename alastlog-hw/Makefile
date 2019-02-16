@@ -10,17 +10,17 @@
 # (note: the indented lines MUST start with a single tab
 #
 
-CC = gcc -Wall -Wextra -g
+GCC = gcc -Wall -Wextra -g
 
 alastlog: alastlog.o lllib.o
-	$(CC) -o alastlog alastlog.o lllib.o
+	$(GCC) -o alastlog alastlog.o lllib.o
 
 alastlog.o: alastlog.c
-	$(CC) -c alastlog.c
+	$(GCC) -c alastlog.c
 
 lllib.o: lllib.c
-	$(CC) -c lllib.c
+	$(GCC) -c lllib.c
 
 clean:
-	rm -f *.o core alastlog
+	rm -f *.o alastlog
 

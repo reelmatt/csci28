@@ -1,14 +1,14 @@
 #include <stdio.h>
 #include <err.h>
 #include <errno.h>
-#include <lastlog.h>
-#include <string.h>
-#include <time.h>
 #include <fcntl.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <sys/types.h>
+#include <lastlog.h>
 #include <pwd.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
+#include <time.h>
+#include <unistd.h>
 #include "lllib.h"
 
 char * check_string(char *, int);
@@ -51,7 +51,7 @@ int main (int ac, char *av[])
 	long days = -1;
 	char *file = NULL;
 
-	//see Note section above
+	//see Note section above for more on option processing
 	while (i < ac)
 	{
 		if(av[i][0] == '-' && (i + 1) < ac)
@@ -80,7 +80,7 @@ int main (int ac, char *av[])
  */
 char * check_string(char *str, int size)
 {
-	if (str == NULL)
+	if (str == NULL)				//if NULL, don't try to access element
 		return "";
 	else if (str[size - 1] != '\0')
 		str[size - 1] = '\0';
@@ -139,7 +139,7 @@ struct passwd *extract_user(char *name)
 		//If strtol returns 0 and copied all chars to temp, it failed
 		if (uid == 0 && strcmp(name, temp) == 0)
 		{
-			fprintf(stderr, "alastlog: invalid user: %s\n", temp);
+			fprintf(stderr, "alastlog: invalid user input: %s\n", temp);
 			exit (1);
 		}
 
@@ -156,7 +156,7 @@ struct passwd *extract_user(char *name)
 
 /*
  *	fatal()
- *	Purpose: helper function to output error messages for bad input.
+ *	Purpose: helper function to output error messages for bad option input.
  */
 void fatal(char opt, char *arg)
 {
