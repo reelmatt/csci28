@@ -54,22 +54,21 @@ int ll_seek(int rec)
 	if (ll_fd == -1)
 		return -1;
 
-	if (rec == cur_rec)										 //no seeking needed
+	if (rec == cur_rec)										 //no seek needed
 		return 0;
 
 	if (rec > buf_start && rec < (buf_start + num_recs - 1)) //in current buf
 		cur_rec = rec - buf_start;
 	else													 //outside buf
-	{		
+	{
 		if ( lseek(ll_fd, (rec * LLSIZE), SEEK_SET) == -1 )	 //seek to rec
-				return -1;
-		
-        if (ll_reload() <= 0)								 //load up new buf
-            return -1;
+			return -1;
+		if (ll_reload() <= 0)								 //load up new buf
+			return -1;
 
-        buf_start = rec;									 //update start pos
-	}	
-	
+		buf_start = rec;									 //update start pos
+	}
+
 	return 0;
 }
 
@@ -77,12 +76,12 @@ int ll_seek(int rec)
  *	ll_reload()
  *	Purpose: read the lastlog record located at cur_rec in the current buffer
  *	 Return: pointer to the lastlog record located in the buffer
- *	 Method: When called for the first time (both buf_start and num_recs are 0),
+ *	 Method: When called for the first time (both buf_start & num_recs are 0),
  *			 call on ll_reload() to load up buffer. On subsequent calls, check
  *			 if we have reached the end of the buffer and if more recs exist.
- *			 Otherwise, the requested cur_rec is in the buffer, so access it and
- *			 return a pointer. Increment cur_rec so sequential records do not
- *			 need seeking.
+ *			 Otherwise, the requested cur_rec is in the buffer, so access it
+ *			 and return a pointer. Increment cur_rec so sequential records do
+ *			 not need seeking.
  *	   Note: copied (with minor modifications), from utmplib.c file. Provided
  *			 in assignment files, also used in lecture 02.
  */
@@ -91,15 +90,15 @@ struct lastlog *ll_read()
 	//error was returned when ll_open was called
 	if (ll_fd == -1)
 		return LL_NULL;
-	
+
 	//first time being called, load up buffer
 	if (buf_start == 0 && num_recs == 0)
 		ll_reload();
-		
+
 	//at the end of the buffer, and reload doesn't return any more
-    if(cur_rec == num_recs && ll_reload() == 0)
-    	return LL_NULL;
-	
+	if(cur_rec == num_recs && ll_reload() == 0)
+		return LL_NULL;
+
 	//store the pointer to the cur_rec and increment cur_rec for next ll_read
 	struct lastlog *llp = (struct lastlog *) &llbuf[cur_rec * LLSIZE];
 	cur_rec++;
@@ -117,13 +116,13 @@ static int ll_reload()
 {
 	//where to read from is set first by ll_open, then by ll_seek
 	int amt_read = read(ll_fd, llbuf, (NRECS*LLSIZE));
-	
+
 	if (amt_read < 0)
 		amt_read = -1;
 
 	num_recs = amt_read/LLSIZE;
 	cur_rec = 0;
-	
+
 	return num_recs;
 }
 
@@ -140,6 +139,6 @@ int ll_close()
 	//if there is no file open, do not close it
 	if (ll_fd != -1)
 		value = close(ll_fd);
-		
+
 	return value;
 }
