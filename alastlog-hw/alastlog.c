@@ -15,7 +15,7 @@ char * check_string(char *, int);
 int check_time(struct lastlog *, long);
 struct passwd *extract_user(char *);
 void fatal(char, char *);
-void get_log(char *, char *, long);
+void get_log(char *, struct passwd *, long);
 void get_option(char, char **, struct passwd **, long *, char **);
 long parse_time(char *);
 void print_headers();
@@ -182,7 +182,7 @@ void fatal(char opt, char *arg)
  *			 a problem extracting a provided user (extract_user), the program
  *			 will print a message to stderr and exit.
  */
-void get_log(char *file, char *user, long days)
+void get_log(char *file, struct passwd *user, long days)
 {
 	if (ll_open(file) == -1)					//open lastlog file
 	{
@@ -190,28 +190,28 @@ void get_log(char *file, char *user, long days)
 		exit(1);
 	}
 
-	struct passwd *entry;						//store passwd rec
+//	struct passwd *entry;						//store passwd rec
 	struct lastlog *ll;							//store lastlog rec
 	int headers = NO;							//have headers been printed
 	
 	if(user == NULL)
-		entry = getpwent();						//open passwd db to iterate
-	else
+		user = getpwent();						//open passwd db to iterate
+/*	else
 		entry = extract_user(user);				//get passwd rec for single user
-
-	while (entry)								//still have a passwd entry
+*/
+	while (user)								//still have a passwd entry
 	{
-		if ( ll_seek(entry->pw_uid) == -1 )		//get the correct pos in buffer
+		if ( ll_seek(user->pw_uid) == -1 )		//get the correct pos in buffer
 			ll = NULL;							//error
 		else
 			ll = ll_read();						//okay to read
 
-        headers = show_info(ll, entry, days, headers);
+        headers = show_info(ll, user, days, headers);
           
         if( user != NULL)
         	return;								//found the user with -u, return
         else
-        	entry = getpwent();					//go until end of passwd db
+        	user = getpwent();					//go until end of passwd db
 	}
 	
 	endpwent();									//if user specified, not called
