@@ -16,7 +16,7 @@ int check_time(struct lastlog *, long);
 struct passwd *extract_user(char *);
 void fatal(char, char *);
 void get_log(char *, char *, long);
-void get_option(char, char **, char **, long *, char **);
+void get_option(char, char **, struct passwd **, long *, char **);
 long parse_time(char *);
 void print_headers();
 int show_info(struct lastlog *, struct passwd *, long, int);
@@ -25,6 +25,7 @@ void show_time(struct lastlog *, char *);
 #define LLOG_FILE "/var/log/lastlog"
 #define TIME_FORMAT "%a %b %e %H:%M:%S %z %Y"
 #define TIMESIZE 32
+#define SECONDS_IN_DAY 86400
 #define NO 0
 #define YES 1
 
@@ -39,7 +40,8 @@ void show_time(struct lastlog *, char *);
 int main (int ac, char *av[])
 {
     int i = 1;
-    char *user = NULL;
+    //char *user = NULL;
+    struct passwd *user = NULL;
     long days = -1;
     char *file = NULL;
  
@@ -97,18 +99,13 @@ int check_time(struct lastlog *lp, long days)
 	if (days != -1)
 	{
 		time_t now;
-		time_t login = (lp) ? lp->ll_time : 0;
+		time_t login = (lp) ? lp->ll_time : 0;		//get ll_time, or 0 if null
 	
-/*		if (lp)
-			login = lp->ll_time;
-		else
-			login = 0;
-*/
-		double delta = difftime(time(&now), login);	//secs b/w now and lastlogin
-        long day_seconds = 24 * 60 * 60;			//number of seconds in a day
+		double delta = difftime(time(&now), login);	//secs between now and login
+ //       long day_seconds = 24 * 60 * 60;			//number of seconds in a day
 
 		//login happened before DAYS ago, out of range
-		if ( delta > (day_seconds * days) )
+		if ( delta > (SECONDS_IN_DAY * days) )
 			return NO;
 	}
 	
@@ -235,10 +232,11 @@ void get_log(char *file, char *user, long days)
  *	  Notes: If there is an invalid option (not -utf), fatal is called
  *			 to output a message to stderr and exit with a non-zero status.
  */
-void get_option(char opt, char **value, char **user, long *days, char **file)
+void get_option(char opt, char **value, struct passwd **user, long *days, char **file)
 {
 	if(opt == 'u')
-		*user = *value;
+		*user = extract_user(*value);	//check if valid user/if they exist
+		//*user = *value;
 	else if (opt == 't')
 		*days = parse_time(*value);		//check if valid time, exit if not
 	else if (opt == 'f')
