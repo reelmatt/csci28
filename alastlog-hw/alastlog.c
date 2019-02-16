@@ -210,7 +210,7 @@ int get_log(char *file, struct passwd *user, long days)
         headers = show_info(ll, entry, days, headers);
           
         if( user != NULL)						//a user provided with -u
-        	return;								//found them, so return
+        	return 0;								//found them, so return
         else
         	entry = getpwent();					//go until end of passwd db
 	}

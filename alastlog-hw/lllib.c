@@ -138,7 +138,8 @@ static int ll_reload()
 int ll_close()
 {
 	int value = 0;
-	
+
+	printf("closing file, num_seeks is %d\n", num_seeks);
 	//if there is no file open, do not close it
 	if (ll_fd != -1)
 		value = close(ll_fd);
