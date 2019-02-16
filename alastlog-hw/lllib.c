@@ -13,8 +13,8 @@ static int num_recs;				//num in buffer
 static int cur_rec;					//next rec to read
 static int buf_start;				//overall starting index of buffer
 static int ll_fd = -1;				//file descriptor
-
-static int ll_reload();
+static int num_seeks;
+static int ll_reload();				//internal function to load buffer
 
 
 /*
@@ -31,7 +31,7 @@ int ll_open(char *fname)
 	num_recs = 0;
 	cur_rec = 0;
 	buf_start = 0;
-		
+	num_seeks = 0;
 	return ll_fd;
 }
 
@@ -66,9 +66,10 @@ int ll_seek(int rec)
 		if ( lseek(ll_fd, (rec * LLSIZE), SEEK_SET) == -1 )	//seek to rec
 				return -1;
 		
-		buf_start = rec;									//update start pos
         if (ll_reload() <= 0)								//load up new buffer
-            return -1;    
+            return -1;
+
+        buf_start = rec;									//update start pos
 	}	
 	
 	return 0;
@@ -124,7 +125,7 @@ static int ll_reload()
 
 	num_recs = amt_read/LLSIZE;
 	cur_rec = 0;
-
+	num_seeks++;
 	return num_recs;
 }
 

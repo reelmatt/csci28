@@ -15,39 +15,44 @@ char * check_string(char *, int);
 int check_time(struct lastlog *, long);
 struct passwd *extract_user(char *);
 void fatal(char, char *);
-void get_log(char *, struct passwd *, long);
+int get_log(char *, struct passwd *, long);
 void get_option(char, char **, struct passwd **, long *, char **);
 long parse_time(char *);
 void print_headers();
 int show_info(struct lastlog *, struct passwd *, long, int);
 void show_time(struct lastlog *, char *);
 
-#define LLOG_FILE "/var/log/lastlog"
-#define TIME_FORMAT "%a %b %e %H:%M:%S %z %Y"
-#define TIMESIZE 32
-#define SECONDS_IN_DAY 86400
-#define NO 0
-#define YES 1
+#define LLOG_FILE 		"/var/log/lastlog"
+#define TIME_FORMAT		"%a %b %e %H:%M:%S %z %Y"
+#define TIMESIZE		32
+#define SECONDS_IN_DAY	86400
+#define NO 				0
+#define YES 			1
 
 /*
  *	main()
- *		Process command-line arguments, if any, and then call get_log()
- *		to open the lastlog file (LLOG_FILE by default), with corresponding
- *      args, NULL if not specified.
- *
- *		Returns 0 on success, exits 1 and prints message to stderr on failure.
+ *	Method: Process command-line arguments, if any, and then call get_log()
+ *			to open the lastlog file (LLOG_FILE by default), with corresponding
+ *			args, NULL if not specified.
+ *	Return: 0 on success
+ *			-1 on close() error
+ *			exits 1 and prints message to stderr on other
+ *				failures (see corresponding functions)
+ *	  Note: The while loop will cycle through options, any/all of -u, -t, or -f.
+ *			If it is not a valid option, fatal() is called and program exits.
+ *			get_option is only called when there is at least one more arg left
+ *			in addition to the '-' option, the (i+1) < ac part in the if case.
  */
 int main (int ac, char *av[])
 {
     int i = 1;
-    //char *user = NULL;
+	int rv = 0;
+	
     struct passwd *user = NULL;
     long days = -1;
     char *file = NULL;
  
-    /* Cycle through options, any/all of -u, -t, or -f. Exit if invalid.
-     * get_option is only called when there is at least one more arg left
-     * in addition to the '-' option, the (i + 1) < ac part in the if. */
+ 	//see Note section above
     while (i < ac)
     {
     	if(av[i][0] == '-' && (i + 1) < ac)
@@ -60,11 +65,11 @@ int main (int ac, char *av[])
 
     //If no file specified with -f, use LLOG_FILE
     if (file == NULL)
-        get_log(LLOG_FILE, user, days);
+        rv = get_log(LLOG_FILE, user, days);
     else
-        get_log(file, user, days);
+		rv = get_log(file, user, days);
 
-	return 0;
+	return rv;
 }
 
 /*
@@ -92,21 +97,17 @@ char * check_string(char *str, int size)
  *	 Return: NO, if login happened later than "days" ago
  *			 YES, if login has happened within the given # of "days"
  */
-//int check_time(time_t entry, long days)
 int check_time(struct lastlog *lp, long days)
 {		
-	//check if a time was given with the -t flag
-	if (days != -1)
+	if (days != -1)									//is a time given with -t
 	{
 		time_t now;
 		time_t login = (lp) ? lp->ll_time : 0;		//get ll_time, or 0 if null
 	
 		double delta = difftime(time(&now), login);	//secs between now and login
- //       long day_seconds = 24 * 60 * 60;			//number of seconds in a day
 
-		//login happened before DAYS ago, out of range
-		if ( delta > (SECONDS_IN_DAY * days) )
-			return NO;
+		if ( delta > (SECONDS_IN_DAY * days) )		//delta is more than range
+			return NO;								//login is earlier than -t
 	}
 	
 	return YES;
@@ -127,15 +128,11 @@ struct passwd *extract_user(char *name)
 {
 	struct passwd *user = NULL;
 	
-	if (name == NULL)
-	{
-		printf("extract_user, name not specified == NULL\n");
+	if ( name == NULL)								//no name given, NULL
 		return user;
-	}
-
-	if ( (user = getpwnam(name)) != NULL)		//name was a username
+	else if ( (user = getpwnam(name)) != NULL)		//name was a username
 		return user;
-	else										//try name as a UID
+	else											//try name as a UID
 	{
 		char *temp = NULL;
         long uid = strtol(name, &temp, 10);
@@ -188,7 +185,7 @@ void fatal(char opt, char *arg)
  *			 a problem extracting a provided user (extract_user), the program
  *			 will print a message to stderr and exit.
  */
-void get_log(char *file, struct passwd *user, long days)
+int get_log(char *file, struct passwd *user, long days)
 {
 	if (ll_open(file) == -1)					//open lastlog file
 	{
@@ -196,22 +193,13 @@ void get_log(char *file, struct passwd *user, long days)
 		exit(1);
 	}
 
-	struct passwd *entry = user;						//store passwd rec
-	struct lastlog *ll;							//store lastlog rec
+	struct passwd *entry = user;				//store passwd record
+	struct lastlog *ll;							//store lastlog record
 	int headers = NO;							//have headers been printed
 	
-	if(entry == NULL)
-	{
+	if(entry == NULL)							//if -u user was specified
 		entry = getpwent();						//open passwd db to iterate
-//		printf("in get_log start, user is null\n");
-	}
-/*	else
-	{
-		printf("in get_log start, user is %s\n", user->pw_name);
-	}*/
-/*	else
-		entry = extract_user(user);				//get passwd rec for single user
-*/
+
 	while (entry)								//still have a passwd entry
 	{
 		if ( ll_seek(entry->pw_uid) == -1 )		//get the correct pos in buffer
@@ -221,18 +209,14 @@ void get_log(char *file, struct passwd *user, long days)
 
         headers = show_info(ll, entry, days, headers);
           
-        if( user != NULL)
-        	return;								//found the user with -u, return
+        if( user != NULL)						//a user provided with -u
+        	return;								//found them, so return
         else
-        {
-//        	printf("in get_log while, should get next pwent\n");
         	entry = getpwent();					//go until end of passwd db
-        }
 	}
 	
 	endpwent();									//if user specified, not called
-	ll_close();									//close lastlog file
-    return;
+	return ll_close();							//close lastlog file, -1 if err
 }
 
 /*
@@ -245,18 +229,23 @@ void get_log(char *file, struct passwd *user, long days)
  *			 file, pointer to store specified file
  *	 Return: None. This function passes through pointers from main
  *			 to store the variables.
+ *	 Errors: For the -u and -t options, parsing functions are called to
+ *			 determine if the input is valid. extract_user() obtains the
+ *			 passwd entry, or exits if not found/invalid. parse_time()
+ *			 changes the text input into a number, or exits if not valid.
  *	  Notes: If there is an invalid option (not -utf), fatal is called
  *			 to output a message to stderr and exit with a non-zero status.
+ *			 See also, errors above for invalid input.
  */
-void get_option(char opt, char **value, struct passwd **user, long *days, char **file)
+void
+get_option(char opt, char **val, struct passwd **user, long *days, char **file)
 {
 	if(opt == 'u')
-		*user = extract_user(*value);	//check if valid user/if they exist
-		//*user = *value;
+		*user = extract_user(*val);		//check if valid user/if they exist
 	else if (opt == 't')
-		*days = parse_time(*value);		//check if valid time, exit if not
+		*days = parse_time(*val);		//check if valid time, exit if not
 	else if (opt == 'f')
-		*file = *value;
+		*file = *val;					//ll_open will determine later if valid
 	else
 		fatal(opt, "");					//unrecognized option, exit with error
 
@@ -348,12 +337,17 @@ int show_info(struct lastlog *lp, struct passwd *ep, long days, int headers)
 /*
  *	show_time()
  *	Purpose: format a time and print it
+ *	  Input: lp, pointer to the lastlog record
+ *			 fmt, the format to print the time in
+ *	 Output: If the lastlog record is null, or the time is 0, the user
+ *			 does not exist or has never logged on, so display that. Otherwise,
+ *			 get the time, lp->ll_time, and format it according to "fmt".
  *	  Notes: copied, with slight modifications, from the who2.c code from
  *			 lecture #2.
  */
 void show_time(struct lastlog *lp, char *fmt)
 {
-	if (lp == NULL || lp->ll_time == 0)		//user has never logged in
+	if (lp == NULL || lp->ll_time == 0)		//user doesn't exist/never logged in
 	{
 		printf("**Never logged in**");
 	}

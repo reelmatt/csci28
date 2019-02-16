@@ -14,7 +14,7 @@ static int cur_rec;					//next rec to read
 static int buf_start;				//absolute starting index of buffer
 static int buf_end;					//ending index of buffer
 static int ll_fd = -1;				//file descriptor
-
+static int num_seeks;
 static int ll_reload();
 void debug(int, int, int, int, int);
 
@@ -33,7 +33,7 @@ int ll_open(char *fname)
 	cur_rec = 0;
 	buf_start = 0;
 	buf_end = 0;
-
+	num_seeks = 0;
 	return ll_fd;
 }
 
@@ -153,7 +153,7 @@ static int ll_reload()
 	
 	num_recs = amt_read/LLSIZE;
 	//cur_rec = 0;
-
+	num_seeks++;
 	return num_recs;
 }
 
