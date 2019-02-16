@@ -128,7 +128,10 @@ struct passwd *extract_user(char *name)
 	struct passwd *user = NULL;
 	
 	if (name == NULL)
-		return NULL;
+	{
+		printf("extract_user, name not specified == NULL\n");
+		return user;
+	}
 	
 	if ( (user = getpwnam(name)) != NULL)		//name was a username
 		return user;
@@ -214,7 +217,10 @@ void get_log(char *file, struct passwd *user, long days)
         if( user != NULL)
         	return;								//found the user with -u, return
         else
+        {
+        	printf("in get_log while, should get next pwent\n");
         	user = getpwent();					//go until end of passwd db
+        }
 	}
 	
 	endpwent();									//if user specified, not called
