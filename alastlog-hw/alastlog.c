@@ -14,7 +14,8 @@
 int check_time(time_t, long );
 void fatal(char, char *);
 void get_log(char *, char *, long);
-void show_time(time_t, char *);
+void show_time(struct lastlog *, char *);
+//void show_time(time_t, char *);
 void process(char *user, int days, char *file);
 void read_lastlog (struct lastlog *);
 void show_llrec(struct lastlog *);
