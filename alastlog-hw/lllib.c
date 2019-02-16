@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include "lllib.h"
 
-#define NRECS 512
+#define NRECS 65536
 #define LLSIZE	(sizeof(struct lastlog))
 #define LL_NULL ((struct lastlog *) NULL)
 
