@@ -127,6 +127,9 @@ struct passwd *extract_user(char *name)
 {
 	struct passwd *user = NULL;
 	
+	if (name == NULL)
+		return NULL;
+	
 	if ( (user = getpwnam(name)) != NULL)		//name was a username
 		return user;
 	else										//try name as a UID
