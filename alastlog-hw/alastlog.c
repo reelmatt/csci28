@@ -326,7 +326,7 @@ int check_time(struct lastlog *lp, long days)
 		else
 			login = 0;
 
-		double delta = difftime(time(&now), entry);	//secs b/w now and lastlogin
+		double delta = difftime(time(&now), login);	//secs b/w now and lastlogin
         long day_seconds = 24 * 60 * 60;			//number of seconds in a day
 
 		//login happened before DAYS ago, out of range
