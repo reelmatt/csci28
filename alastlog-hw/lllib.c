@@ -16,14 +16,15 @@ static int buf_end;					//ending index of buffer
 static int ll_fd = -1;				//file descriptor
 
 static int ll_reload();
-void debug(int, int, int, int, int);
+
 
 /*
- * ll_open:
- *		opens the filename given for read access.
- * Returns:
- *		int of file descriptor on success
- *		-1 on error
+ *	ll_open()
+ *	Purpose: opens the filename given for read access.
+ *	 Return: int of file descriptor on success
+ *			 -1 on error
+ *	   Note: copied (with minor modifications), from utmplib.c file. Provided
+ *			 in assignment files, also used in lecture 02.
  */
 int ll_open(char *fname)
 {
@@ -36,17 +37,18 @@ int ll_open(char *fname)
 	return ll_fd;
 }
 
-void debug(int a, int b, int c, int d, int e)
-{
-	printf("DEBUGGING current values\n");
-	printf("rec is %d, cur_rec is %d, num_recs is %d, start is %d, end is %d\n",
-		   a, b, c, d, e);
-}
-
 /*
- *	ll_seek moves the pointer for where functions will read next
- *	and returns whether it was successful in doing so. A call to
- *	ll_next() must be made to actually read the record.
+ *	ll_seek()
+ *	Purpose: reposition location where next record is read from
+ *	 Return: -1 on error, 0 on success
+ *	  Input: rec, the index (based on UID) of the record requested
+ *	 Method: If the rec equals cur_rec, no seeking needed; the next record
+ *			 that will be read is correct. If the rec falls within the current
+ *			 buffer, just update cur_rec to the appropriate index. If rec is
+ *			 outside the buffer, calculate the offset and call lseek() to
+ *			 adjust the file pointer read() will use to load a new buffer.
+ *	   Note: When calling lseek() to prep for reading into the buffer, offset
+ *			 is calculated to return to buffer at the record requested.
  */
 int ll_seek(int rec)
 {
@@ -59,7 +61,7 @@ int ll_seek(int rec)
 		return 0;
 
 	//if rec is within the current buffer, update cur_rec index to read	
-	if (rec > buf_start && rec < buf_end)
+	if (rec > buf_start && rec < (buf_start + num_recs))
 		cur_rec = rec - buf_start;
 	else
 	{
@@ -72,33 +74,19 @@ int ll_seek(int rec)
 		
         if (ll_reload() <= 0)
             return -1;
-        else
-            buf_end = buf_start + num_recs;
-		
-		/*
-		if (rec > buf_end)	//record requested is past the end of the buffer
-		{
-			//lseek pointer already at buf_end, add bytes to SEEK_CUR pos
-			//off_t offset = (rec - buf_end) * LLSIZE;
-
-			off_t offset = rec * LLSIZE;
-
-		}
-		else				//record requested if before the start of the buffer
-		{
-			//move rec bytes away from start, or SEEK_SET
-			off_t offset = rec * LLSIZE; 
-
-// 			if ( lseek(ll_fd, offset, SEEK_SET) == -1 )
-// 				return -1;
-		}*/
+//         else
+//             buf_end = buf_start + num_recs;
         
 	}	
 	return 0;
 }
 
 /*
- * starting as a copy of ll_next()
+ *	ll_reload()
+ *	Purpose: read the lastlog record located at cur_rec in the current buffer
+ *	 Return: pointer to the lastlog record located in the buffer
+ *	   Note: copied (with minor modifications), from utmplib.c file. Provided
+ *			 in assignment files, also used in lecture 02.
  */
 struct lastlog *ll_read()
 {
@@ -131,8 +119,10 @@ struct lastlog *ll_read()
 }
 
 /*
- * ll_reload:
- *
+ *	ll_reload()
+ *	Purpose: read in NRECS to buffer
+ *	   Note: copied (with minor modifications), from utmplib.c file. Provided
+ *			 in assignment files, also used in lecture 02.
  */
 static int ll_reload()
 {
@@ -151,8 +141,10 @@ static int ll_reload()
 }
 
 /*
- * ll_close:
- *		close the open file
+ *	ll_close()
+ *	Purpose: close the open file
+ *	   Note: copied (with minor modifications), from utmplib.c file. Provided
+ *			 in assignment files, also used in lecture 02.
  */
 int ll_close()
 {
