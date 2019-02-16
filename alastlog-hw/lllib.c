@@ -12,7 +12,6 @@ static char llbuf[NRECS * LLSIZE];	//buffer storage
 static int num_recs;				//num in buffer
 static int cur_rec;					//next rec to read
 static int buf_start;				//starting index of buffer
-static int buf_end;					//ending index of buffer
 static int ll_fd = -1;				//file descriptor
 
 static int ll_reload();
@@ -32,7 +31,6 @@ int ll_open(char *fname)
 	num_recs = 0;
 	cur_rec = 0;
 	buf_start = 0;
-	buf_end = 0;
 		
 	return ll_fd;
 }
@@ -73,10 +71,7 @@ int ll_seek(int rec)
 		buf_start = rec;
 		
         if (ll_reload() <= 0)
-            return -1;
-//         else
-//             buf_end = buf_start + num_recs;
-        
+            return -1;    
 	}	
 	return 0;
 }
@@ -94,10 +89,14 @@ struct lastlog *ll_read()
 	if (ll_fd == -1)
 		return LL_NULL;
 	
+	//first time being called, load up buffer
+	if (buf_start == 0 && num_recs == 0)
+		ll_reload();
+		
 	//if next to read == num in buffer AND reload doesn't get any more
 	//ll_reload() will ALWAYS be called, UNLESS next to read != num in buffer
 	//at open though, both are equal to 0 and reload WILL run
-	if(cur_rec == num_recs)
+/*	if(cur_rec == num_recs)
     {
         int num_read = ll_reload();
 
@@ -109,9 +108,11 @@ struct lastlog *ll_read()
         {
             buf_end = buf_start + num_read;
         }
-    }
+    }*/
+    
+    if(cur_rec == num_recs && ll_reload() == 0)
+    	return LL_NULL;
 	
-//	printf("\t\treading buffer at position %lu\n", (cur_rec * LLSIZE));
 	struct lastlog *llp = (struct lastlog *) &llbuf[cur_rec * LLSIZE];
 	cur_rec++;
 
@@ -131,11 +132,9 @@ static int ll_reload()
 	
 	if (amt_read < 0)
 		amt_read = -1;
-	
 
 	num_recs = amt_read/LLSIZE;
 	cur_rec = 0;
-	//furthest_rec += num_recs;
 
 	return num_recs;
 }
