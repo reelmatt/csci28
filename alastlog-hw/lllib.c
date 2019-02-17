@@ -41,12 +41,16 @@ int ll_open(char *fname)
  *	 Return: -1 on error, 0 on success
  *	  Input: rec, the index (based on UID) of the record requested
  *	 Method: If the rec equals cur_rec, no seeking needed; the next record
- *			 that will be read is correct. If the rec falls within the current
- *			 buffer, just update cur_rec to the appropriate index. If rec is
- *			 outside the buffer, calculate the offset and call lseek() to
- *			 adjust the file pointer read() will use to load a new buffer.
+ *			 that will be read is correct. If the rec is outside the buffer,
+ *			 calculate the offset nearest a multiple of the buffer size,
+ *			 NRECS. Use integer division to round down to nearest multiple.
+ *			 lseek() to the start of the buffer, update buf_start, and reload.
+ *			 For cases outside AND inside buffer, update cur_rec to the
+ *			 correct position.
  *	   Note: When calling lseek() to prep for reading into the buffer, offset
- *			 is calculated to return to buffer at the record requested.
+ *			 is calculated to return to buffer at the nearest multiple of the
+ *			 buffer size. E.g., if UID 600 is requested with NRECS set to 512,
+ *			 lseek() will point to offset 512 and read records 512-1023.
  */
 int ll_seek(int rec)
 {
@@ -57,37 +61,20 @@ int ll_seek(int rec)
 	if (rec == cur_rec)										 //no seek needed
 		return 0;
 
-	if (rec < buf_start || rec > (buf_start + num_recs - 1))
+	if (rec < buf_start || rec > (buf_start + num_recs - 1)) //outside buffer
 	{
-		off_t offset = (rec / NRECS) * NRECS * LLSIZE;
+		off_t offset = (rec / NRECS) * NRECS * LLSIZE;		 //calculate offset
 		
 		if ( lseek(ll_fd, offset, SEEK_SET) == -1 )
 			return -1;
 			
 		buf_start = (recs / NRECS) * NRECS;
 		
-		if (ll_reload() <= 0)
+		if (ll_reload() <= 0)								 //reload failed
 			return -1;
-		
-	
 	}
 	
-	cur_rec = rec - buf_start;
-
-/*
-
-	if (rec > buf_start && rec < (buf_start + num_recs - 1)) //in current buf
-		cur_rec = rec - buf_start;
-	else													 //outside buf
-	{
-		if ( lseek(ll_fd, (rec * LLSIZE), SEEK_SET) == -1 )	 //seek to rec
-			return -1;
-		if (ll_reload() <= 0)								 //load up new buf
-			return -1;
-
-		buf_start = rec;									 //update start pos
-	}
-*/
+	cur_rec = rec - buf_start;								 //adjust cur_rec
 	return 0;
 }
 
