@@ -60,18 +60,18 @@ int ll_seek(int rec)
 	if (rec < buf_start || rec > (buf_start + num_recs - 1))
 	{
 		off_t offset = (rec / NRECS) * NRECS * LLSIZE;
-		
+
 		if ( lseek(ll_fd, offset, SEEK_SET) == -1 )
 			return -1;
-			
-		buf_start = (recs / NRECS) * NRECS;
-		
+
+		buf_start = (rec / NRECS) * NRECS;
+
 		if (ll_reload() <= 0)
 			return -1;
-		
-	
+
+
 	}
-	
+
 	cur_rec = rec - buf_start;
 
 /*
