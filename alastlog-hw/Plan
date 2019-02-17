@@ -51,8 +51,8 @@ Data Structures:
 				 cur_rec to that position for the next call of ll_read. If not
 				 in the buffer, call on lseek() to move the pointer in the file
 				 descriptor in advance of retrieving a new buffer. Reload the
-				 buffer with NRECS starting at the position of the requested
-				 rec.
+				 buffer with NRECS starting at the nearest multiple of the
+				 buffer size.
 		ll_read: If the buffer is empty when called, it loads NRECS into the
 				 buffer. If the cur_rec is at the end of the buffer, it attempts
 				 to load a new set of records into the buffer. If successful,
@@ -64,23 +64,10 @@ Data Structures:
 	   ll_close: Closes the open file.
 	
 	When a record is requested outside of the current buffer, ll_seek() will
-	adjust the file pointer so that ll_reload() will pull in NRECS starting with
-	the requested record. I did attempt the method suggested in posts @64 and
-	@67 on Piazza to buffer based on a multiple of NRECS, but was not able to
-	get the correct output. My debugging told me the range of records and the
-	offset I requested were correct, but the data being read in was wrong.
-	
-	To test the efficiency of my method -- loading the buffer with the requested
-	record as the first element -- I added a num_seeks variable to lllib.c to
-	see how many times the buffer was reloaded. For an NRECS set to 512, my
-	method reloaded the buffer 707 times. Compared to my not-quite-functional
-	buffering on multiples of NRECS (so the numbers might not be accurate,
-	depending on *why* my implementation was not working), that method reloaded
-	the buffer 721 times with NRECS set to 512.
-	
-	I believe the reason for the similarity in numbers, and the efficiency of
-	loading the buffer with the requested record as the first element, is due
-	to large chunks of the /etc/passwd database having sequential UIDs.
+	adjust the file pointer so that ll_reload() will pull in NRECS starting at
+	the nearest multiple of the buffer size. For example, if UID 600 is 
+	requested with NRECS set to 512, lseek() will point to offset 512 in the
+	lastlog file and read records 512-1023.
 
 Program Flow:
 	1 - Process user options and store any arguments in three
