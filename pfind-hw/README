@@ -13,7 +13,17 @@ Summary:
 	Plan        -- design document for this assignment
 	Makefile	-- the Makefile
 	typescript  -- a sample run, including the lib215 test script
-	
+
+Recursive Tools:
+	chown	-- 
+	diff	--
+	getfacl	--
+
+
+Open File Limit:
+
+
+
 Notes:
 	A lot of the code to implement buffering was copied from the sample files
 	provided in this assignment, utmplib.c and utmp.h. These are the same as

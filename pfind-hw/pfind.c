@@ -1,33 +1,9 @@
 #include <stdio.h>
-#include <err.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <lastlog.h>
-#include <pwd.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/types.h>
-#include <time.h>
-#include <unistd.h>
-#include "lllib.h"
 
-char * check_string(char *, int);
-int check_time(struct lastlog *, long);
-struct passwd *extract_user(char *);
-void fatal(char, char *);
-int get_log(char *, struct passwd *, long);
-void get_option(char, char **, struct passwd **, long *, char **);
-long parse_time(char *);
-void print_headers();
-int show_info(struct lastlog *, struct passwd *, long, int);
-void show_time(struct lastlog *, char *);
-
-#define LLOG_FILE		"/var/log/lastlog"
-#define TIME_FORMAT		"%a %b %e %H:%M:%S %z %Y"
-#define TIMESIZE		32
-#define SECONDS_IN_DAY	86400
 #define NO 				0
 #define YES 			1
+
+void get_option(char opt, char **val, struct passwd **user, long *days, char **file)
 
 /*
  * main()
