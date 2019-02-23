@@ -12,15 +12,11 @@
 
 GCC = gcc -Wall -Wextra -g
 
-alastlog: alastlog.o lllib.o
-	$(GCC) -o alastlog alastlog.o lllib.o
+pfind: pfind.o
+	$(GCC) -o pfind pfind.o
 
-alastlog.o: alastlog.c
-	$(GCC) -c alastlog.c
-
-lllib.o: lllib.c
-	$(GCC) -c lllib.c
+pfind.o: pfind.c
+	$(GCC) -c pfind.c
 
 clean:
-	rm -f *.o alastlog
-
+	rm -f *.o pfind
