@@ -15,7 +15,7 @@
 #define YES 			1
 #define PATHLEN			255
 
-
+static char *myname;	//used by fatal()
 /*
 	 b       block special
 	 c       character special
@@ -26,10 +26,10 @@
 	 s       socket
  */
 char get_type(char);
-void get_option(char *, char *, char **, char *);
+void get_option(char **, char **, char *);
 void searchdir(char *, char *, char);
 char * construct_path(char *, char *);
-void fatal(char *);
+void fatal(char *, char *);
 void get_path(char *, char **);
 struct stat * new_stat();
 int check_type(char c, mode_t item);
@@ -47,41 +47,50 @@ int check_entry(char *, char, char *, char *, mode_t);
  *		   get_option is only called when there is at least one more arg left
  *		   in addition to the '-' option, the (i+1) < ac part in the if case.
  */
-int main (int ac, char *av[])
+int main (int ac, char **av)
 {
 	int i = 1;
-
+	myname = *av++;
+	
 	//initialize variables to default values, changes with user options
 	char *path = NULL;
 	char *name = NULL;
 	char type = '\0';
 
+//	printf("before arg loop, av is %s\n", *av);
 	//see Note section above for more on option processing
-	while (i < ac)
+	while (*av)
 	{
+// 		printf("in arg loop, av is %s\n", *av);
 		if (!path)
 		{
-			get_path(av[i], &path);
+			get_path(*av, &path);
 		}
-		else if(av[i][0] == '-' && (i + 1) < ac)
+		else if(*av[0] == '-')
 		{
-			get_option(av[i], av[i + 1], &name, &type);
-			i++;
+			get_option(av, &name, &type);
+			av++;
 		}
 		else
 		{
-			fatal("usage: pfind starting_path [-name ...] [-type ...]");
+			fprintf(stderr, "usage: pfind starting_path [-name ...] [-type ...]\n");
+			exit(1);
 		}
 
-		i++;
+//		printf("\t\tpassed in vars are %s, %s, %c\n", path, name, type);
+		av++;
 	}
 	
-//	printf("passed in vars are %s, %s, %c\n", path, name, type);
-	
+// 	printf("passed in vars are %s, %s, %c\n", path, name, type);
+// 	return 0;
+		
 	if (path)
 		searchdir(path, name, type);
 	else
-		fatal("usage: pfind starting_path [-name ...] [-type ...]");
+	{
+		fprintf(stderr, "usage: pfind starting_path [-name ...] [-type ...]\n");
+		exit(1);
+	}
 
 	return 0;
 }
@@ -91,14 +100,20 @@ void get_path(char *val, char **path)
 	if(val[0] != '-')
 		*path = val;
 	else
-		fatal("not a valid path");
+		fatal("not a valid path", "");
 	
 	return;
 }
 
-void fatal(char *s1)
+void fatal(char *s1, char *s2)
 {
-	fprintf(stderr, "%s\n", s1);
+	fprintf(stderr, "%s: `%s' ", myname, s1);
+	
+	if (strcmp(s2, "") != 0)
+		perror(s2);
+	else
+		fprintf(stderr, "\n");
+	
 	exit(1);
 }
 
@@ -108,7 +123,7 @@ char * construct_path(char *parent, char *child)
 	
 	//Get memory for newstr and check
 	if (newstr == NULL)
-		fatal("memory error: not enough memory to create new string\n");
+		fatal("memory error: not enough memory to create new string\n", "");
 	
 	if (strcmp(parent, child) == 0)
 		snprintf(newstr, PATHLEN, "%s", parent);
@@ -123,7 +138,7 @@ struct stat * new_stat()
 	struct stat *new_stat = malloc(sizeof(struct stat));
 	
 	if (new_stat == NULL)
-		fatal("memory error: could not allocate a stat struct\n");
+		fatal("memory error: could not allocate a stat struct\n", "");
 	
 	return new_stat;
 }
@@ -141,7 +156,7 @@ struct stat * new_stat()
  */
 void searchdir(char *dirname, char *findme, char type)
 {
-	//printf("passed in vars are %s, %s, %c\n", dirname, findme, type);
+//	printf("passed in vars are %s, %s, %c\n", dirname, findme, type);
 	
 	DIR* current_dir;
 	struct dirent *dp = NULL;
@@ -151,40 +166,24 @@ void searchdir(char *dirname, char *findme, char type)
 	if ( (current_dir = opendir(dirname)) == NULL)
 	{
 		perror(dirname);
-		exit(1);
+		return;
+//		exit(1);
 	}
 	
+//	printf("directory OPENED! %s\n", dirname);
 	//iterate through all entries in the directory
 	while( (dp = readdir(current_dir)) != NULL )
 	{
 		char *full_path = construct_path(dirname, dp->d_name);
-
-		//printf("in while loop, what is full_path? - %s\n", full_path);
-		
+	
 		if (lstat(full_path, info) == -1)
 		{
-			perror(full_path);
+			fatal(full_path, "");
 			continue;
 		}
 
 		if (check_entry(findme, type, dp->d_name, full_path, info->st_mode))
 			printf("%s\n", full_path);
-		
-/*		//if either/both options specified, check against filter
-		if (findme || type != '\0')
-		{
-			if (fnmatch(findme, dp->d_name, FNM_PERIOD) == 0)
-				printf("findme is %s and full_path is %s\n", findme, full_path);
-			else if (check_type(type, info->st_mode))
-				printf("type is %c and full_path is %s\n", c, full_path);
-			else
-				printf("does not match\n");
-			//printf("type is %c and check is %d\n", type, check_type(type, info->st_mode));
-		}
-		else
-		{
-			printf("%s\t\tno options specified...\n", full_path);
-		}*/
 
 		if ( recurse_directory(dp->d_name, info->st_mode) == YES )
 			searchdir(full_path, findme, type);
@@ -295,14 +294,33 @@ int check_entry(char *findme, char type, char *name, char *path, mode_t mode)
  *			 to output a message to stderr and exit with a non-zero status.
  *			 See also, errors above for invalid input.
  */
-void get_option(char *opt, char *val, char **name, char *type)
+void get_option(char **args, char **name, char *type)
 {
-	if (strcmp(opt, "-name") == 0)
-		*name = val;
-	else if (strcmp(opt, "-type") == 0)
-		*type = get_type(val[0]);
+	char *option = *args++;
+	char *value = *args;
+	
+	if (strcmp(option, "-name") == 0)
+		if(value)
+			*name = value;
+		else
+		{
+			fprintf(stderr, "%s: missing argument to `name'\n", myname);
+			exit(1);
+		}
+	else if (strcmp(option, "-type") == 0)
+		if (value)
+			*type = get_type(*args[0]);
+		else
+		{
+			fprintf(stderr, "%s: missing argument to `type'\n", myname);
+			exit(1);
+		}
 	else
-		printf("else condition, get_option\n");
+	{
+		fprintf(stderr, "%s: unknown predicate `%s'\n", myname, *args);
+		exit(1);
+	}
+//		fatal("unknown predicate", opt);
 
 	return;
 }
