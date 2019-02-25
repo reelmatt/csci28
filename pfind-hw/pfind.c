@@ -162,6 +162,7 @@ void searchdir(char *dirname, char *findme, char type)
 	struct dirent *dp = NULL;
 	struct stat *info = new_stat();
 	
+	printf("in serachdir, dirname is %s\n", dirname);
 	//open the directory, exit on error with message
 	if ( (current_dir = opendir(dirname)) == NULL)
 	{
@@ -175,7 +176,7 @@ void searchdir(char *dirname, char *findme, char type)
 	while( (dp = readdir(current_dir)) != NULL )
 	{
 		char *full_path = construct_path(dirname, dp->d_name);
-	
+		printf("\t\tentry is %s\n", full_path);
 		if (lstat(full_path, info) == -1)
 		{
 			fatal(full_path, "");
@@ -258,8 +259,10 @@ int check_entry(char *findme, char type, char *name, char *path, mode_t mode)
 	//only findme specified
 	else if (findme)
 	{
+		printf("ONLY findme specified\n");
 		if (fnmatch(findme, path, FNM_PERIOD) == 0)
 			return YES;
+		
 	}
 	else if (type != '\0')
 	{
@@ -304,7 +307,7 @@ void get_option(char **args, char **name, char *type)
 			*name = value;
 		else
 		{
-			fprintf(stderr, "%s: missing argument to `name'\n", myname);
+			fprintf(stderr, "%s: missing argument to `-name'\n", myname);
 			exit(1);
 		}
 	else if (strcmp(option, "-type") == 0)
@@ -312,12 +315,12 @@ void get_option(char **args, char **name, char *type)
 			*type = get_type(*args[0]);
 		else
 		{
-			fprintf(stderr, "%s: missing argument to `type'\n", myname);
+			fprintf(stderr, "%s: missing argument to `-type'\n", myname);
 			exit(1);
 		}
 	else
 	{
-		fprintf(stderr, "%s: unknown predicate `%s'\n", myname, *args);
+		fprintf(stderr, "%s: unknown predicate `%s'\n", myname, option);
 		exit(1);
 	}
 //		fatal("unknown predicate", opt);
