@@ -1,3 +1,9 @@
+/*
+ * ==========================
+ *   FILE: ./pfind.c
+ * ==========================
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -27,6 +33,8 @@ void fatal(char *);
 void get_path(char *, char **);
 struct stat * new_stat();
 int check_type(char c, mode_t item);
+int recurse_directory(char *, mode_t);
+int check_entry(char *, char, char *, char *, mode_t);
 /*
  * main()
  * Method: Process command-line arguments, if any, and then call get_log()
@@ -42,7 +50,6 @@ int check_type(char c, mode_t item);
 int main (int ac, char *av[])
 {
 	int i = 1;
-	int rv = 0;
 
 	//initialize variables to default values, changes with user options
 	char *path = NULL;
@@ -68,15 +75,15 @@ int main (int ac, char *av[])
 
 		i++;
 	}
-
-	printf("after processing, vars are %s, %s, %c\n", path, name, type);
+	
+//	printf("passed in vars are %s, %s, %c\n", path, name, type);
 	
 	if (path)
 		searchdir(path, name, type);
-// 	else
-// 		searchdir(".", name, type);
+	else
+		fatal("usage: pfind starting_path [-name ...] [-type ...]");
 
-	return rv;
+	return 0;
 }
 
 void get_path(char *val, char **path)
@@ -84,10 +91,7 @@ void get_path(char *val, char **path)
 	if(val[0] != '-')
 		*path = val;
 	else
-	{
-		fprintf(stderr, "not a valid path\n");
-		exit (1);
-	}
+		fatal("not a valid path");
 	
 	return;
 }
@@ -106,7 +110,10 @@ char * construct_path(char *parent, char *child)
 	if (newstr == NULL)
 		fatal("memory error: not enough memory to create new string\n");
 	
-	snprintf(newstr, PATHLEN, "%s/%s", parent, child);
+	if (strcmp(parent, child) == 0)
+		snprintf(newstr, PATHLEN, "%s", parent);
+	else
+		snprintf(newstr, PATHLEN, "%s/%s", parent, child);
 	
 	return newstr;
 }
@@ -121,6 +128,17 @@ struct stat * new_stat()
 	return new_stat;
 }
 
+/*
+ * searchdir()
+ * Purpose: Recursively search a directory, filtering output based on
+ *			optional findme and type parameters.
+ *   Input: dirname, path of the current directory to search
+ * 			findme, the pattern to look for/match against
+ * 			type, the kind of file to search for
+ *  Output: The path/filename for all matched entries. When findme and type
+ *			are not specified, all entries are printed to stdout.
+ * 
+ */
 void searchdir(char *dirname, char *findme, char type)
 {
 	//printf("passed in vars are %s, %s, %c\n", dirname, findme, type);
@@ -129,14 +147,14 @@ void searchdir(char *dirname, char *findme, char type)
 	struct dirent *dp = NULL;
 	struct stat *info = new_stat();
 	
-	//open the directory, exit on error
+	//open the directory, exit on error with message
 	if ( (current_dir = opendir(dirname)) == NULL)
 	{
 		perror(dirname);
 		exit(1);
 	}
 	
-	//iterate through all entries in the director
+	//iterate through all entries in the directory
 	while( (dp = readdir(current_dir)) != NULL )
 	{
 		char *full_path = construct_path(dirname, dp->d_name);
@@ -149,11 +167,16 @@ void searchdir(char *dirname, char *findme, char type)
 			continue;
 		}
 
-		//if either/both options specified, check against filter
+		if (check_entry(findme, type, dp->d_name, full_path, info->st_mode))
+			printf("%s\n", full_path);
+		
+/*		//if either/both options specified, check against filter
 		if (findme || type != '\0')
 		{
 			if (fnmatch(findme, dp->d_name, FNM_PERIOD) == 0)
 				printf("findme is %s and full_path is %s\n", findme, full_path);
+			else if (check_type(type, info->st_mode))
+				printf("type is %c and full_path is %s\n", c, full_path);
 			else
 				printf("does not match\n");
 			//printf("type is %c and check is %d\n", type, check_type(type, info->st_mode));
@@ -161,20 +184,21 @@ void searchdir(char *dirname, char *findme, char type)
 		else
 		{
 			printf("%s\t\tno options specified...\n", full_path);
-		}
+		}*/
 
-		if (S_ISDIR(info->st_mode))
-		{
-			if (strcmp(dp->d_name, ".") == 0 || strcmp(dp->d_name, "..") == 0)
-			{
-				//printf("current, or above dir. don't process\n");
-				continue;
-			}
-			
-			//printf("recurse now! full_path is %s\n", full_path);
-//			printf("%s\t%hu\n", full_path, info->st_mode);
+		if ( recurse_directory(dp->d_name, info->st_mode) == YES )
 			searchdir(full_path, findme, type);
-		}
+		
+		
+/*		if (S_ISDIR(info->st_mode))
+		{
+			//don't process the current or parent directory entries
+			if (strcmp(dp->d_name, ".") == 0 || strcmp(dp->d_name, "..") == 0)
+				continue;
+			
+			
+			searchdir(full_path, findme, type);
+		}*/
 /*		else
 		{
 			printf("%s\t%hu\n", full_path, info->st_mode);
@@ -188,6 +212,70 @@ void searchdir(char *dirname, char *findme, char type)
 	closedir(current_dir);
 	return;
 }
+
+/*
+ * recurse_directory()
+ * Purpose: check if the given directory entry is one we need to recurse
+ *   Input: name, the current entry in the directory
+ * 			mode, the current mode/type of file
+ *  Return: NO, the file mode is not a directory. Or, the file is a directory
+ * 				but it is either the current, ".", or parent, "..", entry.
+ *			YES, the entry is a subdirectory that we should recursively search
+ */
+int recurse_directory(char *name, mode_t mode)
+{
+	//if the file isn't a directory, also return NO
+	if (! S_ISDIR(mode) )
+		return NO;
+		
+	//shouldn't be processing the current or parent directory entries
+	if (strcmp(name, ".") == 0 || strcmp(name, "..") == 0)
+		return NO;
+	
+	return YES;
+}
+
+int check_entry(char *findme, char type, char *name, char *path, mode_t mode)
+{
+	//shouldn't be processing the current or parent directory entries
+	if (strcmp(name, "..") == 0)
+		return NO;
+	
+	if (strcmp(name, ".") == 0)
+	{
+		if (strcmp(name, path) == 0)
+			return YES;
+		else
+			return NO;
+	}
+		
+	//both are specified, check both
+	if (findme && type != '\0')
+	{
+		if (fnmatch(findme, path, FNM_PERIOD) == 0)
+			if(check_type(type, mode) == 1)
+				return YES;
+	}
+	//only findme specified
+	else if (findme)
+	{
+		if (fnmatch(findme, path, FNM_PERIOD) == 0)
+			return YES;
+	}
+	else if (type != '\0')
+	{
+		if (check_type(type, mode) == 1)
+			return YES;
+	}
+	else
+	{
+		return YES;		//no findme, type specified, so YES
+	}
+
+	return NO;	
+//	return YES;
+}
+
 
 /*
  *	get_option()
@@ -245,24 +333,31 @@ int check_type(char c, mode_t item)
 	
 	switch(c) {
 		case 'b':
+//			printf("case %c\t", c);
 			rv = S_ISBLK(item);
 			break;
 		case 'c':
+//			printf("case %c\t", c);
 			rv = S_ISCHR(item);
 			break;
 		case 'd':
+//			printf("case %c\t", c);
 			rv = S_ISDIR(item);
 			break;
 		case 'f':
+//			printf("case %c\t", c);
 			rv = S_ISREG(item);
 			break;
 		case 'l':
+//			printf("case %c\t", c);
 			rv = S_ISLNK(item);
 			break;
 		case 'p':
+//			printf("case %c\t", c);
 			rv = S_ISFIFO(item);
 			break;
 		case 's':
+//			printf("case %c\t", c);
 			rv = S_ISSOCK(item);
 			break;
 		default:
@@ -270,5 +365,5 @@ int check_type(char c, mode_t item)
 			break;
 	}
 	
-	return 0;
+	return rv;
 }

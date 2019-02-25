@@ -1,0 +1,14 @@
+.
+./pfind.o
+./reg.output
+./Makefile
+./Plan
+./burrow
+./burrow/a
+./burrow/a/d1
+./burrow/a/d1/d2
+./burrow/b
+./pfind
+./README
+./my.output
+./pfind.c
