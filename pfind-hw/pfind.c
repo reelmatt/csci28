@@ -194,10 +194,10 @@ void searchdir(char *dirname, char *findme, char type)
 	}
 	else
 	{
-		full_path = construct_path(dirname, "");	//
+		//full_path = construct_path(dirname, "");	//
 		
-		if (lstat(full_path, info) == -1)			//see if dir node is file
-			read_fatal(full_path);					//nope
+		if (lstat(dirname, info) == -1)			//see if dir node is file
+			read_fatal(dirname);					//nope
 		else if (check_entry(findme, type, dirname, dirname, info->st_mode))
 			printf("%s\n", dirname);				//it was a file, print
 
