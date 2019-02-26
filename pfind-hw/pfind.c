@@ -241,7 +241,7 @@ int check_entry(char *findme, char type, char *name, char *path, mode_t mode)
 	}
 	else											//no findme or type, so YES
 	{
-		printf("in check_entry, name is %s and path is %s\n", name, path);
+//		printf("in check_entry, name is %s and path is %s\n", name, path);
 		
 		if (strcmp(name, ".") == 0 && strcmp(name, path) != 0)
 			return NO;
