@@ -128,7 +128,7 @@ char * construct_path(char *parent, char *child)
 	if (newstr == NULL)
 		fatal("memory error: not enough memory to create new string\n", "");
 	
-	if (strcmp(parent, child) == 0)
+	if (strcmp(parent, child) == 0 || strcmp(child, "") == 0)
 		snprintf(newstr, PATHLEN, "%s", parent);
 	else
 		snprintf(newstr, PATHLEN, "%s/%s", parent, child);
@@ -171,40 +171,42 @@ void searchdir(char *dirname, char *findme, char type)
 	struct dirent *dp = NULL;
 	struct stat *info = new_stat();
 	
-
-	//open the directory, exit on error with message
-	if ( (current_dir = opendir(dirname)) == NULL)	//open the directory
+	if ( (current_dir = opendir(dirname)) != NULL)	//open was successful
 	{
-		full_path = construct_path(".", dirname);	//
+		//iterate through all entries in the directory
+		while( (dp = readdir(current_dir)) != NULL )
+		{
+			//turn parent/child into a single pathname
+			full_path = construct_path(dirname, dp->d_name);
+
+			if (lstat(full_path, info) == -1)
+			{
+				read_fatal(full_path);
+				continue;
+			}
+
+			if (check_entry(findme, type, dp->d_name, full_path, info->st_mode))
+				printf("%s\n", full_path);
+
+			if ( recurse_directory(dp->d_name, info->st_mode) == YES )
+				searchdir(full_path, findme, type);
+		}
+	}
+	else
+	{
+		full_path = construct_path(dirname, "");	//
 		
 		if (lstat(full_path, info) == -1)			//see if dir node is file
 			read_fatal(full_path);					//nope
 		else if (check_entry(findme, type, dirname, dirname, info->st_mode))
 			printf("%s\n", dirname);				//it was a file, print
 
-		return;		
-	}
-	
-	//iterate through all entries in the directory
-	while( (dp = readdir(current_dir)) != NULL )
-	{
-		full_path = construct_path(dirname, dp->d_name);
-
-		if (lstat(full_path, info) == -1)
-		{
-			read_fatal(full_path);
-			continue;
-		}
-
-		if (check_entry(findme, type, dp->d_name, full_path, info->st_mode))
-			printf("%s\n", full_path);
-
-		if ( recurse_directory(dp->d_name, info->st_mode) == YES )
-			searchdir(full_path, findme, type);
 		
-		free(full_path);
+		return;	
 	}
 	
+	
+	free(full_path);
 	closedir(current_dir);
 	return;
 }
