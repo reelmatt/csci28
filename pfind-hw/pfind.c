@@ -193,25 +193,8 @@ void searchdir(char *dirname, char *findme, char type)
 		if ( recurse_directory(dp->d_name, info->st_mode) == YES )
 			searchdir(full_path, findme, type);
 		
-		
-/*		if (S_ISDIR(info->st_mode))
-		{
-			//don't process the current or parent directory entries
-			if (strcmp(dp->d_name, ".") == 0 || strcmp(dp->d_name, "..") == 0)
-				continue;
-			
-			
-			searchdir(full_path, findme, type);
-		}*/
-/*		else
-		{
-			printf("%s\t%hu\n", full_path, info->st_mode);
-			//printf("full_path is %s\tinode is %llu\n", full_path, info->st_ino);
-		}
-*/		
 		free(full_path);
 	}
-	
 	
 	closedir(current_dir);
 	return;
@@ -245,41 +228,37 @@ int check_entry(char *findme, char type, char *name, char *path, mode_t mode)
 	if (strcmp(name, "..") == 0)
 		return NO;
 	
-	if (strcmp(name, ".") == 0)
+/*	if (strcmp(name, ".") == 0)
 	{
 		if (strcmp(name, path) == 0)
 			return YES;
 		else
 			return NO;
 	}
-		
-	//both are specified, check both
-	if (findme && type != '\0')
+*/		
+	if (findme && type != '\0')						//both args specified
 	{
 		if (fnmatch(findme, name, FNM_PERIOD) == 0)
 			if(check_type(type, mode) == 1)
 				return YES;
 	}
-	//only findme specified
-	else if (findme)
+	else if (findme)								//only "name" specified
 	{
-//		printf("ONLY findme specified\n");
 		if (fnmatch(findme, name, FNM_PERIOD) == 0)
 			return YES;
 		
 	}
-	else if (type != '\0')
+	else if (type != '\0')							//only "type" specified
 	{
 		if (check_type(type, mode) == 1)
 			return YES;
 	}
-	else
+	else											//no findme or type, so YES
 	{
-		return YES;		//no findme, type specified, so YES
+		return YES;
 	}
 
 	return NO;	
-//	return YES;
 }
 
 
