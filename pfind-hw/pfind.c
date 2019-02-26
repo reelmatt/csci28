@@ -162,7 +162,7 @@ void searchdir(char *dirname, char *findme, char type)
 	struct dirent *dp = NULL;
 	struct stat *info = new_stat();
 	
-	printf("in serachdir, dirname is %s\n", dirname);
+//	printf("in serachdir, dirname is %s\n", dirname);
 	//open the directory, exit on error with message
 	if ( (current_dir = opendir(dirname)) == NULL)
 	{
@@ -176,7 +176,7 @@ void searchdir(char *dirname, char *findme, char type)
 	while( (dp = readdir(current_dir)) != NULL )
 	{
 		char *full_path = construct_path(dirname, dp->d_name);
-		printf("\t\tentry is %s\n", full_path);
+//		printf("\t\tentry is %s\n", full_path);
 		if (lstat(full_path, info) == -1)
 		{
 			fatal(full_path, "");
@@ -252,15 +252,15 @@ int check_entry(char *findme, char type, char *name, char *path, mode_t mode)
 	//both are specified, check both
 	if (findme && type != '\0')
 	{
-		if (fnmatch(findme, path, FNM_PERIOD) == 0)
+		if (fnmatch(findme, name, FNM_PERIOD) == 0)
 			if(check_type(type, mode) == 1)
 				return YES;
 	}
 	//only findme specified
 	else if (findme)
 	{
-		printf("ONLY findme specified\n");
-		if (fnmatch(findme, path, FNM_PERIOD) == 0)
+//		printf("ONLY findme specified\n");
+		if (fnmatch(findme, name, FNM_PERIOD) == 0)
 			return YES;
 		
 	}
