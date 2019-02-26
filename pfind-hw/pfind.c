@@ -206,12 +206,20 @@ void searchdir(char *dirname, char *findme, char type)
 		}
 		else if (check_entry(findme, type, dirname, dirname, info->st_mode))
 		{
-			if ( ! S_ISDIR(info->st_mode))
+			if (S_ISDIR(info->st_mode))
+				read_fatal(dirname);
+				//printf("still a dir, shouldn't print\n");
+			else
 				printf("%s\n", dirname);				//it was a file, print
+
+
 //			printf("regular check_entry...\t\t");
 		}
 		else
 		{
+			//@@TO-Do
+			//this case works for the /etc -name passwd case
+			//but fails for "Makefile -name not-Makefile" case
 			read_fatal(dirname);
 //			printf("added new else clause... will it run?\n");
 //			perror(dirname);
