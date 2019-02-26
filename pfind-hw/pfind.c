@@ -160,15 +160,35 @@ void searchdir(char *dirname, char *findme, char type)
 	
 	DIR* current_dir;
 	struct dirent *dp = NULL;
+	char *full_path = NULL;
 	struct stat *info = new_stat();
 	
 //	printf("in serachdir, dirname is %s\n", dirname);
 	//open the directory, exit on error with message
 	if ( (current_dir = opendir(dirname)) == NULL)
 	{
-		fprintf(stderr, "%s: `%s': ", myname, dirname);
-		perror("");
-		return;
+		full_path = construct_path(".", dirname);
+		
+		if (lstat(full_path, info) == -1)		//try starting node as a file
+		{
+//			printf("in lstat if\n");
+			fprintf(stderr, "%s: `%s': ", myname, full_path);
+			perror("");
+//			fprintf(stderr, "\n");
+		}
+		else
+		{
+//			printf("in lstat else\n");
+			printf("%s\n", full_path);
+
+		}
+
+		return;		
+// 		fprintf(stderr, "%s: `%s': ", myname, full_path);
+// 		perror("");
+// 		return;		
+		
+		
 //		exit(1);
 	}
 	
@@ -176,7 +196,7 @@ void searchdir(char *dirname, char *findme, char type)
 	//iterate through all entries in the directory
 	while( (dp = readdir(current_dir)) != NULL )
 	{
-		char *full_path = construct_path(dirname, dp->d_name);
+		full_path = construct_path(dirname, dp->d_name);
 //		printf("\t\tentry is %s\n", full_path);
 		if (lstat(full_path, info) == -1)
 		{
@@ -255,7 +275,10 @@ int check_entry(char *findme, char type, char *name, char *path, mode_t mode)
 	}
 	else											//no findme or type, so YES
 	{
-		return YES;
+		if (strcmp(name, ".") == 0 && strcmp(name, path) != 0)
+			return NO;
+		else
+			return YES;
 	}
 
 	return NO;	
