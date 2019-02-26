@@ -88,8 +88,8 @@ void usage_fatal()
 void read_fatal(char *path)
 {
 	fprintf(stderr, "%s: `%s': ", myname, path);
-	perror(path);
-	fprintf(stderr, "\n");
+	perror("");
+//	fprintf(stderr, "\n");
 }
 
 void type_fatal(char *type)
@@ -195,11 +195,23 @@ void searchdir(char *dirname, char *findme, char type)
 	else
 	{
 		//full_path = construct_path(dirname, "");	//
-		
+//		printf("open not successful, trying as start file\n");
 		if (lstat(dirname, info) == -1)			//see if dir node is file
+		{
+//			printf("lstat failed, dirname was %s\n", dirname);
 			read_fatal(dirname);					//nope
-		else if (check_entry(findme, type, dirname, dirname, info->st_mode))
+		}
+		else if (check_entry(findme, 'f', dirname, dirname, info->st_mode))
+		{
+//			printf("regular check_entry...\t\t");
 			printf("%s\n", dirname);				//it was a file, print
+		}
+		else
+		{
+			read_fatal(dirname);
+//			printf("added new else clause... will it run?\n");
+//			perror(dirname);
+		}
 
 		
 		return;	
