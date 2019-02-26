@@ -159,37 +159,21 @@ void searchdir(char *dirname, char *findme, char type)
 	}
 	//dirname is NOT a dir
 	else if (errno == ENOTDIR)
-	{
-		
+	{	
 		//full_path = construct_path(dirname, "");	//
 //		printf("open not successful, trying as start file\n");
 		if (lstat(dirname, info) == -1)			//see if dir node is file
 		{
-//			printf("lstat failed, dirname was %s\n", dirname);
 			read_fatal(dirname);					//nope
 		}
 		else if (check_entry(findme, type, dirname, dirname, info->st_mode))
 		{
 			if (S_ISDIR(info->st_mode))
 				read_fatal(dirname);
-				//printf("still a dir, shouldn't print\n");
 			else
 				printf("%s\n", dirname);				//it was a file, print
-
-
-//			printf("regular check_entry...\t\t");
-		}
-/*		else
-		{
-			//@@TO-Do
-			//this case works for the /etc -name passwd case
-			//but fails for "Makefile -name not-Makefile" case
-			read_fatal(dirname);
-//			printf("added new else clause... will it run?\n");
-//			perror(dirname);
 		}
 
-	*/	
 		return;	
 	}
 	//otherwise, some other opendir error, just print error message
@@ -249,11 +233,16 @@ int check_entry(char *findme, char type, char *name, char *path, mode_t mode)
 	}
 	else if (type != '\0')							//only "type" specified
 	{
+		if (strcmp(name, ".") == 0 && strcmp(name, path) != 0)
+			return NO;
+			
 		if (check_type(type, mode) == 1)
 			return YES;
 	}
 	else											//no findme or type, so YES
 	{
+		printf("in check_entry, name is %s and path is %s\n", name, path);
+		
 		if (strcmp(name, ".") == 0 && strcmp(name, path) != 0)
 			return NO;
 		else
