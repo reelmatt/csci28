@@ -87,6 +87,7 @@ void usage_fatal()
 
 void read_fatal(char *path)
 {
+	//example -- ./pfind: `/tmp/pft.IO8Et0': Permission denied
 	fprintf(stderr, "%s: `%s': ", myname, path);
 	perror("");
 //	fprintf(stderr, "\n");
@@ -94,6 +95,7 @@ void read_fatal(char *path)
 
 void type_fatal(char *type)
 {
+	//example -- ./pfind: missing argument to `-name'
 	fprintf(stderr, "%s: missing argument to `%s'\n", myname, type);
 	exit(1);
 }
@@ -153,6 +155,7 @@ struct stat * new_stat()
 	return new_stat;
 }
 
+
 /*
  * searchdir()
  * Purpose: Recursively search a directory, filtering output based on
@@ -166,10 +169,10 @@ struct stat * new_stat()
  */
 void searchdir(char *dirname, char *findme, char type)
 {
-	DIR* current_dir;
-	char *full_path = NULL;
-	struct dirent *dp = NULL;
-	struct stat *info = new_stat();
+	DIR* current_dir;					//pointer to directory
+	char *full_path = NULL;				//path to file
+	struct dirent *dp = NULL;			//pointer to "file"
+	struct stat *info = new_stat();		//file info
 	
 	if ( (current_dir = opendir(dirname)) != NULL)	//open was successful
 	{
@@ -201,10 +204,11 @@ void searchdir(char *dirname, char *findme, char type)
 //			printf("lstat failed, dirname was %s\n", dirname);
 			read_fatal(dirname);					//nope
 		}
-		else if (check_entry(findme, 'f', dirname, dirname, info->st_mode))
+		else if (check_entry(findme, type, dirname, dirname, info->st_mode))
 		{
+			if ( ! S_ISDIR(info->st_mode))
+				printf("%s\n", dirname);				//it was a file, print
 //			printf("regular check_entry...\t\t");
-			printf("%s\n", dirname);				//it was a file, print
 		}
 		else
 		{
@@ -219,6 +223,7 @@ void searchdir(char *dirname, char *findme, char type)
 	
 	
 	free(full_path);
+	free(info);
 	closedir(current_dir);
 	return;
 }
@@ -251,14 +256,8 @@ int check_entry(char *findme, char type, char *name, char *path, mode_t mode)
 	if (strcmp(name, "..") == 0)
 		return NO;
 	
-/*	if (strcmp(name, ".") == 0)
-	{
-		if (strcmp(name, path) == 0)
-			return YES;
-		else
-			return NO;
-	}
-*/		
+	//see "else" condition below for handling "." directories
+		
 	if (findme && type != '\0')						//both args specified
 	{
 		if (fnmatch(findme, name, FNM_PERIOD) == 0)
