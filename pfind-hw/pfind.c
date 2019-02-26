@@ -35,6 +35,10 @@ struct stat * new_stat();
 int check_type(char c, mode_t item);
 int recurse_directory(char *, mode_t);
 int check_entry(char *, char, char *, char *, mode_t);
+void usage_fatal();
+void type_fatal(char *);
+void read_fatal(char *);
+
 /*
  * main()
  * Method: Process command-line arguments, if any, and then call get_log()
@@ -49,50 +53,49 @@ int check_entry(char *, char, char *, char *, mode_t);
  */
 int main (int ac, char **av)
 {
-	int i = 1;
-	myname = *av++;
+	myname = *av++;							//initialize to program name
 	
-	//initialize variables to default values, changes with user options
+	//variables set to default values for user options
 	char *path = NULL;
 	char *name = NULL;
 	char type = '\0';
 
-//	printf("before arg loop, av is %s\n", *av);
-	//see Note section above for more on option processing
+	//process command-line args
 	while (*av)
 	{
-// 		printf("in arg loop, av is %s\n", *av);
-		if (!path)
-		{
-			get_path(*av, &path);
-		}
-		else if(*av[0] == '-')
-		{
-			get_option(av, &name, &type);
-			av++;
-		}
-		else
-		{
-			fprintf(stderr, "usage: pfind starting_path [-name ...] [-type ...]\n");
-			exit(1);
-		}
+		if (!path)							//no starting_path has been given
+			get_path(*av, &path);			//fatal() if not valid
+		else								//check if args are valid options
+			get_option(av++, &name, &type);	//fatal() if not valid
 
-//		printf("\t\tpassed in vars are %s, %s, %c\n", path, name, type);
 		av++;
 	}
-	
-// 	printf("passed in vars are %s, %s, %c\n", path, name, type);
-// 	return 0;
-		
-	if (path)
-		searchdir(path, name, type);
+			
+	if (path)								//if path was specified
+		searchdir(path, name, type);		//perform find there, with options
 	else
-	{
-		fprintf(stderr, "usage: pfind starting_path [-name ...] [-type ...]\n");
-		exit(1);
-	}
-
+		usage_fatal();
+		
 	return 0;
+}
+
+void usage_fatal()
+{
+	fprintf(stderr, "usage: pfind starting_path [-name ...] [-type ...]\n");
+	exit(1);
+}
+
+void read_fatal(char *path)
+{
+	fprintf(stderr, "%s: `%s': ", myname, path);
+	perror(path);
+	fprintf(stderr, "\n");
+}
+
+void type_fatal(char *type)
+{
+	fprintf(stderr, "%s: missing argument to `%s'\n", myname, type);
+	exit(1);
 }
 
 void get_path(char *val, char **path)
@@ -133,6 +136,13 @@ char * construct_path(char *parent, char *child)
 	return newstr;
 }
 
+/*
+ * new_stat()
+ * Purpose: allocate memory for a stat struct, and check for errors
+ *  Return: a pointer to the newly allocated stat struct
+ *  Errors: if malloc fails, call fatal() to quit the program with an
+ *			error message.
+ */
 struct stat * new_stat()
 {
 	struct stat *new_stat = malloc(sizeof(struct stat));
@@ -156,54 +166,33 @@ struct stat * new_stat()
  */
 void searchdir(char *dirname, char *findme, char type)
 {
-//	printf("passed in vars are %s, %s, %c\n", dirname, findme, type);
-	
 	DIR* current_dir;
-	struct dirent *dp = NULL;
 	char *full_path = NULL;
+	struct dirent *dp = NULL;
 	struct stat *info = new_stat();
 	
-//	printf("in serachdir, dirname is %s\n", dirname);
-	//open the directory, exit on error with message
-	if ( (current_dir = opendir(dirname)) == NULL)
-	{
-		full_path = construct_path(".", dirname);
-		
-		if (lstat(full_path, info) == -1)		//try starting node as a file
-		{
-//			printf("in lstat if\n");
-			fprintf(stderr, "%s: `%s': ", myname, full_path);
-			perror("");
-//			fprintf(stderr, "\n");
-		}
-		else
-		{
-//			printf("in lstat else\n");
-			printf("%s\n", full_path);
 
-		}
+	//open the directory, exit on error with message
+	if ( (current_dir = opendir(dirname)) == NULL)	//open the directory
+	{
+		full_path = construct_path(".", dirname);	//
+		
+		if (lstat(full_path, info) == -1)			//see if dir node is file
+			read_fatal(full_path);					//nope
+		else if (check_entry(findme, type, dirname, dirname, info->st_mode))
+			printf("%s\n", dirname);				//it was a file, print
 
 		return;		
-// 		fprintf(stderr, "%s: `%s': ", myname, full_path);
-// 		perror("");
-// 		return;		
-		
-		
-//		exit(1);
 	}
 	
-//	printf("directory OPENED! %s\n", dirname);
 	//iterate through all entries in the directory
 	while( (dp = readdir(current_dir)) != NULL )
 	{
 		full_path = construct_path(dirname, dp->d_name);
-//		printf("\t\tentry is %s\n", full_path);
+
 		if (lstat(full_path, info) == -1)
 		{
-			fprintf(stderr, "%s: `%s': ", myname, full_path);
-			perror(full_path);
-			fprintf(stderr, "\n");
-			//fatal(full_path, "");
+			read_fatal(full_path);
 			continue;
 		}
 
@@ -288,11 +277,9 @@ int check_entry(char *findme, char type, char *name, char *path, mode_t mode)
 /*
  *	get_option()
  *	Purpose: process command line options
- *	  Input: opt, the char following the '-' flag
- *			 value, the argument following the [-utf] flag
- *			 user, pointer to store specified user
- *			 days, pointer to store specified time restriction
- *			 file, pointer to store specified file
+ *	  Input: args, the array pointer to command-line arguments
+ *			 name, pointer to store specified user
+ *			 type, pointer to store specified file type
  *	 Return: None. This function passes through pointers from main
  *			 to store the variables.
  *	 Errors: For the -u and -t options, parsing functions are called to
@@ -305,31 +292,28 @@ int check_entry(char *findme, char type, char *name, char *path, mode_t mode)
  */
 void get_option(char **args, char **name, char *type)
 {
-	char *option = *args++;
-	char *value = *args;
+	char *option = *args++;				//store option, then point to next arg
+	char *value = *args;				//store value for option (if any)
 	
 	if (strcmp(option, "-name") == 0)
+	{
 		if(value)
 			*name = value;
 		else
-		{
-			fprintf(stderr, "%s: missing argument to `-name'\n", myname);
-			exit(1);
-		}
+			type_fatal("-name");
+	}
 	else if (strcmp(option, "-type") == 0)
+	{
 		if (value)
-			*type = get_type(*args[0]);
+			*type = get_type(value[0]);
 		else
-		{
-			fprintf(stderr, "%s: missing argument to `-type'\n", myname);
-			exit(1);
-		}
+			type_fatal("-type");
+	}
 	else
 	{
 		fprintf(stderr, "%s: unknown predicate `%s'\n", myname, option);
 		exit(1);
 	}
-//		fatal("unknown predicate", opt);
 
 	return;
 }
@@ -346,7 +330,7 @@ char get_type(char c)
 		case 's':
 			break;
 		default:
-			fprintf(stderr, "find -type: %c: unknown type.\n", c);
+			fprintf(stderr, "%s: Unknown argument to -type: %c\n", myname, c);
 			exit (1);
 	}
 	
@@ -356,41 +340,25 @@ char get_type(char c)
 
 int check_type(char c, mode_t item)
 {
-	int rv = 0;
-	
 	switch(c) {
 		case 'b':
-//			printf("case %c\t", c);
-			rv = S_ISBLK(item);
-			break;
+			return S_ISBLK(item);
 		case 'c':
-//			printf("case %c\t", c);
-			rv = S_ISCHR(item);
-			break;
+			return S_ISCHR(item);
 		case 'd':
-//			printf("case %c\t", c);
-			rv = S_ISDIR(item);
-			break;
+			return S_ISDIR(item);
 		case 'f':
-//			printf("case %c\t", c);
-			rv = S_ISREG(item);
-			break;
+			return S_ISREG(item);
 		case 'l':
-//			printf("case %c\t", c);
-			rv = S_ISLNK(item);
-			break;
+			return S_ISLNK(item);
 		case 'p':
-//			printf("case %c\t", c);
-			rv = S_ISFIFO(item);
-			break;
+			return S_ISFIFO(item);
 		case 's':
-//			printf("case %c\t", c);
-			rv = S_ISSOCK(item);
-			break;
+			return S_ISSOCK(item);
 		default:
 			fprintf(stderr, "find -type: %c: unknown type.\n", c);
 			break;
 	}
 	
-	return rv;
+	return 0;
 }
