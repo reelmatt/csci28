@@ -166,7 +166,8 @@ void searchdir(char *dirname, char *findme, char type)
 	//open the directory, exit on error with message
 	if ( (current_dir = opendir(dirname)) == NULL)
 	{
-		perror(dirname);
+		fprintf(stderr, "%s: `%s': ", myname, dirname);
+		perror("");
 		return;
 //		exit(1);
 	}
@@ -179,7 +180,10 @@ void searchdir(char *dirname, char *findme, char type)
 //		printf("\t\tentry is %s\n", full_path);
 		if (lstat(full_path, info) == -1)
 		{
-			fatal(full_path, "");
+			fprintf(stderr, "%s: `%s': ", myname, full_path);
+			perror(full_path);
+			fprintf(stderr, "\n");
+			//fatal(full_path, "");
 			continue;
 		}
 
