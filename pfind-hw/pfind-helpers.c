@@ -11,7 +11,7 @@ char * construct_path(char *parent, char *child)
 	
 	//Get memory for newstr and check
 	if (newstr == NULL)
-		fatal("memory error: not enough memory to create new string\n", "");
+		fatal("", "memory error: not enough memory to create new string\n", "");
 	
 	if (strcmp(parent, child) == 0 || strcmp(child, "") == 0)
 		snprintf(newstr, PATHLEN, "%s", parent);
@@ -33,7 +33,7 @@ struct stat * new_stat()
 	struct stat *new_stat = malloc(sizeof(struct stat));
 	
 	if (new_stat == NULL)
-		fatal("memory error: could not allocate a stat struct\n", "");
+		fatal("", "memory error: could not allocate a stat struct\n", "");
 	
 	return new_stat;
 }
