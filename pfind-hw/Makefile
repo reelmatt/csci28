@@ -1,22 +1,22 @@
 # ----------------------------------------------------------
-# This is a makefile.  A makefile contains rules that tell
-# how to build a program, often from separate source files
+# Makefile for pfind
+# 
 #
-# This sample makefile shows how to build dumputmp from
-# the two source files dumputmp.c and utmplib.c
-#
-# You must modify this file so it contains rules to make
-# your solution to the project
-# (note: the indented lines MUST start with a single tab
 #
 
 GCC = gcc -Wall -Wextra -g
 
-pfind: pfind.o
-	$(GCC) -o pfind pfind.o
+pfind: pfind.o pfind-errors.o pfind-helpers.o
+	$(GCC) -o pfind pfind.o pfind-errors.o pfind-helpers.o
 
 pfind.o: pfind.c
 	$(GCC) -c pfind.c
+
+pfind-errors.o: pfind-errors.c
+	$(GCC) -c pfind-errors.c
+
+pfind-helpers.o: pfind-helpers.c
+	$(GCC) -c pfind-helpers.c
 
 clean:
 	rm -f *.o pfind

@@ -3,7 +3,6 @@
  *   FILE: ./pfind.c
  * ==========================
  */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,26 +10,9 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include <fnmatch.h>
+#include "pfind.h"
 
-#define NO 				0
-#define YES 			1
-#define PATHLEN			255
-
-static char *myname;	//used by fatal()
-
-char get_type(char);
-void get_option(char **, char **, char *);
-void searchdir(char *, char *, char);
-char * construct_path(char *, char *);
-void fatal(char *, char *);
-void get_path(char *, char **);
-struct stat * new_stat();
-int check_type(char c, mode_t item);
-int recurse_directory(char *, mode_t);
-int check_entry(char *, char, char *, char *, mode_t);
-void usage_fatal();
-void type_fatal(char *);
-void read_fatal(char *);
+static char *myname;	//used in pfind-error.c functions
 
 /*
  * main()
@@ -77,45 +59,10 @@ void get_path(char *val, char **path)
 	if(val[0] != '-')
 		*path = val;
 	else
-		fatal("not a valid path", "");
+		fatal(myname, "paths must precede expression:", "");
 	
 	return;
 }
-
-
-char * construct_path(char *parent, char *child)
-{
-	char *newstr = malloc(PATHLEN);
-	
-	//Get memory for newstr and check
-	if (newstr == NULL)
-		fatal("memory error: not enough memory to create new string\n", "");
-	
-	if (strcmp(parent, child) == 0 || strcmp(child, "") == 0)
-		snprintf(newstr, PATHLEN, "%s", parent);
-	else
-		snprintf(newstr, PATHLEN, "%s/%s", parent, child);
-	
-	return newstr;
-}
-
-/*
- * new_stat()
- * Purpose: allocate memory for a stat struct, and check for errors
- *  Return: a pointer to the newly allocated stat struct
- *  Errors: if malloc fails, call fatal() to quit the program with an
- *			error message.
- */
-struct stat * new_stat()
-{
-	struct stat *new_stat = malloc(sizeof(struct stat));
-	
-	if (new_stat == NULL)
-		fatal("memory error: could not allocate a stat struct\n", "");
-	
-	return new_stat;
-}
-
 
 /*
  * searchdir()
@@ -146,7 +93,7 @@ void searchdir(char *dirname, char *findme, char type)
 
 			if (lstat(full_path, info) == -1)
 			{
-				read_fatal(full_path);
+				read_fatal(myname, full_path);
 				continue;
 			}
 
@@ -164,28 +111,35 @@ void searchdir(char *dirname, char *findme, char type)
 //		printf("open not successful, trying as start file\n");
 		if (lstat(dirname, info) == -1)			//see if dir node is file
 		{
-			read_fatal(dirname);					//nope
+			read_fatal(myname, dirname);					//nope
 		}
 		else if (check_entry(findme, type, dirname, dirname, info->st_mode))
 		{
 			if (S_ISDIR(info->st_mode))
-				read_fatal(dirname);
+				read_fatal(myname, dirname);
 			else
 				printf("%s\n", dirname);				//it was a file, print
 		}
-
+		printf("the errno was ENOTDIR\n");
 		return;	
 	}
 	//otherwise, some other opendir error, just print error message
 	else
 	{
-		read_fatal(dirname);
+		printf("there was some other error\n");
+		read_fatal(myname, dirname);
+		return;
+		
 	}
 	
+	printf("about to free things...\n");
 	
 	free(full_path);
+	printf("freed full_path\n");
 	free(info);
+	printf("freed info\n");
 	closedir(current_dir);
+	printf("closed the dir\n");
 	return;
 }
 
@@ -279,14 +233,14 @@ void get_option(char **args, char **name, char *type)
 		if(value)
 			*name = value;
 		else
-			type_fatal("-name");
+			type_fatal(myname, "-name");
 	}
 	else if (strcmp(option, "-type") == 0)
 	{
 		if (value)
 			*type = get_type(value[0]);
 		else
-			type_fatal("-type");
+			type_fatal(myname, "-type");
 	}
 	else
 	{
@@ -358,35 +312,4 @@ int check_type(char c, mode_t item)
 	return 0;
 }
 
-void fatal(char *s1, char *s2)
-{
-	fprintf(stderr, "%s: `%s' ", myname, s1);
-	
-	if (strcmp(s2, "") != 0)
-		perror(s2);
-	else
-		fprintf(stderr, "\n");
-	
-	exit(1);
-}
 
-void usage_fatal()
-{
-	fprintf(stderr, "usage: pfind starting_path [-name ...] [-type ...]\n");
-	exit(1);
-}
-
-void read_fatal(char *path)
-{
-	//example -- ./pfind: `/tmp/pft.IO8Et0': Permission denied
-	fprintf(stderr, "%s: `%s': ", myname, path);
-	perror("");
-//	fprintf(stderr, "\n");
-}
-
-void type_fatal(char *type)
-{
-	//example -- ./pfind: missing argument to `-name'
-	fprintf(stderr, "%s: missing argument to `%s'\n", myname, type);
-	exit(1);
-}
