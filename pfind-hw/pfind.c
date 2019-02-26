@@ -9,6 +9,7 @@
 #include <string.h>
 #include <dirent.h>
 #include <sys/stat.h>
+#include <errno.h>
 #include <fnmatch.h>
 
 #define NO 				0
@@ -16,15 +17,7 @@
 #define PATHLEN			255
 
 static char *myname;	//used by fatal()
-/*
-	 b       block special
-	 c       character special
-	 d       directory
-	 f       regular file
-	 l       symbolic link
-	 p       FIFO
-	 s       socket
- */
+
 char get_type(char);
 void get_option(char **, char **, char *);
 void searchdir(char *, char *, char);
@@ -79,27 +72,6 @@ int main (int ac, char **av)
 	return 0;
 }
 
-void usage_fatal()
-{
-	fprintf(stderr, "usage: pfind starting_path [-name ...] [-type ...]\n");
-	exit(1);
-}
-
-void read_fatal(char *path)
-{
-	//example -- ./pfind: `/tmp/pft.IO8Et0': Permission denied
-	fprintf(stderr, "%s: `%s': ", myname, path);
-	perror("");
-//	fprintf(stderr, "\n");
-}
-
-void type_fatal(char *type)
-{
-	//example -- ./pfind: missing argument to `-name'
-	fprintf(stderr, "%s: missing argument to `%s'\n", myname, type);
-	exit(1);
-}
-
 void get_path(char *val, char **path)
 {
 	if(val[0] != '-')
@@ -110,17 +82,6 @@ void get_path(char *val, char **path)
 	return;
 }
 
-void fatal(char *s1, char *s2)
-{
-	fprintf(stderr, "%s: `%s' ", myname, s1);
-	
-	if (strcmp(s2, "") != 0)
-		perror(s2);
-	else
-		fprintf(stderr, "\n");
-	
-	exit(1);
-}
 
 char * construct_path(char *parent, char *child)
 {
@@ -174,7 +135,8 @@ void searchdir(char *dirname, char *findme, char type)
 	struct dirent *dp = NULL;			//pointer to "file"
 	struct stat *info = new_stat();		//file info
 	
-	if ( (current_dir = opendir(dirname)) != NULL)	//open was successful
+	//dirname is a dir, and one we have permission to open
+	if ( (current_dir = opendir(dirname)) != NULL)
 	{
 		//iterate through all entries in the directory
 		while( (dp = readdir(current_dir)) != NULL )
@@ -195,8 +157,10 @@ void searchdir(char *dirname, char *findme, char type)
 				searchdir(full_path, findme, type);
 		}
 	}
-	else
+	//dirname is NOT a dir
+	else if (errno == ENOTDIR)
 	{
+		
 		//full_path = construct_path(dirname, "");	//
 //		printf("open not successful, trying as start file\n");
 		if (lstat(dirname, info) == -1)			//see if dir node is file
@@ -215,7 +179,7 @@ void searchdir(char *dirname, char *findme, char type)
 
 //			printf("regular check_entry...\t\t");
 		}
-		else
+/*		else
 		{
 			//@@TO-Do
 			//this case works for the /etc -name passwd case
@@ -225,8 +189,13 @@ void searchdir(char *dirname, char *findme, char type)
 //			perror(dirname);
 		}
 
-		
+	*/	
 		return;	
+	}
+	//otherwise, some other opendir error, just print error message
+	else
+	{
+		read_fatal(dirname);
 	}
 	
 	
@@ -339,6 +308,22 @@ void get_option(char **args, char **name, char *type)
 	return;
 }
 
+/*
+ * get_type()
+ * Purpose: initial check to see if -type is supported
+ *   Input: c, the char to check
+ *  Return: c, the same char pass in, if one of 'bcdflps'. Otherwise,
+ *			error is printed and program exits.
+ * Options: the following options are allowed, as per <sys/stat.h>, and
+ *			the 'find' command.
+ *				b	block special
+ *				c	character special
+ *				d	directory
+ *				f	regular file
+ *				l	symbolic link
+ *				p	FIFO
+ *				s	socket
+ */
 char get_type(char c)
 {
 	switch (c) {
@@ -382,4 +367,37 @@ int check_type(char c, mode_t item)
 	}
 	
 	return 0;
+}
+
+void fatal(char *s1, char *s2)
+{
+	fprintf(stderr, "%s: `%s' ", myname, s1);
+	
+	if (strcmp(s2, "") != 0)
+		perror(s2);
+	else
+		fprintf(stderr, "\n");
+	
+	exit(1);
+}
+
+void usage_fatal()
+{
+	fprintf(stderr, "usage: pfind starting_path [-name ...] [-type ...]\n");
+	exit(1);
+}
+
+void read_fatal(char *path)
+{
+	//example -- ./pfind: `/tmp/pft.IO8Et0': Permission denied
+	fprintf(stderr, "%s: `%s': ", myname, path);
+	perror("");
+//	fprintf(stderr, "\n");
+}
+
+void type_fatal(char *type)
+{
+	//example -- ./pfind: missing argument to `-name'
+	fprintf(stderr, "%s: missing argument to `%s'\n", myname, type);
+	exit(1);
 }
