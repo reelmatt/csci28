@@ -102,6 +102,8 @@ void searchdir(char *dirname, char *findme, char type)
 
 			if ( recurse_directory(dp->d_name, info->st_mode) == YES )
 				searchdir(full_path, findme, type);
+			
+			free(full_path);
 		}
 	}
 	//dirname is NOT a dir

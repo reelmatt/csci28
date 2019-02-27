@@ -2,47 +2,83 @@
     Date: 3/2/2019
 Contains: Design details for CSCI E-215 homework 2
 ==================================================
+//@@TO-DO:
+	--not calling free() for all full_path strings that are malloc()ed.
+	--investigate increasing path buffer size if path is longer than PATHLEN
+	--clean up/refactor code
+
 
 Project: pfind
 
-Purpose: A program to display a list of last logins.
+Purpose: Search directories and subdirectories for files matching criteria.
 
 Outline:
-	alastlog reads a lastlog file, defaults to /var/log/lastlog, and presents
-	the contents in human-readable form. For each entry, the Username,
-	Port (line), From (host), and Latest login time is displayed.
+	pfind recursively searches, depth-first, through directories and any
+	subdirectories it encounters, starting with a provided path. If no options
+	are specified by the user, pfind prints all files it encounters. Users are
+	allowed to specified either a search query -- i.e. "*.c" or "Makefile".
+	Users can also specify a file type. If one, or both, options are specified
+	pfind will filter the results.
 
 Arguments:
-	alastlog accepts three user options, -u, -t, and -f to specify a user, a
-	date limit on entries, and a different data file respectively. See the
-	Input section for more details.
+	Proper usage for the pfind program is as follows:
+		./pfind starting_path [-name file-or-pattern] [-type {b|c|d|f|l|p|s}]
+	
+	The starting path must be specified, and be the first argument. The -name
+	and -type arguments are optional, can appear in any order, but must not
+	appear more than once. See the Input section below for more details
+	about the options for -name and -type.
 		
 Input:
-	alastlog is controlled via the command line and accepts -u, -t, and -f
-	options. The usage and purpose of each is as follows:
-		[-u USER]: 	a USER name or ID is specified and results are
-					restricted to that single user. Multiple users/ranges
-					are not supported.
-		[-t DAYS]:	an amount of time, in DAYS, allows you to restrict output
-					to logins that have happened within the last number of
-					days.
-		[-f FILE]:	an alternate lastlog FILE to read from. By default,
-					alastlog reads from /var/log/lastlog. Using the -f option
-					changes the default behavior.
+	pfind is controlled via the command line. It requires a starting path and
+	optionally allows for a filename/pattern to be specified and/or a file
+	type.
 	
+	starting_path: a simple get_path() function prints an error message if
+			 the argument provided begins with a '-', which indicates an
+			 option. Otherwise, whatever the string entered by the user is
+			 stored. If it was an invalid path, an error message will be
+			 called later in the program.
+	
+	[-name]: 
+	
+	[-type]: Compared with the st_mode value of a given file after lstat() is
+			 called. The following are the types specified in <sys/stat.h>
+			 with the corresponding letters being those used in the system find
+			 command.
+					b: block special
+					c: character special
+					d: directory
+					f: regular file
+					l: symbolic link
+					p: FIFO
+					s: socket
+
 Output:
-	The output is fixed-width fields including Username, Port, From,
-	and Latest columns. The latest login field is displayed with a time format
-	of "Mon Dec 17 11:14:39 -0500 2018", for example. Columns are 16, 8, and
-	16 chars for Username, Port, and From respectively. TIMESIZE is defined
-	as 32 chars.
+	The output is a list of paths-to-filenames, sorted according to the order
+	of directory entries returned by readdir(). pfind performs a recursive,
+	depth-first search, so the contents of a subdirectory, if any, will precede
+	the remaining entries in the current/parent directory.
 	
-	alastlog uses read() to get data from the file and uses printf to format and
-	output results. 
+	pfind uses a helper function, construct_path(), to build the path to the
+	current file being examined. If no user-options are specified, or it
+	matches the options specified, printf() outputs it to the screen.
+	
+	There are two exceptions that relate to directories, the "." and ".."
+	entries. ".." entries will be skipped, both in the output and in the
+	recursive search (see Program Flow for why). "." entries will also be
+	skipped, because they are equivalent to previous output. For example,
+	if you start a pfind search in /usr, "bin" is one of the entries; a
+	directory. pfind will open "bin" and start recursively searching. "."
+	is skipped because that is equivalent to "/usr/bin", which has already
+	been output.
 
 Data Structures:
-	The main logic exists in alastlog.c while the open, read, seek, and close
-	functions, along with buffering, exist in lllib.c
+	The main logic exists in pfind.c. Error-handling functions are located in
+	pfind-errors.c and other helper functions are located in pfind-helpers.c.
+
+	The helper functions deal with allocating memory and work as follows:
+		construct_path: calls malloc() to create a string to store
 	
 	The functions work as follows:
 		ll_open: Opens the file and returns the file descriptor for the lastlog
@@ -97,7 +133,8 @@ Program Flow:
 		specified, and in all cases close the lastlog file.
 
 Files:
-	alastlog reads a file of lastlog records. Per the man page for lastlog,
-	entries are sorted by their order in /etc/passwd and that is how
-	alastlog works as well. See Arguments and Input sections
-	above for more info about location of the lastlog file.
+	pfind uses opendir, readdir, and closedir to process directory entries,
+	which are the files on disk. pfind uses readdir() to get the name of a
+	file and lstat() to get information about the file, like the type. See
+	Output, Data Structures, and Program Flow for more information about
+	pfind reads and processes these directory entries.
