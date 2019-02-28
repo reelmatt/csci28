@@ -98,7 +98,7 @@ void searchdir(char *dirname, char *findme, char type)
 
 			if (lstat(full_path, info) == -1)
 			{
-				fprintf(stderr, "%s: `%s': %s", progname, full_path, strerror(errno));
+				fprintf(stderr, "%s: `%s': %s\n", progname, full_path, strerror(errno));
 //				read_fatal(progname, full_path);
 				continue;
 			}
@@ -124,13 +124,13 @@ void searchdir(char *dirname, char *findme, char type)
 //		printf("open not successful, trying as start file\n");
 		if (lstat(dirname, info) == -1)			//see if dir node is file
 		{
-			fprintf(stderr, "%s: `%s': %s", progname, dirname, strerror(errno));
+			fprintf(stderr, "%s: `%s': %s\n", progname, dirname, strerror(errno));
 //			read_fatal(progname, dirname);					//nope
 		}
 		else if (check_entry(findme, type, dirname, dirname, info->st_mode))
 		{
 			if (S_ISDIR(info->st_mode))
-				fprintf(stderr, "%s: `%s': %s", progname, dirname, strerror(errno));
+				fprintf(stderr, "%s: `%s': %s\n", progname, dirname, strerror(errno));
 //				read_fatal(progname, dirname);
 			else
 				printf("%s\n", dirname);				//it was a file, print
@@ -141,7 +141,7 @@ void searchdir(char *dirname, char *findme, char type)
 	//otherwise, some other opendir error, just print error message
 	else
 	{
-		fprintf(stderr, "%s: `%s': %s", progname, dirname, strerror(errno));
+		fprintf(stderr, "%s: `%s': %s\n", progname, dirname, strerror(errno));
 //		printf("there was some other error\n");
 //		read_fatal(progname, dirname);
 		return;
