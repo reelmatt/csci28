@@ -102,6 +102,7 @@ void searchdir(char *dirname, char *findme, int type)
 	//dirname is not a dir, test for starting node as file
 	if ( (current_dir = opendir(dirname)) == NULL )
 	{
+//		fprintf(stderr, "problem opening dir...\n");
 		//get stat on initial entry
 		if (lstat(dirname, info) == -1)
 		{
@@ -109,7 +110,13 @@ void searchdir(char *dirname, char *findme, int type)
 			return;
 		}
 		
-		if (check_entry(findme, type, dirname, dirname, "", info->st_mode))
+		if(S_ISDIR(info->st_mode))
+		{
+			fprintf(stderr, "%s: `%s': %s\n", progname, dirname, strerror(errno));
+			return;
+		}
+
+		if (check_entry(findme, type, dirname, dirname, dirname, info->st_mode))
 			printf("%s\n", dirname);
 	}
 	else
@@ -226,7 +233,7 @@ int recurse_directory(char *name, mode_t mode)
 
 int check_entry(char *findme, int type, char *full_path, char *dirname, char *fname, mode_t mode)
 {
-	//printf("\t\tin check_entry, full_path is %s, dirname is %s and fname is %s\n", full_path, dirname, fname);
+//	printf("\t\tin check_entry, full_path is %s, dirname is %s and fname is %s\n", full_path, dirname, fname);
 	//shouldn't be processing the current or parent directory entries
 // 	if (strcmp(fname, "..") == 0)
 // 		return NO;
@@ -239,6 +246,7 @@ int check_entry(char *findme, int type, char *full_path, char *dirname, char *fn
 	//check if name is specified and filter if no match
 	if(findme)
 	{
+//		printf("checking findme...\n");
 		if(fnmatch(findme, fname, FNM_NOESCAPE) != 0)
 			return NO;
 	}
@@ -246,6 +254,7 @@ int check_entry(char *findme, int type, char *full_path, char *dirname, char *fn
 	//check if type is specified and filter if no match
 	if(type != 0)
 	{
+//		printf("checking type...\n");
 		if(check_type(type, mode) == NO)
 			return NO;
 	}
@@ -255,6 +264,8 @@ int check_entry(char *findme, int type, char *full_path, char *dirname, char *fn
 	
 	if (strcmp(fname, ".") == 0 && strcmp(fname, dirname) != 0)
 			return NO;
+
+//	printf("passed all checks, returning YES\n");
 
 /*		
 	if (findme && type != 0)						//both args specified
