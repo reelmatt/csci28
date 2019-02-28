@@ -13,7 +13,7 @@ char * construct_path(char *parent, char *child)
 	if (newstr == NULL)
 		fatal("", "memory error: not enough memory to create new string\n", "");
 	
-	if (strcmp(parent, child) == 0 || strcmp(child, "") == 0)
+	if (strcmp(parent, child) == 0 || strcmp(parent, "") == 0)
 		snprintf(newstr, PATHLEN, "%s", parent);
 	else
 		snprintf(newstr, PATHLEN, "%s/%s", parent, child);

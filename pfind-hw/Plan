@@ -6,6 +6,7 @@ Contains: Design details for CSCI E-215 homework 2
 	--not calling free() for all full_path strings that are malloc()ed.
 	--investigate increasing path buffer size if path is longer than PATHLEN
 	--clean up/refactor code
+	--beware double // in file path names
 
 
 Project: pfind

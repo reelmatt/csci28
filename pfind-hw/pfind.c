@@ -10,10 +10,10 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include <fnmatch.h>
+#include <libgen.h>
 #include "pfind.h"
 
 static char *progname;	//used in pfind-error.c functions
-static int searchmode;	//convert -type char into constant, get rid of?
 /*
  * main()
  * Method: Process command-line arguments, if any, and then call get_log()
@@ -33,7 +33,7 @@ int main (int ac, char **av)
 	//variables set to default values for user options
 	char *path = NULL;
 	char *name = NULL;
-	char type = '\0';
+	int type = 0;
 
 	//process command-line args
 	while (*av)
@@ -46,7 +46,7 @@ int main (int ac, char **av)
 		av++;
 		ac++;
 	}
-			
+	
 	if (path)								//if path was specified
 		searchdir(path, name, type);		//perform find there, with options
 	else
@@ -76,17 +76,69 @@ void get_path(char *val, char **path)
  *			are not specified, all entries are printed to stdout.
  * 
  */
-void searchdir(char *dirname, char *findme, char type)
+void searchdir(char *dirname, char *findme, int type)
 {
-	DIR* current_dir;					//pointer to directory
-	char *full_path = NULL;				//path to file
-	struct dirent *dp = NULL;			//pointer to "file"
+//	printf("\n\nstarting search...\n");
 	struct stat *info = new_stat();		//file info
-//	int searchmode = ;
+	char *full_path = NULL;				//path to file
+	DIR* current_dir;					//pointer to directory
+	struct dirent *dp = NULL;			//pointer to "file"
 	
-//	if (check_entry(findme, type, dirname, dirname, info->st_mode))
-//		printf("%s\n", dirname);
+/*	//get stat on initial entry
+	if (lstat(dirname, info) == -1)
+	{
+		fprintf(stderr, "%s: `%s': %s\n", progname, dirname, strerror(errno)); //read err
+		return;
+	}
+
+
+//	char *full_path = construct_path(dirname, );
 	
+	//check the first entry
+	if (check_entry(findme, type, dirname, dirname, "", info->st_mode))
+		printf("%s\n", dirname);
+	
+*/
+	//dirname is not a dir, test for starting node as file
+	if ( (current_dir = opendir(dirname)) == NULL )
+	{
+		//get stat on initial entry
+		if (lstat(dirname, info) == -1)
+		{
+			fprintf(stderr, "%s: `%s': %s\n", progname, dirname, strerror(errno)); //read err
+			return;
+		}
+		
+		if (check_entry(findme, type, dirname, dirname, "", info->st_mode))
+			printf("%s\n", dirname);
+	}
+	else
+	{
+		//read through entries
+		while( (dp = readdir(current_dir)) != NULL )
+		{
+			//turn parent/child into a single pathname
+			full_path = construct_path(dirname, dp->d_name);
+
+			if (lstat(full_path, info) == -1)
+			{
+				fprintf(stderr, "%s: `%s': %s\n", progname, full_path, strerror(errno));
+				continue;
+			}
+
+			if (check_entry(findme, type, full_path, dirname, dp->d_name, info->st_mode))
+				printf("%s\n", full_path);
+
+			if ( recurse_directory(dp->d_name, info->st_mode) == YES )
+				searchdir(full_path, findme, type);
+			
+			//free(full_path);
+		}	
+	}
+//there was an error
+//fprintf(stderr, "%s: `%s': %s\n", progname, dirname, strerror(errno));
+	
+/*	
 	//dirname is a dir, and one we have permission to open
 	if ( (current_dir = opendir(dirname)) != NULL)
 	{
@@ -99,14 +151,8 @@ void searchdir(char *dirname, char *findme, char type)
 			if (lstat(full_path, info) == -1)
 			{
 				fprintf(stderr, "%s: `%s': %s\n", progname, full_path, strerror(errno));
-//				read_fatal(progname, full_path);
 				continue;
 			}
-
-//			printf("testing bitmasking...\t");
-//			int searchmode = S_IFREG;
-//			int searchmode = (char) S_IFREG;
-//			printf("%d\n", (S_IFMT & info->st_mode) == searchmode);
 
 			if (check_entry(findme, type, dp->d_name, full_path, info->st_mode))
 				printf("%s\n", full_path);
@@ -124,18 +170,15 @@ void searchdir(char *dirname, char *findme, char type)
 //		printf("open not successful, trying as start file\n");
 		if (lstat(dirname, info) == -1)			//see if dir node is file
 		{
-			fprintf(stderr, "%s: `%s': %s\n", progname, dirname, strerror(errno));
-//			read_fatal(progname, dirname);					//nope
+			fprintf(stderr, "%s: `%s': %s\n", progname, dirname, strerror(errno)); //nope
 		}
 		else if (check_entry(findme, type, dirname, dirname, info->st_mode))
 		{
 			if (S_ISDIR(info->st_mode))
 				fprintf(stderr, "%s: `%s': %s\n", progname, dirname, strerror(errno));
-//				read_fatal(progname, dirname);
 			else
 				printf("%s\n", dirname);				//it was a file, print
 		}
-//		printf("the errno was ENOTDIR\n");
 		return;	
 	}
 	//otherwise, some other opendir error, just print error message
@@ -147,15 +190,15 @@ void searchdir(char *dirname, char *findme, char type)
 		return;
 		
 	}
-	
+	*/
 	//printf("about to free things...\n");
-	
+/*	
 	free(full_path);
 	//printf("freed full_path\n");
 	free(info);
 	//printf("freed info\n");
 	closedir(current_dir);
-	//printf("closed the dir\n");
+	//printf("closed the dir\n");*/
 	return;
 }
 
@@ -171,39 +214,64 @@ void searchdir(char *dirname, char *findme, char type)
 int recurse_directory(char *name, mode_t mode)
 {
 	//if the file isn't a directory, also return NO
-	if (! S_ISDIR(mode) )
+	if (! S_ISDIR(mode) || strcmp(name, ".") == 0 || strcmp(name, "..") == 0)
 		return NO;
 		
 	//shouldn't be processing the current or parent directory entries
-	if (strcmp(name, ".") == 0 || strcmp(name, "..") == 0)
-		return NO;
+// 	if (strcmp(name, ".") == 0 || strcmp(name, "..") == 0)
+// 		return NO;
 	
 	return YES;
 }
 
-int check_entry(char *findme, char type, char *name, char *path, mode_t mode)
+int check_entry(char *findme, int type, char *full_path, char *dirname, char *fname, mode_t mode)
 {
+	//printf("\t\tin check_entry, full_path is %s, dirname is %s and fname is %s\n", full_path, dirname, fname);
 	//shouldn't be processing the current or parent directory entries
-	if (strcmp(name, "..") == 0)
-		return NO;
+// 	if (strcmp(fname, "..") == 0)
+// 		return NO;
+// 	
+
+
 	
 	//see "else" condition below for handling "." directories
-		
-	if (findme && type != '\0')						//both args specified
+
+	//check if name is specified and filter if no match
+	if(findme)
 	{
-		if (fnmatch(findme, name, FNM_PERIOD) == 0)
+		if(fnmatch(findme, fname, FNM_NOESCAPE) != 0)
+			return NO;
+	}
+	
+	//check if type is specified and filter if no match
+	if(type != 0)
+	{
+		if(check_type(type, mode) == NO)
+			return NO;
+	}
+
+	if (strcmp(fname, "..") == 0)
+		return NO;
+	
+	if (strcmp(fname, ".") == 0 && strcmp(fname, dirname) != 0)
+			return NO;
+
+/*		
+	if (findme && type != 0)						//both args specified
+	{
+		if (fnmatch(findme, fname, FNM_NOESCAPE) == 0)
 			if(check_type(type, mode) == 1)
 				return YES;
 	}
 	else if (findme)								//only "name" specified
 	{
-		if (fnmatch(findme, name, FNM_PERIOD) == 0)
+		if (fnmatch(findme, fname, FNM_NOESCAPE) == 0)
 			return YES;
 		
 	}
-	else if (type != '\0')							//only "type" specified
+	else if (type != 0)							//only "type" specified
 	{
-		if (strcmp(name, ".") == 0 && strcmp(name, path) != 0)
+		if (strcmp(fname, ".") == 0 && strcmp(fname, dirname) != 0)
 			return NO;
 			
 		if (check_type(type, mode) == 1)
@@ -213,14 +281,20 @@ int check_entry(char *findme, char type, char *name, char *path, mode_t mode)
 	{
 //		printf("in check_entry, name is %s and path is %s\n", name, path);
 //		printf("else in check_entry\t");
-		if (strcmp(name, ".") == 0 && strcmp(name, path) != 0)
+
+
+
+// 		if(strcmp(fname, dirname) != 0)
+// 			return YES;
+
+		if (strcmp(fname, ".") == 0 && strcmp(fname, path) != 0)
 //			printf("returning no...\t%s\n", path);
 			return NO;
 		else
 			return YES;
 	}
-
-	return NO;	
+*/
+	return YES;	
 }
 
 
@@ -240,7 +314,7 @@ int check_entry(char *findme, char type, char *name, char *path, mode_t mode)
  *			 to output a message to stderr and exit with a non-zero status.
  *			 See also, errors above for invalid input.
  */
-void get_option(char **args, char **name, char *type)
+void get_option(char **args, char **name, int *type)
 {
 	char *option = *args++;				//store option, then point to next arg
 	char *value = *args;				//store value for option (if any)
@@ -284,8 +358,10 @@ void get_option(char **args, char **name, char *type)
  *				p	FIFO
  *				s	socket
  */
-char get_type(char c)
+int get_type(char c)
 {
+	int searchmode;
+	
 	switch (c) {
 		case 'b':
 			searchmode = S_IFBLK;
@@ -313,38 +389,16 @@ char get_type(char c)
 			exit (1);
 	}
 	
-	return c;
+	return searchmode;
 }
 
 
-int check_type(char c, mode_t item)
+int check_type(int type, mode_t item)
 {
-	if ( (S_IFMT & item) == searchmode )
+	if ( (S_IFMT & item) == type )
 		return YES;
 	else
 		return NO;
-/*
-	switch(c) {
-		case 'b':
-			return S_ISBLK(item);
-		case 'c':
-			return S_ISCHR(item);
-		case 'd':
-			return S_ISDIR(item);
-		case 'f':
-			return S_ISREG(item);
-		case 'l':
-			return S_ISLNK(item);
-		case 'p':
-			return S_ISFIFO(item);
-		case 's':
-			return S_ISSOCK(item);
-		default:
-			fprintf(stderr, "find -type: %c: unknown type.\n", c);
-			break;
-	}
-*/
-//	return 0;
 }
 
 

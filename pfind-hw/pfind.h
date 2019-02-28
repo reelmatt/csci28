@@ -10,13 +10,13 @@
 #define PATHLEN			255
 
 /* function declarations for pfind.c */
-void searchdir(char *, char *, char);
+void searchdir(char *, char *, int);
 int recurse_directory(char *, mode_t);
-int check_entry(char *, char, char *, char *, mode_t);
-int check_type(char c, mode_t item);
+int check_entry(char *, int, char *, char *, char *, mode_t);
+int check_type(int, mode_t);
 
-char get_type(char);
-void get_option(char **, char **, char *);
+int get_type(char);
+void get_option(char **, char **, int *);
 void get_path(char *, char **);
 
 /* function delcarations for pfind-errors.c */
