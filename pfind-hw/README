@@ -15,10 +15,34 @@ Summary:
 	typescript  -- a sample run, including the lib215 test script
 
 Recursive Tools:
-	chown	-- 
-	diff	--
-	getfacl	--
+	chown	-- change file owner and group
+	    sample command line:
+	            chown -R mst611 ~/homework_files/
+	            
+	    description: With the recursive option, chown will change the
+	                 owner/group for all files in a specified directory.
+	                 In the command line above, 'chown' will make the user
+	                 mst611 (me), the owner of all files/directories in the
+	                 "homework_files" directory.
 
+	diff	-- compare files line by line
+	    sample command line:
+	            diff -r test_output_a/ test_output_b/
+
+	    description: With the recursive option, diff will compare the files
+	                 and subdirectories it encounters to each other.
+	                 "Regular" diff compares the two files specified, while
+	                 the -r option can be used to compare directories full of
+	                 files.
+
+	getfacl	-- get file access control lists
+        sample command line: 
+                getfacl -R ~/pfind-hw/
+                
+        description: With the recursive option, getfacl acts similarly to
+                     the -lR option for 'ls'. getfacl will recursively print
+                     the name of the file, the owner, group, and the
+                     permissions ("rwx") for user, group, and other.
 
 Open File Limit:
 

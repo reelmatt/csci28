@@ -17,7 +17,7 @@ void fatal(char *myname, char *s1, char *s2)
 	exit(1);
 }
 
-void usage_fatal()
+void syntax_fatal()
 {
 	fprintf(stderr, "usage: pfind starting_path [-name ...] [-type ...]\n");
 	exit(1);

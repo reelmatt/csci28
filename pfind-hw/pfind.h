@@ -20,7 +20,7 @@ void get_option(char **, char **, int *);
 void get_path(char **, char **, char **, int *);
 
 /* function delcarations for pfind-errors.c */
-void usage_fatal();
+void syntax_fatal();
 void type_fatal(char *, char *);
 void read_fatal(char *, char *);
 void fatal(char *, char *, char *);
