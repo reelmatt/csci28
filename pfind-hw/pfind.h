@@ -17,7 +17,7 @@ int check_type(int, mode_t);
 
 int get_type(char);
 void get_option(char **, char **, int *);
-void get_path(char *, char **);
+void get_path(char **, char **, char **, int *);
 
 /* function delcarations for pfind-errors.c */
 void usage_fatal();

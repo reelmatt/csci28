@@ -7,6 +7,7 @@ Contains: Design details for CSCI E-215 homework 2
 	--investigate increasing path buffer size if path is longer than PATHLEN
 	--clean up/refactor code
 	--beware double // in file path names
+	--check/investigate hard-coding of ".." exclusions
 
 
 Project: pfind
