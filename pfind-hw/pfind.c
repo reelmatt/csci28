@@ -17,14 +17,13 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include <fnmatch.h>
-#include <libgen.h>
+//#include <libgen.h>
 
 /* CONSTANTS */
 #define NO 				0
 #define YES 			1
-#define PATHLEN			255
 
-/* FUNCTIONS */
+/* MAIN LOGIC FUNCTIONS */
 void searchdir(char *, char *, int);
 int recurse_directory(char *, mode_t);
 int check_entry(char *, int, char *, char *, mode_t);
@@ -33,7 +32,7 @@ void process_file(char *, char *, int);
 void process_dir(char *, char *, int, DIR *);
 char * construct_path(char *, char *);
 
-/* OPTION PROCESSING */
+/* OPTION PROCESSING FUNCTIONS */
 int get_type(char);
 void get_option(char **, char **, int *);
 void get_path(char **, char **, char **, int *);
@@ -293,9 +292,15 @@ void process_dir(char *dirname, char *findme, int type, DIR *search)
 		if ( recurse_directory(dp->d_name, info.st_mode) == YES )
 			searchdir(full_path, findme, type);
 		
+		//printf("about to free full_path, current: %s\n", full_path);
 		//free(full_path);
 	}	
 
+	if(full_path != NULL)
+	{
+		//printf("FREEING AT END...Problem?: %s\n", full_path);
+		free(full_path);
+	}
 }
 
 /*
@@ -378,29 +383,37 @@ int get_type(char c)
 /*
  *	construct_path()
  *	Purpose: 
- *	  Input: 
- *	 Return: 
+ *	  Input: parent,
+ *			 child, 
+ *	 Return: pointer to full path string allocated by malloc()
  */
 char * construct_path(char *parent, char *child)
 {
-//	char *newstr = malloc(PATHLEN);
 	int path_size = 1 + strlen(parent) + 1 + strlen(child);
-	
 	char *newstr = malloc(path_size);
 	
 	//Get memory for newstr and check
 	if (newstr == NULL)
 	{
 		fprintf(stderr, "mem error: not enough memory to create new string\n");
-		exit(1);
+		return NULL;
 	}
 	
-// 	newstr = cp_string(newstr, parent, child);
+	int rv;
+
 	if (strcmp(parent, child) == 0 || strcmp(parent, "") == 0)
-		snprintf(newstr, path_size, "%s", parent);
+		rv = sprintf(newstr, "%s", parent);
+	else if (parent[strlen(parent) - 1] == '/' || child[0] == '/')
+		rv = sprintf(newstr, "%s%s", parent, child);
 	else
-		snprintf(newstr, path_size, "%s/%s", parent, child);
+		rv = sprintf(newstr, "%s/%s", parent, child);
 	
+	//check for sprintf errors
+	if ( rv < 0 || rv > (path_size - 1) )
+	{
+		fprintf(stderr, "%s: failed to construct path\n", progname);
+	}
+
 	return newstr;
 }
 
@@ -438,19 +451,23 @@ void file_error(char *path)
  *	  Input: opt, 
  *			 value,
  *	 Return: 
+ *  Example: "./pfind: missing argument to `-name'"
  */
 void type_error(char *opt, char *value)
 {
-	//example -- "./pfind: missing argument to `-name'"
+	//output program name
+	fprintf(stderr, "%s: ", progname);
+
+	//one of two accepted options, but previously declared/missing arg
 	if(strcmp(opt, "-name") == 0 || strcmp(opt, "-type") == 0)
 	{
 		if(value)
-			fprintf(stderr, "%s: option already declared: `%s'\n", progname, opt);	
+			fprintf(stderr, "option already declared: `%s'\n", opt);	
 		else
-			fprintf(stderr, "%s: missing argument to `%s'\n", progname, opt);
+			fprintf(stderr, "missing argument to `%s'\n", opt);
 	}
 	else
-		fprintf(stderr, "%s: unknown predicate `%s'\n", progname, opt);
+		fprintf(stderr, "unknown predicate `%s'\n", opt);
 		
 	exit(1);
 }

@@ -8,8 +8,6 @@ Summary:
   This submission contains the files:
 	README		-- this file
 	pfind.c     -- main logic to process options and display lastlog contents
-	lllib.c     -- library functions to open, close, read, and buffer lastlog
-	lllib.h     -- header file for lllib
 	Plan        -- design document for this assignment
 	Makefile	-- the Makefile
 	typescript  -- a sample run, including the lib215 test script
@@ -45,21 +43,50 @@ Recursive Tools:
                      permissions ("rwx") for user, group, and other.
 
 Open File Limit:
-
-
+    My solution to the open file limit would be to implement a incorporate a    
+    series of linked lists to store the names of all files and directories. For
+    this implementation, each node in the linked list would include the name of
+    the file and a link to the next node. New nodes are inserted at the end of
+    the linked list, thereby sorting entries in the order they were encountered.
+    
+    This solution would minimize the resources used and file descriptors that
+    remain open by reading all directory entries into the linked list. Similar
+    to my implementation for the homework submission, opendir() would be called
+    to open a directory, and if opened, readdir() would read successive entries
+    into the linked list, using strcpy() to copy the file names, d_name, into
+    the name portion of the linked list.
+    
+    Upon readdir() returning NULL, the linked list would contain all directory
+    entries in the order they appeared. For each node in the linked list, a
+    call to lstat() would get information on each file, checked against the
+    criteria specified by the user (a -name or -type option), and output if
+    matched. Then, a helper function would check if the file referenced by
+    the current node in the linked list is a directory to be searched -- a
+    task that recurse_directory() performs in my actual submission.
+    
+    If a node refers to a subdirectory (not "." or ".." - as that would cause
+    a recursion loop), then the same process is repeated. The current directory
+    name is passed along to construct the full path and a new linked list is
+    created to store the entries of the subdirectory. The subdirectory is opened
+    and closed at the start to prevent the file descriptor from being occupied,
+    and the linked list is traversed.
+    
+    Upon reaching the end of a given linked list, the "next" field points to
+    NULL, the function returns and we are brought back to the previous linked
+    list and continue. Once all linked lists are traversed, the search is
+    complete and the program returns.
 
 Notes:
-	A lot of the code to implement buffering was copied from the sample files
-	provided in this assignment, utmplib.c and utmp.h. These are the same as
-	ones written in lecture #2 for implementing the who program. I modified
-	the code to work with lastlog structs (as opposed to utmp structs), and
-	added ll_seek() to assist with loading the buffer from the correct position.
+	My pfind program uses some ideas I learned/copied from previous assignments
+	in Bruce's CSCI e26 class in the fall of 2018. Mainly, the idea of the
+	file-scope variable "progname" to keep track of the program name
+	("./pfind") to be used in helper functions that output messages to stderr
+	and exit. Also, construct_path is a helper function that I modified from a
+	"new_string" function I wrote/used in homeworks #4 and #5. For pfind, the
+	function also performs the task of concatenating the parent and child
+	strings; my original "new_string" function only malloc()ed memory and
+	exit(1) if there was an error.
 	
-	For buffering, I set the NRECS value to 512, but also tested with values of
-	1, 2, 16, and 2048 to make sure the buffer worked properly. See my plan for 
-	more on buffering, but the tl;dr is when loading a new buffer, it reads 
-	NRECS in, with the requested record at the start of the index.
-
 	I wrote my code using a combination of BBEdit on the Mac, and server-side
 	editing using Emacs. Indentation should be 4-space wide tabs. I checked
 	the display of code before submission, and it looked good in Emacs and

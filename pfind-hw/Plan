@@ -4,9 +4,6 @@ Contains: Design details for CSCI E-215 homework 2
 ==================================================
 //@@TO-DO:
 	--not calling free() for all full_path strings that are malloc()ed.
-	--investigate increasing path buffer size if path is longer than PATHLEN
-	--clean up/refactor code
-	--beware double // in file path names
 	--check/investigate hard-coding of ".." exclusions
 
 
@@ -108,6 +105,33 @@ Data Structures:
 	lastlog file and read records 512-1023.
 
 Program Flow:
+     1 - Process user options and store arguments in three variables: path,
+         name, and type. A path argument cannot being with a '-' as that
+         symbolizes an option. Accepted options are "-name" and "-type".
+         If a "-type" is specified, the helper function get_type() returns
+         the corresponding bitmask specified in <sys/stat.h>.
+     2 - Call on searchdir() with the user options. A path must be specified
+         otherwise it is a syntax error. Name and type need not be specified,
+         and default to NULL and 0 respectively.
+     3 - Treat the path, "dirname", specified on the command line as a
+         directory and try to open with a call to opendir().
+    3a - If opendir() fails, call on process_file() to treat the starting
+         path as a file. Call lstat() to retrieve file info and check if
+         the file type *was* a directory. If so, there was an error with
+         opendir() and we should print an error message and return. Else,
+         compare the file name and info with the criteria specified by the
+         user. If it matches, output the name of the file.
+    3b - If opendir() succeeds, call on process_dir() to iterate through
+         all entries in the directory. For each entry read in by readdir(),
+         call lstat() to retrieve file info and compare the name/info with
+         the criteria specified by the user. If it matches, output the name
+         of the file.
+    3c - Next, check to see if the current entry is a directory, and if so,
+         recursively call searchdir() with the current path as "dirname".
+         
+    
+    
+
 	1 - Process user options and store any arguments in three
 		variables: user, days, and file to be used later on (if specified).
 		For the -u and -t, check immediately whether the user/time are valid,
