@@ -330,7 +330,7 @@ int check_entry(char *findme, int type, char *dirname, char *fname, mode_t mode)
 		return NO;
 		
 	//check if type is specified and filter if no match
-	if( (type != 0) && ((S_IFMT & mode) != type) )
+	if( (type != 0) && ((S_IFMT & mode) != (unsigned) type) )
 		return NO;
 
 	if (strcmp(fname, "..") == 0)
