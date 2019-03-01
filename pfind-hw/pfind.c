@@ -8,6 +8,8 @@
  *
  *
  */
+ 
+ /* INCLUDES */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -16,12 +18,35 @@
 #include <errno.h>
 #include <fnmatch.h>
 #include <libgen.h>
-#include "pfind.h"
 
-void process_file(char *, char *, int, struct stat *);
-void process_dir(char *, char *, int, DIR *, struct dirent *, struct stat *);
+/* CONSTANTS */
+#define NO 				0
+#define YES 			1
+#define PATHLEN			255
 
-static char *progname;	//used in pfind-error.c functions
+/* FUNCTIONS */
+void searchdir(char *, char *, int);
+int recurse_directory(char *, mode_t);
+int check_entry(char *, int, char *, char *, mode_t);
+int check_type(int, mode_t);
+void process_file(char *, char *, int);
+void process_dir(char *, char *, int, DIR *);
+char * construct_path(char *, char *);
+
+/* OPTION PROCESSING */
+int get_type(char);
+void get_option(char **, char **, int *);
+void get_path(char **, char **, char **, int *);
+
+/* ERROR FUNCTIONS */
+void syntax_error();
+void type_error(char *, char *);
+void file_error(char *);
+
+/* FILE-SCOPE VARIABLES*/
+static char *progname;			//used for error-reporting
+
+
 /*
  * main()
  *  Method: Process command-line arguments, if any, and then call searchdir()
@@ -52,7 +77,7 @@ int main (int ac, char **av)
 	progname = *av++;							//initialize to program name
 	
 	if(ac > 6)
-		syntax_fatal();							//syntax error, see above
+		syntax_error();							//syntax error, see above
 
 	while (*av)									//process command-line args
 	{
@@ -67,7 +92,7 @@ int main (int ac, char **av)
 	if (path)									//if path was specified
 		searchdir(path, name, type);			//perform find there
 	else
-		syntax_fatal();							//otherwise, syntax error
+		syntax_error();							//otherwise, syntax error
 		
 	return 0;
 }
@@ -108,12 +133,59 @@ void get_path(char **args, char **path, char **name, int *type)
 		//otherwise, general syntax error
 		else
 		{
-			syntax_fatal();
+			syntax_error();
 		}
 
 		exit(1);
 	}
 	
+	return;
+}
+
+
+/*
+ *	get_option()
+ *	Purpose: process command line options
+ *	  Input: args, the array pointer to command-line arguments
+ *			 name, pointer to store specified user
+ *			 type, pointer to store specified file type
+ *	 Return: None. This function passes through pointers from main
+ *			 to store the variables.
+ *	 Errors: If there is an invalid option (not -name or -type), missing value,
+ *			 or an option has already been declared, type_error() is called
+ *			 to output a message to stderr and exit with a non-zero status.
+ *			 See also, errors above for invalid input.
+ *	   Note: Each option that appears, must have a corresponding value.
+ *			 The order the options appear in does not matter, but they can
+ *			 only appear once.
+ */
+void get_option(char **args, char **name, int *type)
+{
+	char *option = *args++;				//store option, then point to next arg
+	char *value = *args;				//store value for option (if any)
+	
+	//the name option, not previously declared
+	if (strcmp(option, "-name") == 0 && (*name == NULL))
+	{
+		if( value )											//option exists
+			*name = value;
+		else
+			type_error(option, value);						//missing arg
+	}
+	//the type option, not previously declared
+	else if (strcmp(option, "-type") == 0 && *type == 0)
+	{
+		if (value)											//option exists
+			*type = get_type(value[0]);
+		else
+			type_error(option, value);						//missing arg
+	}
+	//either an unknown predicate, or is repeat of -name or -type
+	else
+	{
+		type_error(option, value);
+	}
+
 	return;
 }
 
@@ -124,95 +196,101 @@ void get_path(char **args, char **path, char **name, int *type)
  *   Input: dirname, path of the current directory to search
  * 			findme, the pattern to look for/match against
  * 			type, the kind of file to search for
- *  Output: The path/filename for all matched entries. When findme and type
- *			are not specified, all entries are printed to stdout.
- * 
+ *  Output: searchdir() calls on two helper functions -- process_file()
+ *			and process_dir() -- to match a file/entries within a directory
+ *			to the, optionally, specified criteria. If they match, those
+ *			functions will print to stdout.
+ *  Method: searchdir() initially tests to see if it can open a directory
+ *			with name of "dirname". In this case, searchdir() next tries
+ *			to see if the starting path specified by "dirname" is actually
+ *			a file. Otherwise, it iterates recursively though all entries in
+ *			the directory with help of process_dir().
  */
 void searchdir(char *dirname, char *findme, int type)
 {
-
-	struct stat info;					//file info
-//	struct stat *info = new_stat();		//file info
-//	char *full_path = NULL;				//path to file
-	DIR* current_dir;					//pointer to directory
-	struct dirent *dp = NULL;			//pointer to "file"
+	DIR* current_dir = opendir(dirname);		//attempt to open dir
 	
-	//dirname is not a dir, test for starting node as file
-	if ( (current_dir = opendir(dirname)) == NULL )
-	{
-		process_file(dirname, findme, type, &info);
-	}
+	if ( current_dir == NULL )					//couldn't open dir
+		process_file(dirname, findme, type);	//try using 'dirname' as file
 	else
-	{
-		process_dir(dirname, findme, type, current_dir, dp, &info);
-	}
+		process_dir(dirname, findme, type, current_dir);
 
-	//printf("about to free things...\n");
-/*	
-	free(full_path);
-	//printf("freed full_path\n");
-	free(info);
-	//printf("freed info\n");
-	closedir(current_dir);
-	//printf("closed the dir\n");*/
+	if(current_dir)
+		closedir(current_dir);
+
 	return;
 }
 
 /*
  *	process_file()
- *	Purpose: 
- *	  Input: 
- *	 Return: 
+ *	Purpose: Check to see if "dirname" references a file instead of a dir.
+ *	  Input: dirname, used as the name of a file
+ * 			 findme, the pattern to look for/match against
+ * 			 type, the kind of file to search for
+ *	 Return: If "dirname" is a file that matches the criteria, the name
+ *			 will be printed to stdout. In all other cases, the function
+ *			 returns.
+ *   Errors: If lstat() fails, file_error() is called to print to stderr.
+ *			 See man page for lstat for kinds of possible errors. An error
+ *			 also occurs if the "dirname" given is actually a directory.
+ *			 See man page for opendir for kinds of possible errors. Most
+ *			 common cases are EACCES and ENOENT errors.
  */
-void process_file(char *dirname, char *findme, int type, struct stat *info)
+void process_file(char *dirname, char *findme, int type)
 {
+	struct stat info;
+	
 	//get stat on initial entry
-	if (lstat(dirname, info) == -1)
+	if (lstat(dirname, &info) == -1)
 	{
-		fprintf(stderr, "%s: `%s': %s\n", progname, dirname, strerror(errno)); //read err
+		file_error(dirname);
 		return;
 	}
 	
-	//check to see if it was a dir, just didn't have permissions
-	if(S_ISDIR(info->st_mode))
+	//check to see if it was an error from opendir()
+	if(S_ISDIR(info.st_mode))
 	{
-		fprintf(stderr, "%s: `%s': %s\n", progname, dirname, strerror(errno));
+		file_error(dirname);
 		return;
 	}
 
 	//filter start path/file according to criteria
-	if (check_entry(findme, type, dirname, dirname, dirname, info->st_mode))
+	if (check_entry(findme, type, dirname, dirname, info.st_mode))
 		printf("%s\n", dirname);
 }
 
 /*
  *	process_dir()
- *	Purpose: 
- *	  Input: 
+ *	Purpose: Check all entries in an open directory and match against criteria
+ *	  Input: dirname, path of the current directory to search
+ * 			 findme, the pattern to look for/match against
+ * 			 type, the kind of file to search for
  *	 Return: 
  */
-void 
-process_dir(char *dirname, char *findme, int type, DIR *search,
-			struct dirent *dp, struct stat *info)
+void process_dir(char *dirname, char *findme, int type, DIR *search)
 {
-	char *full_path = NULL;
+	struct dirent *dp = NULL;			//pointer to "file"
+	struct stat info;					//file info
+	char *full_path = NULL;				//store full path
 	
 	//read through entries
 	while( (dp = readdir(search)) != NULL )
 	{
 		//turn parent/child into a single pathname
 		full_path = construct_path(dirname, dp->d_name);
-
-		if (lstat(full_path, info) == -1)
+	//	printf("in process_dir, full path is %s\n", full_path);
+		
+		if (lstat(full_path, &info) == -1)
 		{
-			fprintf(stderr, "%s: `%s': %s\n", progname, full_path, strerror(errno));
+//			printf("in process_dir, lstat() error\n");
+			file_error(full_path);
 			continue;
 		}
 
-		if (check_entry(findme, type, full_path, dirname, dp->d_name, info->st_mode))
+		if (check_entry(findme, type, dirname, dp->d_name, info.st_mode))
 			printf("%s\n", full_path);
 
-		if ( recurse_directory(dp->d_name, info->st_mode) == YES )
+		if ( recurse_directory(dp->d_name, info.st_mode) == YES )
 			searchdir(full_path, findme, type);
 		
 		//free(full_path);
@@ -245,7 +323,7 @@ int recurse_directory(char *name, mode_t mode)
  *	  Input: 
  *	 Return: 
  */
-int check_entry(char *findme, int type, char *full_path, char *dirname, char *fname, mode_t mode)
+int check_entry(char *findme, int type, char *dirname, char *fname, mode_t mode)
 {
 	//check if name is specified and filter if no match
 	if(findme && fnmatch(findme, fname, FNM_NOESCAPE) != 0)
@@ -255,67 +333,13 @@ int check_entry(char *findme, int type, char *full_path, char *dirname, char *fn
 	if( (type != 0) && ((S_IFMT & mode) != type) )
 		return NO;
 
-/*
-	//check if type is specified and filter if no match
-	if(type != 0 && check_type(type, mode) == NO)
-		return NO;
-*/
-//	if (strcmp(fname, dirname) != 0 )
-
 	if (strcmp(fname, "..") == 0)
 		return NO;
 	
 	if (strcmp(fname, ".") == 0 && strcmp(fname, dirname) != 0)
-			return NO;
+		return NO;
 
 	return YES;	
-}
-
-
-/*
- *	get_option()
- *	Purpose: process command line options
- *	  Input: args, the array pointer to command-line arguments
- *			 name, pointer to store specified user
- *			 type, pointer to store specified file type
- *	 Return: None. This function passes through pointers from main
- *			 to store the variables.
- *	 Errors: Each criterion can only appear once. If the name or type
- *			 variables have been initialized, 
- *	 Errors: For the -u and -t options, parsing functions are called to
- *			 determine if the input is valid. extract_user() obtains the
- *			 passwd entry, or exits if not found/invalid. parse_time()
- *			 changes the text input into a number, or exits if not valid.
- *	  Notes: If there is an invalid option (not -utf), fatal is called
- *			 to output a message to stderr and exit with a non-zero status.
- *			 See also, errors above for invalid input.
- */
-void get_option(char **args, char **name, int *type)
-{
-	char *option = *args++;				//store option, then point to next arg
-	char *value = *args;				//store value for option (if any)
-	
-	if (strcmp(option, "-name") == 0)
-	{
-		if( value && (*name == NULL) )
-			*name = value;
-		else
-			type_fatal(progname, "-name");
-	}
-	else if (strcmp(option, "-type") == 0)
-	{
-		if (value && *type == 0)
-			*type = get_type(value[0]);
-		else
-			type_fatal(progname, "-type");
-	}
-	else
-	{
-		fprintf(stderr, "%s: unknown predicate `%s'\n", progname, option);
-		exit(1);
-	}
-
-	return;
 }
 
 /*
@@ -324,33 +348,27 @@ void get_option(char **args, char **name, int *type)
  *   Input: c, the char to check
  *  Return: the bitmask associated with the -type specified. If -type is
  *			not a valid option, print message to stderr and exit.
- * Options: the following options are allowed, as per <sys/stat.h>, and
- *			the 'find' command.
- *				b	block special
- *				c	character special
- *				d	directory
- *				f	regular file
- *				l	symbolic link
- *				p	FIFO
- *				s	socket
+ * Options: the following options are allowed, as per <sys/stat.h>, the
+ *			'find' command, and the homework spec: {b|c|d|f|l|p|s}. See
+ *			inline comments below for the types they represent.
  */
 int get_type(char c)
 {
 	switch (c) {
 		case 'b':
-			return S_IFBLK;
+			return S_IFBLK;		//block special
 		case 'c':
-			return S_IFCHR;
+			return S_IFCHR;		//character special
 		case 'd':
-			return S_IFDIR;	
+			return S_IFDIR;		//directory
 		case 'f':
-			return S_IFREG;	
+			return S_IFREG;		//regular file
 		case 'l':
-			return S_IFLNK;
+			return S_IFLNK;		//symbolic link
 		case 'p':
-			return S_IFIFO;
+			return S_IFIFO;		//FIFO
 		case 's':
-			return S_IFSOCK;
+			return S_IFSOCK;	//socket
 		default:
 			fprintf(stderr, "%s: Unknown argument to -type: %c\n", progname, c);
 			exit (1);
@@ -365,33 +383,74 @@ int get_type(char c)
  */
 char * construct_path(char *parent, char *child)
 {
-	char *newstr = malloc(PATHLEN);
+//	char *newstr = malloc(PATHLEN);
+	int path_size = 1 + strlen(parent) + 1 + strlen(child);
+	
+	char *newstr = malloc(path_size);
 	
 	//Get memory for newstr and check
 	if (newstr == NULL)
-		fatal("", "memory error: not enough memory to create new string\n", "");
+	{
+		fprintf(stderr, "mem error: not enough memory to create new string\n");
+		exit(1);
+	}
 	
+// 	newstr = cp_string(newstr, parent, child);
 	if (strcmp(parent, child) == 0 || strcmp(parent, "") == 0)
-		snprintf(newstr, PATHLEN, "%s", parent);
+		snprintf(newstr, path_size, "%s", parent);
 	else
-		snprintf(newstr, PATHLEN, "%s/%s", parent, child);
+		snprintf(newstr, path_size, "%s/%s", parent, child);
 	
 	return newstr;
 }
 
 /*
- * new_stat()
- * Purpose: allocate memory for a stat struct, and check for errors
- *  Return: a pointer to the newly allocated stat struct
- *  Errors: if malloc fails, call fatal() to quit the program with an
- *			error message.
+ *	syntax_error()
+ *	Purpose: Helper function to display error message and exit.
+ *	 Return: This function is called when a syntax error occurs. It
+ *			 displays the message and exits with value of 1.
  */
-struct stat * new_stat()
+void syntax_error()
 {
-	struct stat *new_stat = malloc(sizeof(struct stat));
-	
-	if (new_stat == NULL)
-		fatal("", "memory error: could not allocate a stat struct\n", "");
-	
-	return new_stat;
+	fprintf(stderr, "usage: pfind starting_path [-name ...] [-type ...]\n");
+	exit(1);
+}
+
+/*
+ *	file_error()
+ *	Purpose: Helper function to display error message.
+ *	  Input: path, the full path of the file there was an error with
+ *	 Return: Prints an error message with program name, the full path,
+ *			 and the error message set by errno. After printing, the
+ *			 function returns to continue to search through any remaining
+ *			 files.
+ */
+void file_error(char *path)
+{
+	//example -- "./pfind: `/tmp/pft.IO8Et0': Permission denied"
+	fprintf(stderr, "%s: `%s': %s\n", progname, path, strerror(errno));
+	return;
+}
+
+/*
+ *	type_error()
+ *	Purpose: Helper function to display error message for command-line options
+ *	  Input: opt, 
+ *			 value,
+ *	 Return: 
+ */
+void type_error(char *opt, char *value)
+{
+	//example -- "./pfind: missing argument to `-name'"
+	if(strcmp(opt, "-name") == 0 || strcmp(opt, "-type") == 0)
+	{
+		if(value)
+			fprintf(stderr, "%s: option already declared: `%s'\n", progname, opt);	
+		else
+			fprintf(stderr, "%s: missing argument to `%s'\n", progname, opt);
+	}
+	else
+		fprintf(stderr, "%s: unknown predicate `%s'\n", progname, opt);
+		
+	exit(1);
 }

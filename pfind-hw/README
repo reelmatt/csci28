@@ -7,7 +7,7 @@ Summary:
 
   This submission contains the files:
 	README		-- this file
-	alastlog.c  -- main logic to process options and display lastlog contents
+	pfind.c     -- main logic to process options and display lastlog contents
 	lllib.c     -- library functions to open, close, read, and buffer lastlog
 	lllib.h     -- header file for lllib
 	Plan        -- design document for this assignment
