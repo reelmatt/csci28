@@ -135,15 +135,14 @@ void get_path(char **args, char **path, char **name, int *type)
 		
 		if(*args)						//assume remaining arg is start path
 		{
-			fprintf(stderr, "%s: paths must precede expression: \n", progname);
+			fprintf(stderr, "%s: paths must precede expression: ", progname);
 			fprintf(stderr, "%s\n", *args);
+			syntax_error();
 		}
 		else							//otherwise, general syntax error
 		{
 			syntax_error();
 		}
-
-		exit(1);
 	}
 	
 	return;
@@ -298,7 +297,6 @@ void process_dir(char *dirname, char *findme, int type, DIR *search)
 			continue;
 		}
 		
-
 		//filter start path/file according to criteria
 		if (check_entry(findme, type, dirname, dp->d_name, info.st_mode))
 			printf("%s\n", full_path);
@@ -342,7 +340,7 @@ int recurse_directory(char *name, mode_t mode)
 int check_entry(char *findme, int type, char *dirname, char *fname, mode_t mode)
 {
 	//check if name is specified and filter if no match
-	if(findme && fnmatch(findme, fname, FNM_NOESCAPE) != 0)
+	if(findme && fnmatch(findme, fname, FNM_PERIOD) != 0)
 		return NO;
 		
 	//check if type is specified and filter if no match
@@ -413,7 +411,7 @@ char * construct_path(char *parent, char *child)
 		return NULL;
 
 	//Concatenate "parent/child"
-	if (strcmp(parent, child) == 0 || strcmp(parent, "") == 0)
+	if (strcmp(parent, child) == 0)
 		rv = sprintf(newstr, "%s", parent);
 	else if (parent[strlen(parent) - 1] == '/' || child[0] == '/')
 		rv = sprintf(newstr, "%s%s", parent, child);
@@ -463,9 +461,9 @@ void file_error(char *path)
 /*
  *	type_error()
  *	Purpose: Helper function to display error message for command-line options
- *	  Input: opt, 
- *			 value,
- *	 Return: 
+ *	  Input: opt, the "-option" flag entered on the command line
+ *			 value, the value proceeding the "-option" flag
+ *	 Return: Appropriate error message printed to stderr, then exit(1).
  *  Example: "./pfind: missing argument to `-name'"
  */
 void type_error(char *opt, char *value)

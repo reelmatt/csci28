@@ -2,10 +2,6 @@
     Date: 3/2/2019
 Contains: Design details for CSCI E-215 homework 2
 ==================================================
-//@@TO-DO:
-	--check/investigate hard-coding of ".." exclusions
-
-
 Project: pfind
 
 Purpose: Search directories and subdirectories for files matching criteria.
@@ -38,7 +34,10 @@ Input:
 			 stored. If it was an invalid path, an error message will be
 			 called later in the program.
 	
-	[-name]: 
+	[-name]: a pattern to be stored in the "findme" variable. If no argument
+	         exists after the "-name" flag, an error is output and the
+	         program exits 1. Otherwise, whatever argument is present is
+	         stored.
 	
 	[-type]: Compared with the st_mode value of a given file after lstat() is
 			 called. The following are the types specified in <sys/stat.h>
@@ -88,7 +87,37 @@ Data Structures:
 	./subdir/a, not ./subdir//a); or 3) "parent/child" with a '/' in between.
 
 Algorithms:
-    fnmatch uses FNM_NOESCAPE because...
+    The code pfind uses to determine whether or not to output a given
+    directory entry is found in the check_entry() function. It is passed
+    the user-specified "-name" and/or "-type" options, the current directory
+    name (dirname), the current directory entry (fname), and the file mode
+    associated with fname.
+    
+    The default return value for check_entry() is YES, meaning all directory
+    entries WILL be printed UNLESS they do not match any/all options the user
+    specifies. It uses fnmatch() with the FNM_PERIOD flag to compare the
+    current entry with the "findme" pattern specified with "-name". FNM_PERIOD
+    is used so that any leading period in the "fname" must be matched in the
+    pattern in "findme". If no "findme" pattern was given, or the "fname" does
+    not match the patter, return NO and do not print.
+    
+    check_entry() then sees if the user specified an option for "-type" and
+    compares that value with the mode obtained by lstat(). The mode is
+    bitwise-and'ed with the S_IFMT constant specified by <sys/stat.h> and
+    compared with the bitmasked obtained with the get_type() helper function
+    during command-line argument processing. If no "-type" was specified, or
+    the mode does not match, return NO and do not print.
+    
+    Next, it checks for a "." or ".." path, and if the fname and dirname are
+    different -- e.g. fname = . and dirname = ./burrow -- than return NO and
+    do not print. This prevents "."  or ".." sub-directory entries from being
+    output, but allows for the top-level entries to be printed --
+    fname = . and dirname = .
+    
+    The other algorithm present in pfind appears in the construct_path()
+    function. Here, when concatenating a parent and child to create a full
+    path, it checks several conditions to output a valid path. See the Data
+    Structures section above for more info.
 
 Program Flow:
      1 - Process user options and store arguments in three variables: path,
@@ -141,8 +170,6 @@ Error Handling:
     file_error() takes a path as an argument and is called to output the
     errno related to an lstat() or opendir() call. 
     
-
-
 Files:
 	pfind uses opendir, readdir, and closedir to process directory entries,
 	which are the files on disk. pfind uses readdir() to get the name of a

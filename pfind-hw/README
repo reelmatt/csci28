@@ -6,11 +6,12 @@ README for pfind
 Summary:
 
   This submission contains the files:
-	README		-- this file, with answers to Q1 and Q3 of the assignment
-	pfind.c     -- main logic to process options and display "find" results
-	Plan        -- design document for this assignment
-	Makefile	-- the Makefile
-	typescript  -- a sample run, including the lib215 test script
+	README       -- this file, with answers to Q1 and Q3 of the assignment
+	pfind.c      -- main logic to process options and display "find" results
+	Plan         -- design document for this assignment
+	Makefile	 -- the Makefile
+	my_script.sh -- my sample test script, including a run of the lib215 script
+	typescript   -- a sample run, performed using my_script.sh
 
 Recursive Tools:
 	chown	-- change file owner and group
