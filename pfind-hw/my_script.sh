@@ -6,27 +6,76 @@
 # and saves the typescript file.
 #
 
-# compile program
+#-------------------------------------
+#    compile program
+#-------------------------------------
 make clean
+
 make pfind
 
-# my sample tests
+#-------------------------------------
+#    my positive tests
+#-------------------------------------
 
-#demo pathname out of order
-./pfind -name foo .
-find -name foo .
-
-#prints the starting path
+# prints the starting path
 ./pfind . -name .
 find . -name .
 
-#creates a subdirectory, and searches ".."
+# creates a subdirectory, and searches ".."
 mkdir burrow
 cd burrow
+
 ../pfind ..
+
 find ..
+
+# go back and remove test directory
 cd ..
 rm -r burrow
 
-#run the course test-script
+# test a long directory name
+./pfind ~lib215/hw/pfind/pft.d -name cookie > my.output
+
+find ~lib215/hw/pfind/pft.d -name cookie > find.output
+
+diff my.output find.output
+
+rm my.output find.output
+
+# create and search for symbolic link
+ln -s pfind.c pfind-link.tmp
+
+./pfind . -type l
+
+find . -type l
+
+rm pfind-link.tmp
+
+#-------------------------------------
+#    my negative tests
+#-------------------------------------
+
+# demo pathname out of order
+./pfind -name foo .
+
+find -name foo .
+
+# invalid type option
+./pfind -type q
+
+find -type q
+
+# pathname cannot start with '-', treated as "-option"
+./pfind -foopath
+
+find -foopath
+
+#-------------------------------------
+#    check memory usage
+#-------------------------------------
+valgrind --tool=memcheck --leak-check=yes ./pfind .
+
+#-------------------------------------
+#    run the course test-script
+#-------------------------------------
 ~lib215/hw/pfind/test.pfind

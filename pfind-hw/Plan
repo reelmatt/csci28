@@ -81,10 +81,11 @@ Data Structures:
 	
 	If malloc() fails, NULL is returned which will cause lstat() to output an
 	error for a given entry listing in pfind output. If malloc() succeeds, the
-	function will copy into "newstr": 1) just the parent, if no child exits;
-	2) if parent has a '/' at the end, or child has a leading '/', do not copy
-	an extra slash (ex. a la "find ./subdir/" will output ./subdir/ and
-	./subdir/a, not ./subdir//a); or 3) "parent/child" with a '/' in between.
+	function will copy into "newstr": 1) just the parent, if parent and child
+	are the same; 2) if parent has a '/' at the end, or child has a leading
+	'/', do not copy an extra slash (ex. a la "find ./subdir/" will output
+	./subdir/ and ./subdir/a, not ./subdir//a); or 3) "parent/child" with 
+	a '/' in between.
 
 Algorithms:
     The code pfind uses to determine whether or not to output a given

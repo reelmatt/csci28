@@ -42,14 +42,14 @@ int recurse_directory(char *, mode_t);
 char * construct_path(char *, char *);
 
 /* OPTION PROCESSING FUNCTIONS */
-int get_type(char);
 void get_option(char **, char **, int *);
 void get_path(char **, char **, char **, int *);
+int get_type(char);
 
 /* ERROR FUNCTIONS */
+void file_error(char *);
 void syntax_error();
 void type_error(char *, char *);
-void file_error(char *);
 
 /* FILE-SCOPE VARIABLES*/
 static char *progname;			//used for error-reporting
@@ -102,96 +102,6 @@ int main (int ac, char **av)
 		syntax_error();							//otherwise, syntax error
 		
 	return 0;
-}
-
-/*
- *	get_path()
- *	Purpose: Test the command line argument to see if it is a valid path.
- *	  Input: args, the array of command line arguments
- *			 path, variable to store the specified path in
- *			 name, variable to use as placeholder for out-of-order option
- *			 type, variable to use as placeholder for out-of-order option
- *	 Return: Prints message to stderr and exit(1) on out of order options
- *			 or invalid options.
- *	 Method: If the argument does not begin with an option specifier "-",
- *			 get_path() assumes it is a valid start path and assigns it to
- *			 the path variable. Otherwise, it attempts to recreate the
- *			 behavior in 'find' by processing args first and then outputting
- *			 a "paths must precede expression" error, or general syntax
- *			 error. Ex. 'find -name foobar .'
- */
-void get_path(char **args, char **path, char **name, int *type)
-{
-	if(*args[0] != '-')				//arg DOESN'T begin with option specifier
-		*path = *args;				//set path to the value
-	else							//arg DOES begin with option specifier '-'
-	{
-		//process opts & args first, a la 'find'
-		while(*args && *args[0] == '-')
-		{
-			get_option(args, name, type);
-			args += 2;
-		}
-		
-		if(*args)						//assume remaining arg is start path
-		{
-			fprintf(stderr, "%s: paths must precede expression: ", progname);
-			fprintf(stderr, "%s\n", *args);
-			syntax_error();
-		}
-		else							//otherwise, general syntax error
-		{
-			syntax_error();
-		}
-	}
-	
-	return;
-}
-
-/*
- *	get_option()
- *	Purpose: process command line options
- *	  Input: args, the array pointer to command-line arguments
- *			 name, pointer to store specified user
- *			 type, pointer to store specified file type
- *	 Return: None. This function passes through pointers from main
- *			 to store the variables.
- *	 Errors: If there is an invalid option (not -name or -type), missing value,
- *			 or an option has already been declared, type_error() is called
- *			 to output a message to stderr and exit with a non-zero status.
- *			 See also, errors above for invalid input.
- *	   Note: Each option that appears, must have a corresponding value.
- *			 The order the options appear in does not matter, but they can
- *			 only appear once.
- */
-void get_option(char **args, char **name, int *type)
-{
-	char *option = *args++;				//store option, then point to next arg
-	char *value = *args;				//store value for option (if any)
-	
-	//the name option, not previously declared
-	if (strcmp(option, "-name") == 0 && (*name == NULL))
-	{
-		if( value )											//option exists
-			*name = value;
-		else
-			type_error(option, value);						//missing arg
-	}
-	//the type option, not previously declared
-	else if (strcmp(option, "-type") == 0 && *type == 0)
-	{
-		if (value)											//option exists
-			*type = get_type(value[0]);
-		else
-			type_error(option, value);						//missing arg
-	}
-	//either an unknown predicate, or is repeat of -name or -type
-	else
-	{
-		type_error(option, value);
-	}
-
-	return;
 }
 
 /*
@@ -255,7 +165,7 @@ void process_file(char *dirname, char *findme, int type)
 	//check to see if it dirname is actually a directory
 	if(S_ISDIR(info.st_mode))
 	{
-		file_error(dirname);	//it was, output errno from opendir()
+		file_error(dirname);	//it was a dir, output errno from opendir()
 		return;
 	}
 	
@@ -313,6 +223,38 @@ void process_dir(char *dirname, char *findme, int type, DIR *search)
 }
 
 /*
+ *	check_entry()
+ *	Purpose: Compare the current file/directory entry again matching criteria
+ *	  Input: findme, the pattern to look for/match against
+ * 			 type, the kind of file to search for
+ *			 dirname, the name of the current directory we are in
+ *			 fname, the name of the current entry being checked
+ *			 mode, the file type for "fname"
+ *	 Return: NO, if matching criteria are specified and "fname" does not match
+ *			 NO, if fname is the "." or ".." entry and the directory is not
+ *				 a "." or ".."
+ *			 YES, for all other cases
+ */
+int check_entry(char *findme, int type, char *dirname, char *fname, mode_t mode)
+{
+	//check if name is specified and filter if no match
+	if(findme && fnmatch(findme, fname, FNM_PERIOD) != 0)
+		return NO;
+		
+	//check if type is specified and filter if no match
+	if( (type != 0) && ((S_IFMT & mode) != (unsigned) type) )
+		return NO;
+
+	if (strcmp(fname, "..") == 0 && strcmp(fname, dirname) != 0)
+		return NO;
+	
+	if (strcmp(fname, ".") == 0 && strcmp(fname, dirname) != 0)
+		return NO;
+
+	return YES;	
+}
+
+/*
  * recurse_directory()
  * Purpose: check if the given directory entry is one we need to recurse
  *   Input: name, the current entry in the directory
@@ -332,28 +274,93 @@ int recurse_directory(char *name, mode_t mode)
 }
 
 /*
- *	check_entry()
- *	Purpose: 
- *	  Input: 
- *	 Return: 
+ *	get_option()
+ *	Purpose: process command line options
+ *	  Input: args, the array pointer to command-line arguments
+ *			 name, pointer to store specified user
+ *			 type, pointer to store specified file type
+ *	 Return: None. This function passes through pointers from main
+ *			 to store the variables.
+ *	 Errors: If there is an invalid option (not -name or -type), missing value,
+ *			 or an option has already been declared, type_error() is called
+ *			 to output a message to stderr and exit with a non-zero status.
+ *			 See also, errors above for invalid input.
+ *	   Note: Each option that appears, must have a corresponding value.
+ *			 The order the options appear in does not matter, but they can
+ *			 only appear once.
  */
-int check_entry(char *findme, int type, char *dirname, char *fname, mode_t mode)
+void get_option(char **args, char **name, int *type)
 {
-	//check if name is specified and filter if no match
-	if(findme && fnmatch(findme, fname, FNM_PERIOD) != 0)
-		return NO;
-		
-	//check if type is specified and filter if no match
-	if( (type != 0) && ((S_IFMT & mode) != (unsigned) type) )
-		return NO;
-
-	if (strcmp(fname, "..") == 0 && strcmp(fname, dirname) != 0)
-		return NO;
+	char *option = *args++;				//store option, then point to next arg
+	char *value = *args;				//store value for option (if any)
 	
-	if (strcmp(fname, ".") == 0 && strcmp(fname, dirname) != 0)
-		return NO;
+	//the name option, not previously declared
+	if (strcmp(option, "-name") == 0 && (*name == NULL))
+	{
+		if( value )											//option exists
+			*name = value;
+		else
+			type_error(option, value);						//missing arg
+	}
+	//the type option, not previously declared
+	else if (strcmp(option, "-type") == 0 && *type == 0)
+	{
+		if (value)											//option exists
+			*type = get_type(value[0]);
+		else
+			type_error(option, value);						//missing arg
+	}
+	//either an unknown predicate, or is repeat of -name or -type
+	else
+	{
+		type_error(option, value);
+	}
 
-	return YES;	
+	return;
+}
+
+/*
+ *	get_path()
+ *	Purpose: Test the command line argument to see if it is a valid path.
+ *	  Input: args, the array of command line arguments
+ *			 path, variable to store the specified path in
+ *			 name, variable to use as placeholder for out-of-order option
+ *			 type, variable to use as placeholder for out-of-order option
+ *	 Return: Prints message to stderr and exit(1) on out of order options
+ *			 or invalid options.
+ *	 Method: If the argument does not begin with an option specifier "-",
+ *			 get_path() assumes it is a valid start path and assigns it to
+ *			 the path variable. Otherwise, it attempts to recreate the
+ *			 behavior in 'find' by processing args first and then outputting
+ *			 a "paths must precede expression" error, or general syntax
+ *			 error. Ex. 'find -name foobar .'
+ */
+void get_path(char **args, char **path, char **name, int *type)
+{
+	if(*args[0] != '-')				//arg DOESN'T begin with option specifier
+		*path = *args;				//set path to the value
+	else							//arg DOES begin with option specifier '-'
+	{
+		//process options and args first, a la 'find'
+		while(*args && *args[0] == '-')
+		{
+			get_option(args, name, type);
+			args += 2;
+		}
+		
+		if(*args)						//assume remaining arg is start path
+		{
+			fprintf(stderr, "%s: paths must precede expression: ", progname);
+			fprintf(stderr, "%s\n", *args);
+			syntax_error();
+		}
+		else							//otherwise, general syntax error
+		{
+			syntax_error();
+		}
+	}
+	
+	return;
 }
 
 /*
@@ -398,7 +405,12 @@ int get_type(char c)
  *   Errors: if malloc() or sprintf() fail, return NULL. This will
  *			 cause lstat() to output an error back in process_file or
  *			 process_dir().
- *   Method: 
+ *   Method: Start by malloc()ing enough memory to store the combined
+ *			 path. If sucessful, call sprintf() to copy into "newstr":
+ *			 1) just the parent, if parent and child are the same;
+ *			 2) if parent or child has trailing or leading '/',
+ *			 	respectively, do not copy an extra '/'; or
+ *			 3) concatenate "parent/child"
  */
 char * construct_path(char *parent, char *child)
 {
@@ -410,7 +422,7 @@ char * construct_path(char *parent, char *child)
 	if (newstr == NULL)
 		return NULL;
 
-	//Concatenate "parent/child"
+	//Concatenate "parent/child", see Method above for how
 	if (strcmp(parent, child) == 0)
 		rv = sprintf(newstr, "%s", parent);
 	else if (parent[strlen(parent) - 1] == '/' || child[0] == '/')
@@ -418,7 +430,7 @@ char * construct_path(char *parent, char *child)
 	else
 		rv = sprintf(newstr, "%s/%s", parent, child);
 	
-	//check for sprintf errors
+	//check for sprintf error --or-- overflow error
 	if ( rv < 0 || rv > (path_size - 1) )
 	{
 		free(newstr);		//failed to construct path
@@ -426,20 +438,6 @@ char * construct_path(char *parent, char *child)
 	}
 
 	return newstr;
-}
-
-/*
- *	syntax_error()
- *	Purpose: Helper function to display error message and exit.
- *	 Return: This function is called when a syntax error occurs. It
- *			 displays the message and exits with value of 1.
- */
-void syntax_error()
-{
-	fprintf(stderr, "usage: pfind starting_path ");
-	fprintf(stderr, "[-name filename-or-pattern] ");
-	fprintf(stderr, "[-type {f|d|b|c|p|l|s}]\n");
-	exit(1);
 }
 
 /*
@@ -456,6 +454,20 @@ void file_error(char *path)
 	//example -- "./pfind: `/tmp/pft.IO8Et0': Permission denied"
 	fprintf(stderr, "%s: `%s': %s\n", progname, path, strerror(errno));
 	return;
+}
+
+/*
+ *	syntax_error()
+ *	Purpose: Helper function to display error message and exit.
+ *	 Return: This function is called when a syntax error occurs. It
+ *			 displays the message and exits with value of 1.
+ */
+void syntax_error()
+{
+	fprintf(stderr, "usage: pfind starting_path ");
+	fprintf(stderr, "[-name filename-or-pattern] ");
+	fprintf(stderr, "[-type {f|d|b|c|p|l|s}]\n");
+	exit(1);
 }
 
 /*
