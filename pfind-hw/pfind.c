@@ -45,6 +45,9 @@ void file_error(char *);
 /* FILE-SCOPE VARIABLES*/
 static char *progname;			//used for error-reporting
 
+//debugging
+static int dirs_open = 0;
+static int paths_made = 0;
 
 /*
  * main()
@@ -88,10 +91,14 @@ int main (int ac, char **av)
 		av++;
 	}
 	
+	printf("before called... dirs_open = %d, paths_made = %d\n", dirs_open, paths_made);
+	
 	if (path)									//if path was specified
 		searchdir(path, name, type);			//perform find there
 	else
 		syntax_error();							//otherwise, syntax error
+
+	printf("before RETURN... dirs_open = %d, paths_made = %d\n", dirs_open, paths_made);
 		
 	return 0;
 }
@@ -207,15 +214,25 @@ void get_option(char **args, char **name, int *type)
  */
 void searchdir(char *dirname, char *findme, int type)
 {
+	
 	DIR* current_dir = opendir(dirname);		//attempt to open dir
 	
 	if ( current_dir == NULL )					//couldn't open dir
+	{
+		
 		process_file(dirname, findme, type);	//try using 'dirname' as file
+	}
 	else
+	{
+		dirs_open++;
 		process_dir(dirname, findme, type, current_dir);
+	}
 
 	if(current_dir)
+	{
+		dirs_open--;
 		closedir(current_dir);
+	}
 
 	return;
 }
@@ -294,13 +311,20 @@ void process_dir(char *dirname, char *findme, int type, DIR *search)
 		
 		//printf("about to free full_path, current: %s\n", full_path);
 		//free(full_path);
+		if(full_path != NULL)
+		{
+			paths_made--;
+			//printf("FREEING AT END...Problem?: %s\n", full_path);
+			free(full_path);
+		}
 	}	
 
-	if(full_path != NULL)
-	{
-		//printf("FREEING AT END...Problem?: %s\n", full_path);
-		free(full_path);
-	}
+// 	if(full_path != NULL)
+// 	{
+// 		paths_made--;
+// 		//printf("FREEING AT END...Problem?: %s\n", full_path);
+// 		free(full_path);
+// 	}
 }
 
 /*
@@ -399,6 +423,7 @@ char * construct_path(char *parent, char *child)
 		return NULL;
 	}
 	
+	paths_made++;
 	int rv;
 
 	if (strcmp(parent, child) == 0 || strcmp(parent, "") == 0)
