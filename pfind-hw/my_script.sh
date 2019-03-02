@@ -35,12 +35,12 @@ find . -name .
 mkdir burrow
 cd burrow
 
-../pfind .. > my.output
+../pfind .. > ../my.output
 
-find .. > find.output
+find .. > ../find.output
 
 # compare output
-diff my.output find.output
+diff ../my.output ../find.output
 
 # go back and remove test directory
 cd ..
