@@ -4,20 +4,22 @@
  * ==========================
  * Purpose: Search directories and subdirectories for files matching criteria.
  *
- * Main features: as seen in the function signatures below, the main features of
- *		pfind can be broken into the main logic, memory allocation, option
+ * Main features: as seen in the function signatures below, the main features
+ *		of pfind can be broken into the main logic, memory allocation, option
  *		processing, and helper functions to output error messages.
  *
- * Outline: pfind recursively searches, depth-first, through directories and any
- *		subdirectories it encounters, starting with a provided path. Results are
- *		filtered according to user-specified "-name" and/or "-type" options.
+ * Outline: pfind recursively searches, depth-first, through directories and
+ *		any subdirectories it encounters, starting with a provided path.
+ *		Results are filtered according to user-specified "-name" and/or
+ *		"-type" options.
+ *
  *
  * Data structures: construct_path() will malloc() a block of memory to store
  *		the full path of the current directory entry returned by the call to
  *		readdir(). If it is a directory, this is passed through to be
  *		recursively searched, otherwise, the char * is freed.
  */
- 
+
  /* INCLUDES */
 #include <stdio.h>
 #include <stdlib.h>
@@ -82,7 +84,7 @@ int main (int ac, char **av)
 	int type = 0;
 
 	progname = *av++;							//initialize to program name
-	
+
 	if(ac > 6)
 		syntax_error();							//syntax error, see above
 
@@ -95,12 +97,12 @@ int main (int ac, char **av)
 
 		av++;
 	}
-	
+
 	if (path)									//if path was specified
 		searchdir(path, name, type);			//perform find there
 	else
 		syntax_error();							//otherwise, syntax error
-		
+
 	return 0;
 }
 
@@ -124,7 +126,7 @@ int main (int ac, char **av)
 void searchdir(char *dirname, char *findme, int type)
 {
 	DIR* current_dir = opendir(dirname);		//attempt to open dir
-	
+
 	if ( current_dir == NULL )					//couldn't open dir
 		process_file(dirname, findme, type);	//try using 'dirname' as file
 	else
@@ -154,25 +156,25 @@ void searchdir(char *dirname, char *findme, int type)
 void process_file(char *dirname, char *findme, int type)
 {
 	struct stat info;
-	
+
 	//get stat on starting path "file"
 	if (lstat(dirname, &info) == -1)
 	{
 		file_error(dirname);
 		return;
 	}
-	
+
 	//check to see if it dirname is actually a directory
 	if(S_ISDIR(info.st_mode))
 	{
 		file_error(dirname);	//it was a dir, output errno from opendir()
 		return;
 	}
-	
+
 	//filter start path/file according to criteria
 	if (check_entry(findme, type, dirname, dirname, info.st_mode))
 		printf("%s\n", dirname);
-		
+
 	return;
 }
 
@@ -194,7 +196,7 @@ void process_dir(char *dirname, char *findme, int type, DIR *search)
 	struct dirent *dp = NULL;			//pointer to directory entry
 	struct stat info;					//file info
 	char *full_path = NULL;				//store full path
-	
+
 	//read through entries
 	while( (dp = readdir(search)) != NULL )
 	{
@@ -206,7 +208,7 @@ void process_dir(char *dirname, char *findme, int type, DIR *search)
 			file_error(full_path);				//output errno
 			continue;
 		}
-		
+
 		//filter start path/file according to criteria
 		if (check_entry(findme, type, dirname, dp->d_name, info.st_mode))
 			printf("%s\n", full_path);
@@ -214,11 +216,11 @@ void process_dir(char *dirname, char *findme, int type, DIR *search)
 		//check if 'd_name' is dir and should recurse -- NO for '.' & '..'
 		if ( recurse_directory(dp->d_name, info.st_mode) == YES )
 			searchdir(full_path, findme, type);
-		
+
 		if(full_path != NULL)
 			free(full_path);		//prevent memory leaks
-	}	
-	
+	}
+
 	return;
 }
 
@@ -235,23 +237,24 @@ void process_dir(char *dirname, char *findme, int type, DIR *search)
  *				 a "." or ".."
  *			 YES, for all other cases
  */
-int check_entry(char *findme, int type, char *dirname, char *fname, mode_t mode)
+int
+check_entry(char *findme, int type, char *dirname, char *fname, mode_t mode)
 {
 	//check if name is specified and filter if no match
 	if(findme && fnmatch(findme, fname, FNM_PERIOD) != 0)
 		return NO;
-		
+
 	//check if type is specified and filter if no match
 	if( (type != 0) && ((S_IFMT & mode) != (unsigned) type) )
 		return NO;
 
 	if (strcmp(fname, "..") == 0 && strcmp(fname, dirname) != 0)
 		return NO;
-	
+
 	if (strcmp(fname, ".") == 0 && strcmp(fname, dirname) != 0)
 		return NO;
 
-	return YES;	
+	return YES;
 }
 
 /*
@@ -268,7 +271,7 @@ int recurse_directory(char *name, mode_t mode)
 	//if the file isn't a directory, the current ".", or parent ".." dir
 	if (! S_ISDIR(mode) || strcmp(name, ".") == 0 || strcmp(name, "..") == 0)
 		return NO;
-	
+
 	//all other cases, the file is a subdirectory to recursively search
 	return YES;
 }
@@ -293,7 +296,7 @@ void get_option(char **args, char **name, int *type)
 {
 	char *option = *args++;				//store option, then point to next arg
 	char *value = *args;				//store value for option (if any)
-	
+
 	//the name option, not previously declared
 	if (strcmp(option, "-name") == 0 && (*name == NULL))
 	{
@@ -347,7 +350,7 @@ void get_path(char **args, char **path, char **name, int *type)
 			get_option(args, name, type);
 			args += 2;
 		}
-		
+
 		if(*args)						//assume remaining arg is start path
 		{
 			fprintf(stderr, "%s: paths must precede expression: ", progname);
@@ -359,7 +362,7 @@ void get_path(char **args, char **path, char **name, int *type)
 			syntax_error();
 		}
 	}
-	
+
 	return;
 }
 
@@ -391,8 +394,9 @@ int get_type(char c)
 		case 's':
 			return S_IFSOCK;	//socket
 		default:
-			fprintf(stderr, "%s: Unknown argument to -type: %c\n", progname, c);
-			exit (1);
+			fprintf(stderr, "%s: ", progname);
+            fprintf(stderr, "Unknown argument to -type: %c\n", c);
+			exit(1);
 	}
 }
 
@@ -417,7 +421,7 @@ char * construct_path(char *parent, char *child)
 	int rv;
 	int path_size = 1 + strlen(parent) + 1 + strlen(child);
 	char *newstr = malloc(path_size);
-	
+
 	//Check malloc() returned memory. If no, lstat() will output error
 	if (newstr == NULL)
 		return NULL;
@@ -429,7 +433,7 @@ char * construct_path(char *parent, char *child)
 		rv = sprintf(newstr, "%s%s", parent, child);
 	else
 		rv = sprintf(newstr, "%s/%s", parent, child);
-	
+
 	//check for sprintf error --or-- overflow error
 	if ( rv < 0 || rv > (path_size - 1) )
 	{
@@ -487,12 +491,12 @@ void type_error(char *opt, char *value)
 	if(strcmp(opt, "-name") == 0 || strcmp(opt, "-type") == 0)
 	{
 		if(value)
-			fprintf(stderr, "option already declared: `%s'\n", opt);	
+			fprintf(stderr, "option already declared: `%s'\n", opt);
 		else
 			fprintf(stderr, "missing argument to `%s'\n", opt);
 	}
 	else
 		fprintf(stderr, "unknown predicate `%s'\n", opt);
-		
+
 	exit(1);
 }
