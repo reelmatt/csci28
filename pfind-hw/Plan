@@ -3,7 +3,6 @@
 Contains: Design details for CSCI E-215 homework 2
 ==================================================
 //@@TO-DO:
-	--not calling free() for all full_path strings that are malloc()ed.
 	--check/investigate hard-coding of ".." exclusions
 
 
@@ -73,36 +72,23 @@ Output:
 	been output.
 
 Data Structures:
-	The main logic exists in pfind.c. Error-handling functions are located in
-	pfind-errors.c and other helper functions are located in pfind-helpers.c.
+	All code for the pfind program exists in pfind.c.
+	
+	Several pointers are used, such as a DIR* for the open directory and a
+	struct dirent* to keep track of the current directory entry. A char*
+	pointer is also used that is returned by the construct_path() function.
+	This function malloc()s enough memory to hold the parent (directory) and
+	child (directory entry), the null terminator, and a potential '/' char.
+	
+	If malloc() fails, NULL is returned which will cause lstat() to output an
+	error for a given entry listing in pfind output. If malloc() succeeds, the
+	function will copy into "newstr": 1) just the parent, if no child exits;
+	2) if parent has a '/' at the end, or child has a leading '/', do not copy
+	an extra slash (ex. a la "find ./subdir/" will output ./subdir/ and
+	./subdir/a, not ./subdir//a); or 3) "parent/child" with a '/' in between.
 
-	The helper functions deal with allocating memory and work as follows:
-		construct_path: calls malloc() to create a string to store
-	
-	The functions work as follows:
-		ll_open: Opens the file and returns the file descriptor for the lastlog
-				 file that is used.
-		ll_seek: If the requested record is already in the buffer, update
-				 cur_rec to that position for the next call of ll_read. If not
-				 in the buffer, call on lseek() to move the pointer in the file
-				 descriptor in advance of retrieving a new buffer. Reload the
-				 buffer with NRECS starting at the nearest multiple of the
-				 buffer size.
-		ll_read: If the buffer is empty when called, it loads NRECS into the
-				 buffer. If the cur_rec is at the end of the buffer, it attempts
-				 to load a new set of records into the buffer. If successful,
-				 ll_read() will return a pointer to the lastlog struct for the
-				 cur_rec.
-	  ll_reload: Uses the system call read() to load NRECS into the buffer from
-	  			 wherever ll_seek moved the pointer to (via the offset
-	  			 in lseek).
-	   ll_close: Closes the open file.
-	
-	When a record is requested outside of the current buffer, ll_seek() will
-	adjust the file pointer so that ll_reload() will pull in NRECS starting at
-	the nearest multiple of the buffer size. For example, if UID 600 is 
-	requested with NRECS set to 512, lseek() will point to offset 512 in the
-	lastlog file and read records 512-1023.
+Algorithms:
+    fnmatch uses FNM_NOESCAPE because...
 
 Program Flow:
      1 - Process user options and store arguments in three variables: path,
@@ -128,35 +114,34 @@ Program Flow:
          of the file.
     3c - Next, check to see if the current entry is a directory, and if so,
          recursively call searchdir() with the current path as "dirname".
-         
+     4 - If starting path was a file, searchdir() will return -- no directory
+         to close. If starting path was a directory, once each level of
+         recursion is complete, the malloc()ed path name will be freed and
+         directory closed.
+
+Error Handling:
+    There are three helper functions to assist with reporting errors. "find"
+    has a few differently formatted errors that appear for different reasons,
+    and the three helper functions -- syntax_error(), file_error(), and
+    type_error() -- simplify outputting the correct message.
     
+    syntax_error() takes no arguments and simply outputs an error about
+    correct usage, copied from the homework assignment. It exits 1 after
+    printing the message to stderr.
+    
+    type_error() is used when processing the user's command-line arguments.
+    It takes the "-option" entered and the value proceeding it. It exits 1
+    after printing the message to stderr.
+    
+    get_type() is another helper function used when processing the "-type"
+    flag. pfind only accepts b, c, d, f, l, p, or s as values for "-type".
+    If a letter besides one of those mentioned is entered, it is an
+    "Unkown argument" error, and the program will exit 1.
+    
+    file_error() takes a path as an argument and is called to output the
+    errno related to an lstat() or opendir() call. 
     
 
-	1 - Process user options and store any arguments in three
-		variables: user, days, and file to be used later on (if specified).
-		For the -u and -t, check immediately whether the user/time are valid,
-		and exit, with message to stderr, if not.
-	2 - Call on get_log() with the user options. File is set to LLOG_FILE
-		by default, user is set to NULL or the requested passwd entry, and days
-		is set to -1 or the number of days entered with -t.
-	3 - Open the lastlog file.
-	4 - If a "user" was not specified, call getpwent() to begin iterating
-		through the all passwd database entries. Otherwise, set the entry to the
-		user pulled in from the -u option.
-	5 - For all (1+) passwd entries, call ll_seek() to move a pointer to the
-		correct place to read. If nothing has been read yet, or the requested
-		passwd entry is outside the current buffer, the program uses the system
-		call lseek() to manipulate the pointer to the file descriptor. If the
-		request is for an entry currently in the buffer, it adjusts the cur_rec
-		variable accordingly.
-	6 - If there was an error (e.g. requested a range outside the lastlog file)
-		then the lastlog pointer, ll, is set to NULL. Otherwise, ll_read() is
-		called, and it returns a pointer to the requested struct lastlog entry.
-	7 - The lastlog information is then displayed, with a filter applied based
-		on the user's optional -t argument. If no users are displayed, headers
-		are also not displayed.
-	8 - When all 1+ entries are processed, call endpwent() if no user was
-		specified, and in all cases close the lastlog file.
 
 Files:
 	pfind uses opendir, readdir, and closedir to process directory entries,

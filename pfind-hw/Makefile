@@ -1,7 +1,8 @@
 # ----------------------------------------------------------
 # Makefile for pfind
-# 
-#
+# ----------------------------------------------------------
+# Compiles with messages about warnings and produces debugging
+# information. Only file if pfind.c.
 #
 
 GCC = gcc -Wall -Wextra -g

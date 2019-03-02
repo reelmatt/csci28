@@ -4,9 +4,18 @@
  * ==========================
  * Purpose: Search directories and subdirectories for files matching criteria.
  *
+ * Main features: as seen in the function signatures below, the main features of
+ *		pfind can be broken into the main logic, memory allocation, option
+ *		processing, and helper functions to output error messages.
  *
+ * Outline: pfind recursively searches, depth-first, through directories and any
+ *		subdirectories it encounters, starting with a provided path. Results are
+ *		filtered according to user-specified "-name" and/or "-type" options.
  *
- *
+ * Data structures: construct_path() will malloc() a block of memory to store
+ *		the full path of the current directory entry returned by the call to
+ *		readdir(). If it is a directory, this is passed through to be
+ *		recursively searched, otherwise, the char * is freed.
  */
  
  /* INCLUDES */
@@ -17,19 +26,19 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include <fnmatch.h>
-//#include <libgen.h>
 
 /* CONSTANTS */
-#define NO 				0
-#define YES 			1
+#define NO	0
+#define YES	1
 
 /* MAIN LOGIC FUNCTIONS */
 void searchdir(char *, char *, int);
-int recurse_directory(char *, mode_t);
-int check_entry(char *, int, char *, char *, mode_t);
-int check_type(int, mode_t);
 void process_file(char *, char *, int);
 void process_dir(char *, char *, int, DIR *);
+int check_entry(char *, int, char *, char *, mode_t);
+int recurse_directory(char *, mode_t);
+
+/* MEMORY ALLOCATION */
 char * construct_path(char *, char *);
 
 /* OPTION PROCESSING FUNCTIONS */
@@ -44,10 +53,6 @@ void file_error(char *);
 
 /* FILE-SCOPE VARIABLES*/
 static char *progname;			//used for error-reporting
-
-//debugging
-static int dirs_open = 0;
-static int paths_made = 0;
 
 /*
  * main()
@@ -84,21 +89,17 @@ int main (int ac, char **av)
 	while (*av)									//process command-line args
 	{
 		if (!path)								//no starting_path given
-			get_path(av, &path, &name, &type);	//fatal() if not valid
+			get_path(av, &path, &name, &type);	//exit(1) if not valid
 		else									//check args are valid options
-			get_option(av++, &name, &type);		//fatal() if not valid
+			get_option(av++, &name, &type);		//exit(1) if not valid
 
 		av++;
 	}
-	
-	printf("before called... dirs_open = %d, paths_made = %d\n", dirs_open, paths_made);
 	
 	if (path)									//if path was specified
 		searchdir(path, name, type);			//perform find there
 	else
 		syntax_error();							//otherwise, syntax error
-
-	printf("before RETURN... dirs_open = %d, paths_made = %d\n", dirs_open, paths_made);
 		
 	return 0;
 }
@@ -112,32 +113,32 @@ int main (int ac, char **av)
  *			 type, variable to use as placeholder for out-of-order option
  *	 Return: Prints message to stderr and exit(1) on out of order options
  *			 or invalid options.
- *	 Method: 
+ *	 Method: If the argument does not begin with an option specifier "-",
+ *			 get_path() assumes it is a valid start path and assigns it to
+ *			 the path variable. Otherwise, it attempts to recreate the
+ *			 behavior in 'find' by processing args first and then outputting
+ *			 a "paths must precede expression" error, or general syntax
+ *			 error. Ex. 'find -name foobar .'
  */
 void get_path(char **args, char **path, char **name, int *type)
 {
-	//arg DOES NOT begin with option specifier
-	if(*args[0] != '-')
+	if(*args[0] != '-')				//arg DOESN'T begin with option specifier
+		*path = *args;				//set path to the value
+	else							//arg DOES begin with option specifier '-'
 	{
-		*path = *args;
-	}
-	//arg DOES begin with option specifier '-'
-	else
-	{
-		//process options and arguments first, a la 'find'
+		//process opts & args first, a la 'find'
 		while(*args && *args[0] == '-')
 		{
 			get_option(args, name, type);
 			args += 2;
 		}
 		
-		//if there are still argument left, it is a start_path
-		if(*args)
+		if(*args)						//assume remaining arg is start path
 		{
-			fprintf(stderr, "%s: paths must precede expression: %s\n", progname, *args);
+			fprintf(stderr, "%s: paths must precede expression: \n", progname);
+			fprintf(stderr, "%s\n", *args);
 		}
-		//otherwise, general syntax error
-		else
+		else							//otherwise, general syntax error
 		{
 			syntax_error();
 		}
@@ -147,7 +148,6 @@ void get_path(char **args, char **path, char **name, int *type)
 	
 	return;
 }
-
 
 /*
  *	get_option()
@@ -214,25 +214,15 @@ void get_option(char **args, char **name, int *type)
  */
 void searchdir(char *dirname, char *findme, int type)
 {
-	
 	DIR* current_dir = opendir(dirname);		//attempt to open dir
 	
 	if ( current_dir == NULL )					//couldn't open dir
-	{
-		
 		process_file(dirname, findme, type);	//try using 'dirname' as file
-	}
 	else
-	{
-		dirs_open++;
 		process_dir(dirname, findme, type, current_dir);
-	}
 
 	if(current_dir)
-	{
-		dirs_open--;
-		closedir(current_dir);
-	}
+		closedir(current_dir);					//prevent memory leaks
 
 	return;
 }
@@ -256,23 +246,25 @@ void process_file(char *dirname, char *findme, int type)
 {
 	struct stat info;
 	
-	//get stat on initial entry
+	//get stat on starting path "file"
 	if (lstat(dirname, &info) == -1)
 	{
 		file_error(dirname);
 		return;
 	}
 	
-	//check to see if it was an error from opendir()
+	//check to see if it dirname is actually a directory
 	if(S_ISDIR(info.st_mode))
 	{
-		file_error(dirname);
+		file_error(dirname);	//it was, output errno from opendir()
 		return;
 	}
-
+	
 	//filter start path/file according to criteria
 	if (check_entry(findme, type, dirname, dirname, info.st_mode))
 		printf("%s\n", dirname);
+		
+	return;
 }
 
 /*
@@ -281,11 +273,16 @@ void process_file(char *dirname, char *findme, int type)
  *	  Input: dirname, path of the current directory to search
  * 			 findme, the pattern to look for/match against
  * 			 type, the kind of file to search for
- *	 Return: 
+ *			 search, pointer to the directory from call to opendir()
+ *	 Return: For each directory entry read, if it matches the 'find' criteria
+ *			 the full path to that entry will be printed to stdout.
+ *   Errors: If lstat() has a problem reading the file at 'full_path', the
+ *			 errno that lstat() generates will be output by calling the helper
+ *			 function file_error().
  */
 void process_dir(char *dirname, char *findme, int type, DIR *search)
 {
-	struct dirent *dp = NULL;			//pointer to "file"
+	struct dirent *dp = NULL;			//pointer to directory entry
 	struct stat info;					//file info
 	char *full_path = NULL;				//store full path
 	
@@ -294,37 +291,27 @@ void process_dir(char *dirname, char *findme, int type, DIR *search)
 	{
 		//turn parent/child into a single pathname
 		full_path = construct_path(dirname, dp->d_name);
-	//	printf("in process_dir, full path is %s\n", full_path);
-		
-		if (lstat(full_path, &info) == -1)
+
+		if (lstat(full_path, &info) == -1)		//problem reading file
 		{
-//			printf("in process_dir, lstat() error\n");
-			file_error(full_path);
+			file_error(full_path);				//output errno
 			continue;
 		}
+		
 
+		//filter start path/file according to criteria
 		if (check_entry(findme, type, dirname, dp->d_name, info.st_mode))
 			printf("%s\n", full_path);
 
+		//check if 'd_name' is dir and should recurse -- NO for '.' & '..'
 		if ( recurse_directory(dp->d_name, info.st_mode) == YES )
 			searchdir(full_path, findme, type);
 		
-		//printf("about to free full_path, current: %s\n", full_path);
-		//free(full_path);
 		if(full_path != NULL)
-		{
-			paths_made--;
-			//printf("FREEING AT END...Problem?: %s\n", full_path);
-			free(full_path);
-		}
+			free(full_path);		//prevent memory leaks
 	}	
-
-// 	if(full_path != NULL)
-// 	{
-// 		paths_made--;
-// 		//printf("FREEING AT END...Problem?: %s\n", full_path);
-// 		free(full_path);
-// 	}
+	
+	return;
 }
 
 /*
@@ -362,7 +349,7 @@ int check_entry(char *findme, int type, char *dirname, char *fname, mode_t mode)
 	if( (type != 0) && ((S_IFMT & mode) != (unsigned) type) )
 		return NO;
 
-	if (strcmp(fname, "..") == 0)
+	if (strcmp(fname, "..") == 0 && strcmp(fname, dirname) != 0)
 		return NO;
 	
 	if (strcmp(fname, ".") == 0 && strcmp(fname, dirname) != 0)
@@ -406,26 +393,26 @@ int get_type(char c)
 
 /*
  *	construct_path()
- *	Purpose: 
- *	  Input: parent,
- *			 child, 
+ *	Purpose: concatenate a parent and child into a full path name
+ *	  Input: parent, current path to the open directory
+ *			 child, name of the last entry read by readdir()
  *	 Return: pointer to full path string allocated by malloc()
+ *   Errors: if malloc() or sprintf() fail, return NULL. This will
+ *			 cause lstat() to output an error back in process_file or
+ *			 process_dir().
+ *   Method: 
  */
 char * construct_path(char *parent, char *child)
 {
+	int rv;
 	int path_size = 1 + strlen(parent) + 1 + strlen(child);
 	char *newstr = malloc(path_size);
 	
-	//Get memory for newstr and check
+	//Check malloc() returned memory. If no, lstat() will output error
 	if (newstr == NULL)
-	{
-		fprintf(stderr, "mem error: not enough memory to create new string\n");
 		return NULL;
-	}
-	
-	paths_made++;
-	int rv;
 
+	//Concatenate "parent/child"
 	if (strcmp(parent, child) == 0 || strcmp(parent, "") == 0)
 		rv = sprintf(newstr, "%s", parent);
 	else if (parent[strlen(parent) - 1] == '/' || child[0] == '/')
@@ -436,7 +423,8 @@ char * construct_path(char *parent, char *child)
 	//check for sprintf errors
 	if ( rv < 0 || rv > (path_size - 1) )
 	{
-		fprintf(stderr, "%s: failed to construct path\n", progname);
+		free(newstr);		//failed to construct path
+		return NULL;		//return will cause lstat() error
 	}
 
 	return newstr;
@@ -450,7 +438,9 @@ char * construct_path(char *parent, char *child)
  */
 void syntax_error()
 {
-	fprintf(stderr, "usage: pfind starting_path [-name ...] [-type ...]\n");
+	fprintf(stderr, "usage: pfind starting_path ");
+	fprintf(stderr, "[-name filename-or-pattern] ");
+	fprintf(stderr, "[-type {f|d|b|c|p|l|s}]\n");
 	exit(1);
 }
 

@@ -6,8 +6,8 @@ README for pfind
 Summary:
 
   This submission contains the files:
-	README		-- this file
-	pfind.c     -- main logic to process options and display lastlog contents
+	README		-- this file, with answers to Q1 and Q3 of the assignment
+	pfind.c     -- main logic to process options and display "find" results
 	Plan        -- design document for this assignment
 	Makefile	-- the Makefile
 	typescript  -- a sample run, including the lib215 test script
