@@ -2,8 +2,7 @@
 #
 # My test script to test my submission for pfind.
 # It makes the program, performs a few sample tests
-# of my own, runs the lib215-provided test script
-# and saves the typescript file.
+# of my own, and runs the lib215-provided test script.
 #
 
 #-------------------------------------
@@ -26,12 +25,16 @@ touch find.output
 
 #------------------------------------------
 # prints the starting path
+#
+
 ./pfind . -name .
 
 find . -name .
 
 #------------------------------------------
 # creates a subdirectory, and searches ".."
+#
+
 mkdir burrow
 cd burrow
 
@@ -48,6 +51,8 @@ rm -r burrow
 
 #------------------------------------------
 # test a long directory name
+#
+
 ./pfind ~lib215/hw/pfind/pft.d -name cookie > my.output
 
 find ~lib215/hw/pfind/pft.d -name cookie > find.output
@@ -57,6 +62,8 @@ diff my.output find.output
 
 #------------------------------------------
 # create and search for symbolic link
+#
+
 ln -s pfind.c pfind-link.tmp
 
 ./pfind . -type l
