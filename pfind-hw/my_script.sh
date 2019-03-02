@@ -19,15 +19,20 @@ make pfind
 
 # prints the starting path
 ./pfind . -name .
+
 find . -name .
 
 # creates a subdirectory, and searches ".."
 mkdir burrow
 cd burrow
 
-../pfind ..
+../pfind .. > my.output
 
-find ..
+find .. > find.output
+
+# compare and delete output files
+diff my.output find.output
+rm my.output find.output
 
 # go back and remove test directory
 cd ..
@@ -38,8 +43,8 @@ rm -r burrow
 
 find ~lib215/hw/pfind/pft.d -name cookie > find.output
 
+# compare and delete output files
 diff my.output find.output
-
 rm my.output find.output
 
 # create and search for symbolic link
