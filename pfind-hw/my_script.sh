@@ -14,14 +14,23 @@ make clean
 make pfind
 
 #-------------------------------------
+#    create tmp files to store output
+#-------------------------------------
+
+touch my.output
+touch find.output
+
+#-------------------------------------
 #    my positive tests
 #-------------------------------------
 
+#------------------------------------------
 # prints the starting path
 ./pfind . -name .
 
 find . -name .
 
+#------------------------------------------
 # creates a subdirectory, and searches ".."
 mkdir burrow
 cd burrow
@@ -30,23 +39,23 @@ cd burrow
 
 find .. > find.output
 
-# compare and delete output files
+# compare output
 diff my.output find.output
-rm my.output find.output
 
 # go back and remove test directory
 cd ..
 rm -r burrow
 
+#------------------------------------------
 # test a long directory name
 ./pfind ~lib215/hw/pfind/pft.d -name cookie > my.output
 
 find ~lib215/hw/pfind/pft.d -name cookie > find.output
 
-# compare and delete output files
+# compare output
 diff my.output find.output
-rm my.output find.output
 
+#------------------------------------------
 # create and search for symbolic link
 ln -s pfind.c pfind-link.tmp
 
@@ -74,6 +83,11 @@ find -type q
 ./pfind -foopath
 
 find -foopath
+
+#-------------------------------------
+#    remove tmp files
+#-------------------------------------
+rm my.output find.output
 
 #-------------------------------------
 #    check memory usage
