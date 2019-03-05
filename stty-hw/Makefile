@@ -5,7 +5,7 @@
 # information. Only file is pfind.c.
 #
 
-GCC = gcc -Wall -Wextra -g
+GCC = gcc -Wall -g
 
 sttyl: sttyl.o tty_tables.o termfuncs.o
 	$(GCC) -o sttyl sttyl.o tty_tables.o termfuncs.o

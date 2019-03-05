@@ -1,6 +1,6 @@
 #include <termios.h>
 #include <stdio.h>
-#include "tty.h"
+#include "sttyl.h"
 
 //struct flaginfo {tcflag_t fl_value; char *fl_name; };
 //struct cflaginfo {cc_t c_value; char *c_name; };
@@ -22,11 +22,12 @@ struct flaginfo input_flags[] = {
 	{ 0			,	NULL}
 };
 
+/*
 struct flaginfo * get_input_flags()
 {
 	return input_flags;
 }
-
+*/
 
 
 

@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <termios.h>
+#include "sttyl.h"
 
 /* copied from termfuncs.c from proj0 (more03.c) at beginning of class */
 int get_term_size(int rows_cols[2])
@@ -18,4 +19,15 @@ int get_term_size(int rows_cols[2])
 	}
 	
 	return rv;
+}
+
+struct winsize get_term_alt()
+{
+	struct winsize w;
+	
+	if(ioctl(0, TIOCGWINSZ, &w) != 0)
+		fprintf(stderr, "oops\n");
+		//return NULL;
+	
+	return w;
 }
