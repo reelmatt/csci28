@@ -20,10 +20,8 @@ int main()
 	}
 						/* show info */
 	showbaud ( cfgetospeed( &ttyinfo ) );	/* get + show baud rate	*/
-	printf("The erase character is ascii %d, Ctrl-%c\n",
-			ttyinfo.c_cc[VERASE], ttyinfo.c_cc[VERASE]-1+'A');
-	printf("The line kill character is ascii %d, Ctrl-%c\n",
-			ttyinfo.c_cc[VKILL], ttyinfo.c_cc[VKILL]-1+'A');
+	printf("The erase character is ascii %d, Ctrl-%c\n", ttyinfo.c_cc[VERASE], ttyinfo.c_cc[VERASE]-1+'A');
+	printf("The line kill character is ascii %d, Ctrl-%c\n", ttyinfo.c_cc[VKILL], ttyinfo.c_cc[VKILL]-1+'A');
 
 	show_some_flags( &ttyinfo );		/* show misc. flags	*/
 	return 0;
