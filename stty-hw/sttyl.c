@@ -34,42 +34,46 @@
 void show_tty(struct termios *info);
 void get_settings(struct termios *);
 void set_settings(struct termios *);
-void get_option(char **, struct termios *);
+void get_option(char *, struct termios *);
 
 
 /*
  *
  */
-int main(int ac, char **av)
+int main(int ac, char *av[])
 {
 	struct termios ttyinfo;
 	get_settings(&ttyinfo);
+	int i = 1;
 
 	//no arguments, just show default info
 	if (ac == 1)
 		show_tty(&ttyinfo);
-	
+	else
+		printf("num args is %d\n", ac);
+
 	//go through arguments
-	while(*++av)
+	while(av[i])
 	{
-		if(strcmp(av[0], "erase") == 0 && av[1])
+		if(strcmp(av[i], "erase") == 0 && av[i + 1])
 		{
-			printf("change erase char to %c\n", av[1][0]);
-			ttyinfo.c_cc[VERASE] = av[1][0];
-			av += 2;
+			printf("change erase char to %c\n", av[i + 1][0]);
+			ttyinfo.c_cc[VERASE] = av[1 + 1][0];
+			i += 2;
 		}
-		else if(strcmp(av[0], "kill") == 0 && av[1])
+		else if(strcmp(av[i], "kill") == 0 && av[i + 1])
 		{
-			printf("change kill char to %c\n", av[1][0]);
-			ttyinfo.c_cc[VKILL] = av[1][0];
-			av += 2;
+			printf("change kill char to %c\n", av[i + 1][0]);
+			ttyinfo.c_cc[VKILL] = av[i + 1][0];
+			i += 2;
 		}
 		else
 		{
-			get_option(av, &ttyinfo);
+			get_option(av[i], &ttyinfo);
+			i++;
 		}
-	}	
-	
+	}
+
 	set_settings(&ttyinfo);
 	return 0;
 }
@@ -80,13 +84,13 @@ void update_setting(int mode, struct termios *info)
 	return;
 }*/
 
-void get_option(char **av, struct termios *info)
+void get_option(char *option, struct termios *info)
 {
-	printf("option to change is %s\n", *av);
+	printf("option to change is %s\n", option);
 	
 	
 	
-	if(strcmp(*av, "echo") == 0)
+	if(strcmp(option, "echo") == 0)
 		printf("current val is %d\n", (info->c_lflag & ECHO));
 
 	return;
@@ -156,14 +160,14 @@ void show_tty(struct termios *info)
 	if (get_term_size(size) != 0)
 		return;
 
-	struct winsize w = get_term_alt();
+//	struct winsize w = get_term_alt();
 
 	/* print info */
 	printf("speed %lu baud; ", cfgetospeed(info));			//baud speed		
-//	printf("rows %d; ", size[0]);							//rows
-//	printf("cols %d;\n", size[1]);							//cols
-	printf("rows %d; ", w.ws_row);
-	printf("cols %d;\n", w.ws_col);
+	printf("rows %d; ", size[0]);							//rows
+	printf("cols %d;\n", size[1]);							//cols
+//	printf("rows %d; ", w.ws_row);
+//	printf("cols %d;\n", w.ws_col);
 
 	printf("intr = ^%c; ", info->c_cc[VINTR] + C_OFFSET);	//intr
 	printf("erase = ^%c; ", info->c_cc[VERASE] + C_OFFSET);	//erase
