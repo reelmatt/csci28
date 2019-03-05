@@ -48,7 +48,11 @@ int main(int ac, char *av[])
 
 	//no arguments, just show default info
 	if (ac == 1)
+	{
+		printf("FIRST erase = ^%c; ", ttyinfo.c_cc[VERASE] + C_OFFSET);	//erase
 		show_tty(&ttyinfo);
+		return 0;
+	}
 	else
 		printf("num args is %d\n", ac);
 
@@ -58,7 +62,7 @@ int main(int ac, char *av[])
 		if(strcmp(av[i], "erase") == 0 && av[i + 1])
 		{
 			printf("change erase char to %c\n", av[i + 1][0]);
-			ttyinfo.c_cc[VERASE] = av[1 + 1][0];
+			ttyinfo.c_cc[VERASE] = av[i + 1][0];
 			i += 2;
 		}
 		else if(strcmp(av[i], "kill") == 0 && av[i + 1])
@@ -91,7 +95,7 @@ void get_option(char *option, struct termios *info)
 	
 	
 	if(strcmp(option, "echo") == 0)
-		printf("current val is %d\n", (info->c_lflag & ECHO));
+		printf("current val is %lu\n", (info->c_lflag & ECHO));
 
 	return;
 }
@@ -124,6 +128,7 @@ void set_settings(struct termios *info)
 		exit(1);
 	}
 	
+	printf("setting attributes SUCCESSFUL\n");
 	return;
 }
 
@@ -170,7 +175,17 @@ void show_tty(struct termios *info)
 //	printf("cols %d;\n", w.ws_col);
 
 	printf("intr = ^%c; ", info->c_cc[VINTR] + C_OFFSET);	//intr
-	printf("erase = ^%c; ", info->c_cc[VERASE] + C_OFFSET);	//erase
+	
+	printf("\nASCII of ERASE is %d, OFFSET is %d\n", info->c_cc[VERASE], C_OFFSET);
+	
+	int temp = info->c_cc[VERASE];
+	
+	if(temp < 65 || temp > 122)
+		printf("erase = ^%c; ", info->c_cc[VERASE] + C_OFFSET);	//erase
+	else
+		printf("erase = %c; ", info->c_cc[VERASE]);
+	
+	
 	printf("kill = ^%c; ", info->c_cc[VKILL] + C_OFFSET);	//kill
 	printf("start = ^%c; ", info->c_cc[VSTART] + C_OFFSET);	//start
 	printf("stop = ^%c;\n", info->c_cc[VSTOP] + C_OFFSET);	//stop
