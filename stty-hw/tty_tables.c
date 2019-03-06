@@ -6,7 +6,7 @@
 //struct cflaginfo {cc_t c_value; char *c_name; };
 
 
-
+/*
 struct flaginfo input_flags[] = {
 // 	{ IGNBRK	,	"Ignore BREAK condition on input" },
 // 	{ BRKINT	,	"Signal interrupt on break" },
@@ -22,12 +22,12 @@ struct flaginfo input_flags[] = {
 	{ 0			,	NULL}
 };
 
-/*
+
 struct flaginfo * get_input_flags()
 {
 	return input_flags;
 }
-*/
+
 
 
 
@@ -90,3 +90,4 @@ struct cflaginfo char_flags[] = {
 };
 
 
+*/

@@ -31,11 +31,94 @@
 #define ERROR 1
 #define C_OFFSET ('A' - 1)
 
+/*
+ * ==========================
+ *   TABLES -- to be moved
+ * ==========================
+ */
+
+struct flaginfo input_flags[] = {
+// 	{ IGNBRK	,	"Ignore BREAK condition on input" },
+// 	{ BRKINT	,	"Signal interrupt on break" },
+// 	{ IGNPAR	,	"Ignore chars with parity errors" },
+// 	{ PARMRK	,	"Mark parity errors" },
+// 	{ INPCK		,	"Enable input parity check" },
+// 	{ ISTRIP	,	"Strip character" },
+// 	{ INLCR		,	"Map NL to CR on input"},
+// 	{ IGNCR		,	"Ignore CR"},
+	{ ICRNL		,	"icrnl" },
+// 	{ IXON		,	"Enable start/stop output control" },
+// 	{ IXOFF		,	"Enable start/stop input control"},
+	{ 0			,	NULL}
+};
+
+// 
+// struct flaginfo get_input_flags()[]
+// {
+// 	return input_flags;
+// }
+
+struct flaginfo output_flags[] = {
+	{ OPOST		,	"opost" },
+//	{ ONLCR		,	"map NL to CR-NL"},
+// 	{ OCRNL		,	"Map CR to NL on output" },
+// 	{ ONOCR		,	"Don't output CR at column 0" },
+// 	{ ONLRET	,	"Don't output CR" },
+// 	{ OFILL		,	"Send fill characters for a delay" },
+	{ 0			,	NULL }
+};
+
+
+struct flaginfo control_flags[] = {
+// 	{ CSIZE		,	"Character size mask" },
+// 	{ CSTOPB	,	"Set two stop bits, rather than one" },
+// 	{ CREAD		,	"Enable receiver" },
+// 	{ PARENB	,	"Parity enable" },
+// 	{ PARODD	,	"Odd parity, else even" },
+	{ HUPCL		,	"hupcl" },
+// 	{ CLOCAL	,	"Ignore modem status lines" },
+//	{ CIGNORE	,	"Ignore control flags" },
+	{ 0			,	NULL }
+};
+
+
+struct flaginfo local_flags[] = {
+	{ ISIG		,	"isig" },
+	{ ICANON	,	"icanon" },
+	{ ECHO		,	"echo" },
+	{ ECHOE		,	"echoe" },
+	{ ECHOK		,	"echok" },
+// 	{ ECHONL	,	"Echo the NL character" },
+// 	{ NOFLSH	,	"Disable flushing the input and output queues" },
+// 	{ TOSTOP	,	"Send the SIGTTOU signal" },
+	{ 0			,	NULL }
+};
+
+
+struct cflaginfo char_flags[] = {
+	{ VEOF		,	"EOF"} ,
+	{ VEOL		,	"EOL" },
+	{ VERASE	,	"Erase char" },
+	{ VINTR		,	"Interrupt" },
+	{ VKILL		,	"Kill char" },
+	{ VMIN		,	"Minimum number of chars for noncanon read" },
+	{ VQUIT		,	"Quit" },
+	{ VSTART	,	"Start character" },
+	{ VSTOP		,	"Stop character" },
+	{ VSUSP		,	"suspend char" },
+	{ VTIME		,	"Timeout in deciseconds for noncanon" },
+	{ 0			,	NULL },
+};
+
+
+
+
+
 void show_tty(struct termios *info);
 void get_settings(struct termios *);
 void set_settings(struct termios *);
 void get_option(char *, struct termios *);
-
+int change_char(char *, char *, struct termios *);
 
 /*
  *
@@ -56,16 +139,9 @@ int main(int ac, char *av[])
 	//go through arguments
 	while(av[i])
 	{
-		if(strcmp(av[i], "erase") == 0 && av[i + 1])
+		if((strcmp(av[i], "erase") == 0 || strcmp(av[i], "kill") == 0) && av[i + 1])
 		{
-			printf("change erase char to %d\n", av[i + 1][0]);
-			ttyinfo.c_cc[VERASE] = av[i + 1][0];
-			i += 2;
-		}
-		else if(strcmp(av[i], "kill") == 0 && av[i + 1])
-		{
-			printf("change kill char to %d\n", av[i + 1][0]);
-			ttyinfo.c_cc[VKILL] = av[i + 1][0];
+			change_char(av[i], av[i + 1], &ttyinfo);
 			i += 2;
 		}
 		else
@@ -84,6 +160,33 @@ void update_setting(int mode, struct termios *info)
 	info->c_cc[VERASE]
 	return;
 }*/
+
+int change_char(char *command, char *value, struct termios *info)
+{
+	if (strlen(value) > 1)
+	{
+		fprintf(stderr, "sttyl: invalid integer argument `%s'\n", value);
+		exit(1);
+	}
+	
+	if(strcmp(command, "erase") == 0)
+	{
+		printf("value is %s and temp is %d\n", value, value[0]);
+		info->c_cc[VERASE] = value[0];
+	}
+	else if(strcmp(command, "kill") == 0)
+	{
+		printf("value is %s and temp is %d\n", value, value[0]);
+		info->c_cc[VKILL] = value[0];
+	}
+	else
+	{
+		fprintf(stderr, "sttyl: invalid argument `%s'\n", command);
+		exit(1);
+	}
+	
+	return 0;
+}
 
 void get_option(char *option, struct termios *info)
 {
@@ -186,11 +289,21 @@ void show_tty(struct termios *info)
 	printf("stop = ^%c; ", info->c_cc[VSTOP] + C_OFFSET);	//stop
 	printf("stop = %d;\n", info->c_cc[VSTOP]);
 	
-	show_flagset(info->c_iflag, &input_flags, "iflags");	//input flags
-	show_flagset(info->c_cflag, &control_flags, "cflags");	//control flags
-	show_flagset(info->c_lflag, &local_flags, "lflags");	//local flags
-	show_flagset(info->c_oflag, &output_flags, "oflags");	//output flags
+	show_flagset(info->c_iflag, input_flags, "iflags");	//input flags
+	show_flagset(info->c_cflag, control_flags, "cflags");	//control flags
+	show_flagset(info->c_lflag, local_flags, "lflags");	//local flags
+	show_flagset(info->c_oflag, output_flags, "oflags");	//output flags
 	
 	return;
 }
+
+
+
+
+
+
+
+
+
+
 

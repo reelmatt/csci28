@@ -14,10 +14,10 @@ struct cflaginfo {cc_t c_value; char *c_name; };
 
 //typedef struct flaginfo 
 
-struct flaginfo input_flags[];
-struct flaginfo output_flags[];
-struct flaginfo control_flags[];
-struct flaginfo local_flags[];
+// struct flaginfo input_flags[];
+// struct flaginfo output_flags[];
+// struct flaginfo control_flags[];
+// struct flaginfo local_flags[];
 /*
 struct flaginfo input_flags[];
 struct flaginfo output_flags[];
@@ -25,7 +25,7 @@ struct flaginfo control_flags[];
 struct flaginfo local_flags[];
 */
 
-struct flaginfo * get_input_flags();
+//struct flaginfo * get_input_flags();
  
  /* 
   * ==========================
