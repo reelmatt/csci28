@@ -58,13 +58,13 @@ int main(int ac, char *av[])
 	{
 		if(strcmp(av[i], "erase") == 0 && av[i + 1])
 		{
-			printf("change erase char to %d\n", av[i + 1][0]);
+//			printf("change erase char to %d\n", av[i + 1][0]);
 			ttyinfo.c_cc[VERASE] = av[i + 1][0];
 			i += 2;
 		}
 		else if(strcmp(av[i], "kill") == 0 && av[i + 1])
 		{
-			printf("change kill char to %d\n", av[i + 1][0]);
+//			printf("change kill char to %d\n", av[i + 1][0]);
 			ttyinfo.c_cc[VKILL] = av[i + 1][0];
 			i += 2;
 		}
@@ -87,7 +87,7 @@ void update_setting(int mode, struct termios *info)
 
 void get_option(char *option, struct termios *info)
 {
-	printf("option to change is %s\n", option);
+//	printf("option to change is %s\n", option);
 	
 	
 	
@@ -101,8 +101,8 @@ void get_settings(struct termios *info)
 {
 	if(isatty(0) == 1)
 	{
-		printf("it IS a tty\n");
-		printf("name is %s\n", ttyname(0));
+//		printf("it IS a tty\n");
+//		printf("name is %s\n", ttyname(0));
 	}
 	else
 		printf("nope, not a tty");
@@ -125,7 +125,7 @@ void set_settings(struct termios *info)
 		exit(1);
 	}
 	
-	printf("setting attributes SUCCESSFUL\n");
+//	printf("setting attributes SUCCESSFUL\n");
 	return;
 }
 
@@ -165,32 +165,32 @@ void show_tty(struct termios *info)
 //	struct winsize w = get_term_alt();
 
 	/* print info */
-	printf("speed %lu baud; ", cfgetospeed(info));			//baud speed		
+	printf("speed %lu baud; ", cfgetospeed(info));			//baud speed
 	printf("rows %d; ", size[0]);							//rows
 	printf("cols %d;\n", size[1]);							//cols
 //	printf("rows %d; ", w.ws_row);
 //	printf("cols %d;\n", w.ws_col);
 
 	printf("intr = ^%c; ", info->c_cc[VINTR] + C_OFFSET);	//intr
-	printf("intr = %d;\n", info->c_cc[VINTR]);
-	
-	printf("erase = ^%c; ", info->c_cc[VERASE] + C_OFFSET);	//erase	
-	printf("erase = %d;\n", info->c_cc[VERASE]);	
+//	printf("intr = %d;\n", info->c_cc[VINTR]);
+
+	printf("erase = ^%c; ", info->c_cc[VERASE] + C_OFFSET);	//erase
+//	printf("erase = %d;\n", info->c_cc[VERASE]);
 
 	printf("kill = ^%c; ", info->c_cc[VKILL] + C_OFFSET);	//kill
-	printf("kill = %d;\n", info->c_cc[VKILL]);	
+//	printf("kill = %d;\n", info->c_cc[VKILL]);
 
 	printf("start = ^%c; ", info->c_cc[VSTART] + C_OFFSET);	//start
-	printf("start = %d;\n", info->c_cc[VSTART]);	
+//	printf("start = %d;\n", info->c_cc[VSTART]);
 
 	printf("stop = ^%c; ", info->c_cc[VSTOP] + C_OFFSET);	//stop
-	printf("stop = %d;\n", info->c_cc[VSTOP]);
-	
+//	printf("stop = %d;\n", info->c_cc[VSTOP]);
+
 	show_flagset(info->c_iflag, &input_flags, "iflags");	//input flags
 	show_flagset(info->c_cflag, &control_flags, "cflags");	//control flags
 	show_flagset(info->c_lflag, &local_flags, "lflags");	//local flags
 	show_flagset(info->c_oflag, &output_flags, "oflags");	//output flags
-	
+
 	return;
 }
 
