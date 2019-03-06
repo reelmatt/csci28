@@ -40,7 +40,10 @@
  * ==========================
  */
 
-struct flaginfo input_flags[] = {
+typedef struct flaginfo f_table;
+typedef struct cflaginfo c_table;
+
+f_table input_flags[] = {
 // 	{ IGNBRK	,	"Ignore BREAK condition on input" },
 // 	{ BRKINT	,	"Signal interrupt on break" },
 // 	{ IGNPAR	,	"Ignore chars with parity errors" },
@@ -55,7 +58,7 @@ struct flaginfo input_flags[] = {
 	{ 0			,	NULL}
 };
 
-struct flaginfo output_flags[] = {
+f_table output_flags[] = {
 	{ OPOST		,	"opost" },
 //	{ ONLCR		,	"map NL to CR-NL"},
 // 	{ OCRNL		,	"Map CR to NL on output" },
@@ -65,7 +68,7 @@ struct flaginfo output_flags[] = {
 	{ 0			,	NULL }
 };
 
-struct flaginfo control_flags[] = {
+f_table control_flags[] = {
 // 	{ CSIZE		,	"Character size mask" },
 // 	{ CSTOPB	,	"Set two stop bits, rather than one" },
 // 	{ CREAD		,	"Enable receiver" },
@@ -77,7 +80,7 @@ struct flaginfo control_flags[] = {
 	{ 0			,	NULL }
 };
 
-struct flaginfo local_flags[] = {
+f_table local_flags[] = {
 	{ ISIG		,	"isig" },
 	{ ICANON	,	"icanon" },
 	{ ECHO		,	"echo" },
@@ -111,19 +114,26 @@ struct cflaginfo char_flags[] = {
 // 	input_flags
 // };
 
-
+// struct table = { f_table [] };
+// f_table all_flags[] = {input_flags, output_flags, control_flags, local_flags};
+struct table all_flags = {
+	{ "input_flags", input_flags},
+	{ "output_flags", output_flags },
+	{ "control_flags", control_flags },
+	{ "local_flags", local_flags }
+};
 
 
 void show_tty(struct termios *info);
 void get_option(char *, struct termios *);
 int change_char(char *, char *, struct termios *);
 void show_charset(cc_t [], struct cflaginfo [], char *);
-void show_flagset(int, struct flaginfo [], char *);
-//void check_setting(int, struct flaginfo [], char *);
+void show_flagset(int, f_table [], char *);
+//void check_setting(int, f_table [], char *);
 int check_setting(char *, int, struct termios *);
 void fatal(char *, char *);
-struct flaginfo * lookup(char *);
-struct flaginfo * check_array(struct flaginfo[], char *);
+f_table * lookup(char *);
+f_table * check_array(f_table[], char *);
 
 /* FILE-SCOPE VARIABLES*/
 static char *progname;			//used for error-reporting
@@ -218,7 +228,7 @@ void get_option(char *option, struct termios *info)
 	
 	printf("AFTER option is %s\n", option);
 
-	struct flaginfo *item = lookup(option);
+	f_table *item = lookup(option);
 
 /*	if (check_setting(option, status, info) != 0)
 	{
@@ -244,7 +254,7 @@ void get_option(char *option, struct termios *info)
 	return;
 }
 /*
-//void check_setting(int mode, struct flaginfo flags[], char *option)
+//void check_setting(int mode, f_table flags[], char *option)
 int check_setting(char * option, int status, struct termios *info)
 {
 // 	show_flagset(info->c_iflag, input_flags, "iflags");		//input flags
@@ -274,9 +284,9 @@ int check_setting(char * option, int status, struct termios *info)
 	}
 }*/
 
-struct flaginfo * lookup(char *option)
+f_table * lookup(char *option)
 {
-	struct flaginfo *info = malloc(sizeof(struct flaginfo));
+	f_table *info = malloc(sizeof(f_table));
 	
 	if(info == NULL)
 	{
@@ -305,7 +315,7 @@ struct flaginfo * lookup(char *option)
 }
 
 /*
-void get_flag(struct flaginfo * store, char * option)
+void get_flag(f_table * store, char * option)
 {
 	
 	if(store = check_array(input_flags, option) == 0)
@@ -329,7 +339,7 @@ void get_flag(struct flaginfo * store, char * option)
 	return;
 }*/
 
-struct flaginfo * check_array(struct flaginfo flags[], char *option)
+f_table * check_array(f_table flags[], char *option)
 {
 	int i;
 	
@@ -356,7 +366,7 @@ struct flaginfo * check_array(struct flaginfo flags[], char *option)
  *	Purpose: 
  *	  Input: 
  */
-void show_flagset(int mode, struct flaginfo flags[], char *name)
+void show_flagset(int mode, f_table flags[], char *name)
 {
 	int i;
 	

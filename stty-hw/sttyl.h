@@ -6,11 +6,14 @@
  *
  */
 
-
+typedef struct flaginfo f_table;
+typedef struct cflaginfo c_table;
 
 //TABLES
 struct flaginfo {tcflag_t fl_value; char *fl_name; };
 struct cflaginfo {cc_t c_value; char *c_name; };
+struct table { char *table_name; f_table table[]; };
+
 //struct flags { struct flaginfo table; };
 
 //typedef struct flaginfo 
