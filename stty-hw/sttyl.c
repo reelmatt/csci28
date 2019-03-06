@@ -26,10 +26,8 @@
 #include	<stdlib.h>
 #include	<string.h>
 #include	<unistd.h>
+#include	<sys/ioctl.h>
 #include	"sttyl.h"
-#include <sys/ioctl.h>
-
-
 
 #define ERROR 1
 #define C_OFFSET ('A' - 1)
@@ -99,44 +97,60 @@ struct cflaginfo char_flags[] = {
 	{ VKILL		,	"kill" },
 //	{ VMIN		,	"min" },
 	{ VQUIT		,	"quit" },
-	{ VSTART	,	"start" },
-	{ VSTOP		,	"stop" },
+// 	{ VSTART	,	"start" },
+// 	{ VSTOP		,	"stop" },
 	{ VSUSP		,	"susp" },
 //	{ VTIME		,	"time" },
 	{ 0			,	NULL },
 };
 
+// struct flags all_flags[] = {
+// 	output_flags, 
+// 	control_flags,
+// 	local_flags,
+// 	input_flags
+// };
 
 
 
 
 void show_tty(struct termios *info);
-void get_settings(struct termios *);
-void set_settings(struct termios *);
 void get_option(char *, struct termios *);
 int change_char(char *, char *, struct termios *);
 void show_charset(cc_t [], struct cflaginfo [], char *);
 void show_flagset(int, struct flaginfo [], char *);
-void check_setting(int, struct flaginfo [], char *);
+//void check_setting(int, struct flaginfo [], char *);
+int check_setting(char *, int, struct termios *);
+void fatal(char *, char *);
+struct flaginfo * lookup(char *);
+struct flaginfo * check_array(struct flaginfo[], char *);
+
+/* FILE-SCOPE VARIABLES*/
+static char *progname;			//used for error-reporting
+
+
 /*
- *
+ *	main()
+ *	Purpose: 
+ *	 Method: 
  */
 int main(int ac, char *av[])
 {
-	int i = 1;
+	int i = 0;
 	struct termios ttyinfo;
-	get_settings(&ttyinfo);
+	get_settings(&ttyinfo);						//pull in current settings
+	progname = *av++;							//initialize to program name
 
-	//no arguments, just show default info
-	if (ac == 1)
+	if (ac == 1)								//no arguments
 	{
-		show_tty(&ttyinfo);
+		show_tty(&ttyinfo);						//just show default info
 		return 0;
 	}
 
 	//go through arguments
 	while(av[i])
 	{
+		//it is the erase or kill option, check next argument
 		if(strcmp(av[i], "erase") == 0 || strcmp(av[i], "kill") == 0)
 		{
 			if(av[i + 1])
@@ -146,8 +160,7 @@ int main(int ac, char *av[])
 			}
 			else
 			{
-				fprintf(stderr, "sttyl: missing argument to %s\n", av[i]);
-				exit(1);
+				fatal("missing argument to", av[i]);
 			}
 		}
 		else
@@ -160,55 +173,62 @@ int main(int ac, char *av[])
 	set_settings(&ttyinfo);
 	return 0;
 }
-/*
-void update_setting(int mode, struct termios *info)
-{
-	info->c_cc[VERASE]
-	return;
-}*/
 
+void fatal(char *err, char *arg)
+{
+	fprintf(stderr, "%s: %s `%s'\n", progname, err, arg);
+	exit(1);
+}
+
+/*
+ *	change_char()
+ *	Purpose: check args are valid and update either "erase" or "kill" char
+ *	  Input: 
+ *	 Errors: 
+ */
 int change_char(char *command, char *value, struct termios *info)
 {
+	//value is not a single char
 	if (strlen(value) > 1)
-	{
-		fprintf(stderr, "sttyl: invalid integer argument `%s'\n", value);
-		exit(1);
-	}
+		fatal("invalid integer argument", value);
 	
 	if(strcmp(command, "erase") == 0)
-	{
-//		printf("value is %s and temp is %d\n", value, value[0]);
-		info->c_cc[VERASE] = value[0];
-	}
+		info->c_cc[VERASE] = value[0];				//update VERASE value
 	else if(strcmp(command, "kill") == 0)
-	{
-//		printf("value is %s and temp is %d\n", value, value[0]);
-		info->c_cc[VKILL] = value[0];
-	}
+		info->c_cc[VKILL] = value[0];				//update VKILL value
 	else
-	{
-		fprintf(stderr, "sttyl: invalid argument `%s'\n", command);
-		exit(1);
-	}
+		fatal("invalid argument", command);			//not "erase" or "kill"
 	
 	return 0;
 }
 
+
+
+
 void get_option(char *option, struct termios *info)
 {
-	int status;
-	
-//	printf("option to change is %s\n", option);
+	int status = ON;
+	printf("BEFORE option is %s\n", option);
 	
 	if(option[0] == '-')
+	{
 		status = OFF;
-	else
-		status = ON;
+		option++;
+	}
 	
+	printf("AFTER option is %s\n", option);
 
-//	check_setting(info->c_lflag, local_flags, option);	
+	struct flaginfo *item = lookup(option);
+
+/*	if (check_setting(option, status, info) != 0)
+	{
+		fprintf(stderr, "error with check_setting\n");
+	}*/
+	
+	printf("RETURNED FROM lookup\n");
+	printf("Status is %d\n", status);
 		
-/*	if(status)
+/*	if(status == ON)
 	{
 		info->c_lflag |= ECHO;	//turn on bit
 	}
@@ -219,14 +239,21 @@ void get_option(char *option, struct termios *info)
 */	
 	
 	if(strcmp(option, "echo") == 0)
-		printf("current val is %d\n", (info->c_lflag & ECHO));
+		printf("current val is %d\n", (int) (info->c_lflag & ECHO));
 
 	return;
 }
-
-void check_setting(int mode, struct flaginfo flags[], char *option)
+/*
+//void check_setting(int mode, struct flaginfo flags[], char *option)
+int check_setting(char * option, int status, struct termios *info)
 {
+// 	show_flagset(info->c_iflag, input_flags, "iflags");		//input flags
+// 	show_flagset(info->c_cflag, control_flags, "cflags");	//control flags
+// 	show_flagset(info->c_lflag, local_flags, "lflags");		//local flags
+// 	show_flagset(info->c_oflag, output_flags, "oflags");	//output flags
+
 	int i;
+	
 	
 	for(i = 0; flags[i].fl_value != 0; i++)
 	{
@@ -245,47 +272,90 @@ void check_setting(int mode, struct flaginfo flags[], char *option)
 		}
 			
 	}
-}
+}*/
 
-void get_settings(struct termios *info)
+struct flaginfo * lookup(char *option)
 {
-	if(isatty(0) == 1)
+	struct flaginfo *info = malloc(sizeof(struct flaginfo));
+	
+	if(info == NULL)
 	{
-//		printf("it IS a tty\n");
-//		printf("name is %s\n", ttyname(0));
-	}
-	else
-		printf("nope, not a tty");
-
-	if ( tcgetattr(0, info) == -1 )
-	{
-		perror("cannot get tty info for stdin");
-		exit(1);
+		fprintf(stderr, "error with malloc()ing memory\n");
+		return NULL;
 	}
 	
-	return;
-}
-
-void set_settings(struct termios *info)
-{
-	//from setecho-better.c, week 5 course files
-	if ( tcsetattr( 0, TCSANOW, info ) == -1 )
+	//get_flag(&info, option);
+	info = check_array(input_flags, option);
+	
+	if(info == NULL)
+		info = check_array(control_flags, option);
+		
+	if(info == NULL)
+		info = check_array(local_flags, option);
+	
+	if(info == NULL)
+		info = check_array(output_flags, option);
+	
+	if(info == NULL)
 	{
-		perror("Setting attributes");
-		exit(1);
+		fatal("the option doesn't exist", option);
 	}
 	
-	//printf("setting attributes SUCCESSFUL\n");
-	return;
+	return info;
 }
 
-
-void lookup()
+/*
+void get_flag(struct flaginfo * store, char * option)
 {
 	
+	if(store = check_array(input_flags, option) == 0)
+		store = input_flags[];
+	
+	if(check_array(control_flags, option) == 0)
+		store = control_flags[];
+	
+	if(check_array(local_flags, option) == 0)
+		store = local_flags[];
+	
+	if(check_array(output_flags, option) == 0)
+		store = output_flags[];
+	
+	if(store == NULL)
+		fatal("invalid attribute", option);
+
+
+
+		
 	return;
+}*/
+
+struct flaginfo * check_array(struct flaginfo flags[], char *option)
+{
+	int i;
+	
+	for (i = 0; flags[i].fl_name != NULL; i++)
+	{
+		if(strcmp(flags[i].fl_name, option) == 0)
+		{
+			printf("index of option is %d\n", i);
+			return &flags[i];
+			//return i;
+		}
+	}
+	
+	return NULL;
 }
 
+
+
+
+
+
+/*
+ *	show_flagset()
+ *	Purpose: 
+ *	  Input: 
+ */
 void show_flagset(int mode, struct flaginfo flags[], char *name)
 {
 	int i;
@@ -307,6 +377,11 @@ void show_flagset(int mode, struct flaginfo flags[], char *name)
 	return;
 }
 
+/*
+ *	show_charset()
+ *	Purpose: 
+ *	  Input: 
+ */
 void show_charset(cc_t info[], struct cflaginfo chars[], char *name)
 {
 //	printf("in show_charset, first element is %d\n", chars[10].c_value);
@@ -326,7 +401,7 @@ void show_charset(cc_t info[], struct cflaginfo chars[], char *name)
 		else if (value == 127)
 			printf("%s = ^%c; ", chars[i].c_name, value - C_OFFSET);
 		else if (value > 127)
-			printf("<undef>; ");
+			printf("%s = <undef>; ", chars[i].c_name);
 		else
 			printf("%s = %c; ", chars[i].c_name, value);
 	}
@@ -337,13 +412,20 @@ void show_charset(cc_t info[], struct cflaginfo chars[], char *name)
 	return;
 }
 
+/*
+ *	show_tty()
+ *	Purpose: display the current settings for the tty
+ *	  Input: info, the struct containing the setting information
+ *	 Output: a collection of settings, separated by ';' and sorted by type
+ *	 Errors: get_term_size() will exit(1) if it encounters an error
+ */
 void show_tty(struct termios *info)
 {
 	//get terminal size
-	struct winsize w = get_term_alt();
+	struct winsize w = get_term_size();
 
-	/* print info */
-	printf("speed %d baud; ", cfgetospeed(info));			//baud speed		
+	// print info
+	printf("speed %d baud; ", (int) cfgetospeed(info));		//baud speed		
 	printf("rows %d; ", w.ws_row);							//rows
 	printf("cols %d;\n", w.ws_col);							//cols
 	
@@ -355,19 +437,7 @@ void show_tty(struct termios *info)
 	show_flagset(info->c_oflag, output_flags, "oflags");	//output flags
 
 	return;
-
-/*	OLD method
-	printf("intr = ^%c; ", info->c_cc[VINTR] + C_OFFSET);	//intr
-	printf("intr = %d;\n", info->c_cc[VINTR]);
-*/
 }
-
-
-
-
-
-
-
 
 
 

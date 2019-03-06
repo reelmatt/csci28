@@ -11,6 +11,7 @@
 //TABLES
 struct flaginfo {tcflag_t fl_value; char *fl_name; };
 struct cflaginfo {cc_t c_value; char *c_name; };
+//struct flags { struct flaginfo table; };
 
 //typedef struct flaginfo 
 
@@ -32,5 +33,6 @@ struct flaginfo local_flags[];
   *   termfuncs.
   * ==========================
   */
-int get_term_size(int [2]);
-struct winsize get_term_alt();
+struct winsize get_term_size();
+void get_settings(struct termios *);
+void set_settings(struct termios *);
