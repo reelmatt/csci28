@@ -49,25 +49,22 @@ int main(int ac, char *av[])
 	//no arguments, just show default info
 	if (ac == 1)
 	{
-		printf("FIRST erase = ^%c; ", ttyinfo.c_cc[VERASE] + C_OFFSET);	//erase
 		show_tty(&ttyinfo);
 		return 0;
 	}
-	else
-		printf("num args is %d\n", ac);
 
 	//go through arguments
 	while(av[i])
 	{
 		if(strcmp(av[i], "erase") == 0 && av[i + 1])
 		{
-			printf("change erase char to %c\n", av[i + 1][0]);
+			printf("change erase char to %d\n", av[i + 1][0]);
 			ttyinfo.c_cc[VERASE] = av[i + 1][0];
 			i += 2;
 		}
 		else if(strcmp(av[i], "kill") == 0 && av[i + 1])
 		{
-			printf("change kill char to %c\n", av[i + 1][0]);
+			printf("change kill char to %d\n", av[i + 1][0]);
 			ttyinfo.c_cc[VKILL] = av[i + 1][0];
 			i += 2;
 		}
@@ -175,20 +172,19 @@ void show_tty(struct termios *info)
 //	printf("cols %d;\n", w.ws_col);
 
 	printf("intr = ^%c; ", info->c_cc[VINTR] + C_OFFSET);	//intr
+	printf("intr = %d;\n", info->c_cc[VINTR]);
 	
-	printf("\nASCII of ERASE is %d, OFFSET is %d\n", info->c_cc[VERASE], C_OFFSET);
-	
-	int temp = info->c_cc[VERASE];
-	
-	if(temp < 65 || temp > 122)
-		printf("erase = ^%c; ", info->c_cc[VERASE] + C_OFFSET);	//erase
-	else
-		printf("erase = %c; ", info->c_cc[VERASE]);
-	
-	
+	printf("erase = ^%c; ", info->c_cc[VERASE] + C_OFFSET);	//erase	
+	printf("erase = %d;\n", info->c_cc[VERASE]);	
+
 	printf("kill = ^%c; ", info->c_cc[VKILL] + C_OFFSET);	//kill
+	printf("kill = %d;\n", info->c_cc[VKILL]);	
+
 	printf("start = ^%c; ", info->c_cc[VSTART] + C_OFFSET);	//start
-	printf("stop = ^%c;\n", info->c_cc[VSTOP] + C_OFFSET);	//stop
+	printf("start = %d;\n", info->c_cc[VSTART]);	
+
+	printf("stop = ^%c; ", info->c_cc[VSTOP] + C_OFFSET);	//stop
+	printf("stop = %d;\n", info->c_cc[VSTOP]);
 	
 	show_flagset(info->c_iflag, &input_flags, "iflags");	//input flags
 	show_flagset(info->c_cflag, &control_flags, "cflags");	//control flags
