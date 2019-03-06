@@ -26,8 +26,10 @@ struct winsize get_term_alt()
 	struct winsize w;
 	
 	if(ioctl(0, TIOCGWINSZ, &w) != 0)
-		fprintf(stderr, "oops\n");
-		//return NULL;
+	{
+		fprintf(stderr, "could not get window size\n");
+		exit(1);
+	}
 	
-	return w;
+	return w;	
 }
