@@ -27,6 +27,9 @@
 #include	<string.h>
 #include	<unistd.h>
 #include	"sttyl.h"
+#include <sys/ioctl.h>
+
+
 
 #define ERROR 1
 #define C_OFFSET ('A' - 1)
