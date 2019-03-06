@@ -137,10 +137,18 @@ int main(int ac, char *av[])
 	//go through arguments
 	while(av[i])
 	{
-		if((strcmp(av[i], "erase") == 0 || strcmp(av[i], "kill") == 0) && av[i + 1])
+		if(strcmp(av[i], "erase") == 0 || strcmp(av[i], "kill") == 0)
 		{
-			change_char(av[i], av[i + 1], &ttyinfo);
-			i += 2;
+			if(av[i + 1])
+			{
+				change_char(av[i], av[i + 1], &ttyinfo);
+				i += 2;
+			}
+			else
+			{
+				fprintf(stderr, "sttyl: missing argument to %s\n", av[i]);
+				exit(1);
+			}
 		}
 		else
 		{
