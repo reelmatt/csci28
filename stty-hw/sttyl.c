@@ -190,7 +190,7 @@ void get_option(char *option, struct termios *info)
 {
 	int status;
 	
-	printf("option to change is %s\n", option);
+//	printf("option to change is %s\n", option);
 	
 	if(option[0] == '-')
 		status = OFF;
@@ -198,7 +198,7 @@ void get_option(char *option, struct termios *info)
 		status = ON;
 	
 
-	check_setting(info->c_lflag, local_flags, option);	
+//	check_setting(info->c_lflag, local_flags, option);	
 		
 /*	if(status)
 	{
@@ -211,7 +211,7 @@ void get_option(char *option, struct termios *info)
 */	
 	
 	if(strcmp(option, "echo") == 0)
-		printf("current val is %lu\n", (info->c_lflag & ECHO));
+		printf("current val is %d\n", (info->c_lflag & ECHO));
 
 	return;
 }
@@ -224,7 +224,7 @@ void check_setting(int mode, struct flaginfo flags[], char *option)
 	{
 		if(strcmp(option, flags[i].fl_name) == 0)
 		{
-			printf("MATCHED option, %s\t", flags[i].fl_name);
+//			printf("MATCHED option, %s\t", flags[i].fl_name);
 		
 			if (mode & flags[i].fl_value)
 				printf("%s \n", flags[i].fl_name);
@@ -233,7 +233,7 @@ void check_setting(int mode, struct flaginfo flags[], char *option)
 		}
 		else
 		{
-			printf("NOPE, %s\n", flags[i].fl_name);
+//			printf("NOPE, %s\n", flags[i].fl_name);
 		}
 			
 	}
@@ -335,7 +335,7 @@ void show_tty(struct termios *info)
 	struct winsize w = get_term_alt();
 
 	/* print info */
-	printf("speed %lu baud; ", cfgetospeed(info));			//baud speed		
+	printf("speed %d baud; ", cfgetospeed(info));			//baud speed		
 	printf("rows %d; ", w.ws_row);							//rows
 	printf("cols %d;\n", w.ws_col);							//cols
 	
