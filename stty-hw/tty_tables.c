@@ -1,13 +1,21 @@
 #include <termios.h>
 #include <stdio.h>
+#include <string.h>
 #include "sttyl.h"
 
 //struct flaginfo {tcflag_t fl_value; char *fl_name; };
 //struct cflaginfo {cc_t c_value; char *c_name; };
 
-
 /*
-struct flaginfo input_flags[] = {
+ * ==========================
+ *   TABLES -- to be moved
+ * ==========================
+ */
+
+// typedef struct flaginfo f_table;
+// typedef struct cflaginfo c_table;
+
+f_info input_flags[] = {
 // 	{ IGNBRK	,	"Ignore BREAK condition on input" },
 // 	{ BRKINT	,	"Signal interrupt on break" },
 // 	{ IGNPAR	,	"Ignore chars with parity errors" },
@@ -22,22 +30,7 @@ struct flaginfo input_flags[] = {
 	{ 0			,	NULL}
 };
 
-
-struct flaginfo * get_input_flags()
-{
-	return input_flags;
-}
-
-
-
-
-// 
-// struct flaginfo get_input_flags()[]
-// {
-// 	return input_flags;
-// }
-
-struct flaginfo output_flags[] = {
+f_info output_flags[] = {
 	{ OPOST		,	"opost" },
 //	{ ONLCR		,	"map NL to CR-NL"},
 // 	{ OCRNL		,	"Map CR to NL on output" },
@@ -47,8 +40,7 @@ struct flaginfo output_flags[] = {
 	{ 0			,	NULL }
 };
 
-
-struct flaginfo control_flags[] = {
+f_info control_flags[] = {
 // 	{ CSIZE		,	"Character size mask" },
 // 	{ CSTOPB	,	"Set two stop bits, rather than one" },
 // 	{ CREAD		,	"Enable receiver" },
@@ -60,8 +52,7 @@ struct flaginfo control_flags[] = {
 	{ 0			,	NULL }
 };
 
-
-struct flaginfo local_flags[] = {
+f_info local_flags[] = {
 	{ ISIG		,	"isig" },
 	{ ICANON	,	"icanon" },
 	{ ECHO		,	"echo" },
@@ -73,21 +64,74 @@ struct flaginfo local_flags[] = {
 	{ 0			,	NULL }
 };
 
-
 struct cflaginfo char_flags[] = {
-	{ VEOF		,	"EOF"} ,
-	{ VEOL		,	"EOL" },
-	{ VERASE	,	"Erase char" },
-	{ VINTR		,	"Interrupt" },
-	{ VKILL		,	"Kill char" },
-	{ VMIN		,	"Minimum number of chars for noncanon read" },
-	{ VQUIT		,	"Quit" },
-	{ VSTART	,	"Start character" },
-	{ VSTOP		,	"Stop character" },
-	{ VSUSP		,	"suspend char" },
-	{ VTIME		,	"Timeout in deciseconds for noncanon" },
+	{ VEOF		,	"eof"} ,
+	{ VEOL		,	"eol" },
+	{ VERASE	,	"erase" },
+	{ VINTR		,	"intr" },
+	{ VKILL		,	"kill" },
+//	{ VMIN		,	"min" },
+	{ VQUIT		,	"quit" },
+// 	{ VSTART	,	"start" },
+// 	{ VSTOP		,	"stop" },
+	{ VSUSP		,	"susp" },
+//	{ VTIME		,	"time" },
 	{ 0			,	NULL },
 };
 
+// struct flags all_flags[] = {
+// 	output_flags, 
+// 	control_flags,
+// 	local_flags,
+// 	input_flags
+// };
 
-*/
+// struct table = { f_table [] };
+// f_table all_flags[] = {input_flags, output_flags, control_flags, local_flags};
+struct table_entry all_flags[] = {
+	{ "input_flags"		,	input_flags	 , NULL},
+	{ "control_flags"	,	control_flags , NULL },
+	{ "local_flags"		,	local_flags , NULL	 },
+	{ "output_flags"	,	output_flags , NULL},
+	{ NULL				,	NULL , NULL }
+};
+
+struct table_entry * get_full_table()
+{
+	return all_flags;
+// 	int i;
+// 	
+// 	for(i = 0; all_flags[i].table_name != NULL; i++)
+// 	{
+// 		if(strcmp(all_flags[i].table_name, table) == 0)
+// 		{
+// 			return &all_flags[i];
+// 		}
+// 	}
+// 	
+// 	return NULL;
+}
+
+f_info * get_table(char *table)
+{
+	int i;
+	
+	for(i = 0; all_flags[i].table_name != NULL; i++)
+	{
+		if(strcmp(all_flags[i].table_name, table) == 0)
+		{
+			return all_flags[i].table;
+		}
+	}
+	
+	return NULL;
+}
+
+c_info * get_chars()
+{
+	return char_flags;
+}
+
+
+
+

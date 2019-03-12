@@ -6,13 +6,21 @@
  *
  */
 
-typedef struct flaginfo f_table;
-typedef struct cflaginfo c_table;
+
 
 //TABLES
 struct flaginfo {tcflag_t fl_value; char *fl_name; };
 struct cflaginfo {cc_t c_value; char *c_name; };
-struct table { char *table_name; f_table table[]; };
+
+typedef struct flaginfo f_info;
+typedef struct cflaginfo c_info;
+
+struct table_entry { char *table_name; f_info * table; tcflag_t  * mode; };
+
+
+f_info * get_table(char *);
+c_info * get_chars();
+struct table_entry * get_full_table();
 
 //struct flags { struct flaginfo table; };
 
@@ -29,7 +37,6 @@ struct flaginfo control_flags[];
 struct flaginfo local_flags[];
 */
 
-//struct flaginfo * get_input_flags();
  
  /* 
   * ==========================

@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <termios.h>
 #include <unistd.h>
+#include <string.h>
 #include "sttyl.h"
 
 /* copied from termfuncs.c from proj0 (more03.c) at beginning of class */
@@ -50,6 +51,22 @@ void get_settings(struct termios *info)
 	{
 		perror("cannot get tty info for stdin");
 		exit(1);
+	}
+	
+	int i;
+	struct table_entry * all = get_full_table();
+	for (i = 0; all[i].table_name != NULL ; i++)
+	{
+		if(strcmp(all[i].table_name, "input_flags") == 0)
+			all[i].mode = &info->c_iflag;
+		else if (strcmp(all[i].table_name, "output_flags") == 0)
+			all[i].mode = &info->c_oflag;
+		else if (strcmp(all[i].table_name, "control_flags") == 0)
+			all[i].mode = &info->c_cflag;
+		else if (strcmp(all[i].table_name, "local_flags") == 0)
+			all[i].mode = &info->c_lflag;
+		else
+			printf("Unknown attribute table... %s\n", all[i].table_name);
 	}
 	
 	return;
