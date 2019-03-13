@@ -29,19 +29,11 @@
 #include	<sys/ioctl.h>
 #include	"sttyl.h"
 
-#define ERROR 1
-#define C_OFFSET ('A' - 1)
-#define ON	1
-#define OFF 0
-#define YES 1
-#define NO  0
-#define CHAR_MASK 64
 
-int getbaud(int);
 void show_tty(struct termios *info);
 void get_option(char *, struct termios *);
 int change_char(char *, char *, struct termios *);
-void show_charset(cc_t [], struct cflaginfo [], char *);
+void show_charset(cc_t [], char *);
 void show_flagset(tcflag_t *, char *);
 //void show_flagset(int, f_info [], char *);
 //void check_setting(int, f_table [], char *);
@@ -154,20 +146,17 @@ void get_option(char *option, struct termios *info)
 	}
 	
 	f_info *item = NULL;
-	
 	tcflag_t * mode = lookup(option, &item);
 
 	printf("RETURNED FROM LOOKUP\nMode is %lu\n", *mode);
 	
-	if(status == ON)
+	if(status == ON)				//turning on
 	{
-		printf("turning on...\n");
 		printf("mode is %lu and val is %lu\n", *mode, item->fl_value);
 		*mode |= item->fl_value;
 	}
-	else
+	else							//turning off
 	{
-		printf("turning off...\n");
 		printf("mode is %lu and val is %lu\n", *mode, item->fl_value);
 		*mode &= ~ item->fl_value;
 	}
@@ -181,22 +170,7 @@ void get_option(char *option, struct termios *info)
 
 //	printf("Status is %d\n", status);
 		
-/*	if(status == ON)
-	{
-		info->c_lflag |= ECHO;	//turn on bit
-		
-	}
-	else
-	{
-		info->c_lflag &= ~ECHO;	//turn off bit
-		
-	}	
-*/	
 	
-	
-	
-// 	if(strcmp(option, "echo") == 0)
-// 		printf("current val is %d\n", (int) (info->c_lflag & ECHO));
 
 	return;
 }
@@ -262,29 +236,7 @@ tcflag_t * lookup(char *option, f_info **flag)
 	}
 	
 	return 0;
-// 	get_flag(&info, option);
-// 	f_info *info = get_table("input_flags");
-// 	
-// 	struct * table_entry;
-// 
-// 	
-// 	info = check_array(info, option);
-// 	
-// 	if(info == NULL)
-// 		info = check_array(get_table("control_flags"), option);
-// 		
-// 	if(info == NULL)
-// 		info = check_array(get_table("local_flags"), option);
-// 	
-// 	if(info == NULL)
-// 		info = check_array(get_table("output_flags"), option);
-// 	
-// 	if(info == NULL)
-// 	{
-// 		fatal("the option doesn't exist", option);
-// 	}
-// 	
-// 	return info;
+
 }
 
 /*
@@ -329,11 +281,6 @@ f_info * check_array(f_info flags[], char *option)
 	return NULL;
 }
 
-
-
-
-
-
 /*
  *	show_flagset()
  *	Purpose: 
@@ -375,9 +322,10 @@ void show_flagset(tcflag_t * mode, char *kind)
  *			 where X is value XORed with the CHAR_MASK, 64. In practice, this
  *			 adds 64 to values 0-31 and subtracts from value 127 (delete).
  */
-void show_charset(cc_t info[], struct cflaginfo chars[], char *name)
+void show_charset(cc_t info[], char *name)
 {
 	int i;
+	struct cflaginfo * chars = get_chars();
 	
 	for(i = 0; chars[i].c_name != NULL; i++)
 	{
@@ -412,28 +360,27 @@ void show_charset(cc_t info[], struct cflaginfo chars[], char *name)
  */
 void show_tty(struct termios *info)
 {
-	//get terminal size
+	int i;
+
+	//get terminal size, baud speed, and load tables
 	struct winsize w = get_term_size();
+	int baud = getbaud(cfgetospeed(info));
+	struct table_entry * all = get_full_table();
 
 	// print info
-	printf("speed %d baud; ", getbaud(cfgetospeed(info)));	//baud speed
+	printf("speed %d baud; ", baud);						//baud speed
 	printf("rows %d; ", w.ws_row);							//rows
 	printf("cols %d;\n", w.ws_col);							//cols
 	
-	show_charset(info->c_cc, get_chars(), "cchars");			//characters
+	//print special characters
+	show_charset(info->c_cc, "cchars");
 	
-	struct table_entry * all = get_full_table();
-	
-	int i;
+	//print all current options located in flag tables
 	for (i = 0; all[i].table_name != NULL; i++)
 	{
-		//printf("going into show_flagset, name is %s, mode is %lu\n", all[i].table_name, *(all[i].mode));
 		show_flagset(all[i].mode, all[i].table_name);
 	}
-// 	show_flagset("input_flags");
-// 	show_flagset("control_flags");
-// 	show_flagset("local_flags");
-// 	show_flagset("output_flags");
+
 // 	show_flagset(info->c_iflag, get_table("input_flags"), "iflags");	//input flags
 // 	show_flagset(info->c_cflag, get_table("control_flags"), "cflags");	//control flags
 // 	show_flagset(info->c_lflag, get_table("local_flags"), "lflags");	//local flags
@@ -443,30 +390,3 @@ void show_tty(struct termios *info)
 }
 
 
-/*
- *
- *Note: copied from showtty.c file from week5 lecture, with modifications
- */
-int getbaud(int speed)
-{
-	switch(speed)
-	{
-		case B0:		return 0;		break;
-		case B50:		return 50;		break;
-		case B75:		return 75;		break;
-		case B110:		return 110;		break;
-		case B134:		return 134;		break;
-		case B150:		return 150;		break;
-		case B200:		return 200;		break;
-		case B300:		return 300;		break;
-		case B600:		return 600;		break;
-		case B1200:		return 1200;	break;
-		case B1800:		return 1800;	break;
-		case B2400:		return 2400;	break;
-		case B4800:		return 4800;	break;
-		case B9600:		return 9600;	break;
-		case B19200:	return 19200;	break;
-		case B38400:	return 38400;	break;
-		default:		return 0;		break;
-	}
-}

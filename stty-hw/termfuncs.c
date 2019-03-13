@@ -84,3 +84,32 @@ void set_settings(struct termios *info)
 	//printf("setting attributes SUCCESSFUL\n");
 	return;
 }
+
+
+/*
+ *
+ *Note: copied from showtty.c file from week5 lecture, with modifications
+ */
+int getbaud(int speed)
+{
+	switch(speed)
+	{
+		case B0:		return 0;		break;
+		case B50:		return 50;		break;
+		case B75:		return 75;		break;
+		case B110:		return 110;		break;
+		case B134:		return 134;		break;
+		case B150:		return 150;		break;
+		case B200:		return 200;		break;
+		case B300:		return 300;		break;
+		case B600:		return 600;		break;
+		case B1200:		return 1200;	break;
+		case B1800:		return 1800;	break;
+		case B2400:		return 2400;	break;
+		case B4800:		return 4800;	break;
+		case B9600:		return 9600;	break;
+		case B19200:	return 19200;	break;
+		case B38400:	return 38400;	break;
+		default:		return 0;		break;
+	}
+}

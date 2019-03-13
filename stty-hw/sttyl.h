@@ -7,6 +7,12 @@
  */
 
 
+#define ERROR 1
+#define ON	1
+#define OFF 0
+#define YES 1
+#define NO  0
+#define CHAR_MASK 64
 
 //TABLES
 struct flaginfo {tcflag_t fl_value; char *fl_name; };
@@ -46,3 +52,4 @@ struct flaginfo local_flags[];
 struct winsize get_term_size();
 void get_settings(struct termios *);
 void set_settings(struct termios *);
+int getbaud(int);
