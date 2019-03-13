@@ -15,35 +15,14 @@
 #define CHAR_MASK 64
 
 //TABLES
-struct flaginfo {tcflag_t fl_value; char *fl_name; };
-struct cflaginfo {cc_t c_value; char *c_name; };
+struct flags {tcflag_t fl_value; char *fl_name; };
+struct cchars {cc_t c_value; char *c_name; };
+struct table { char *name; struct flags * table; tcflag_t  * mode; };
 
-typedef struct flaginfo f_info;
-typedef struct cflaginfo c_info;
+struct flags * get_flags(char *);
+struct cchars * get_chars();
+struct table * get_table();
 
-struct table_entry { char *table_name; f_info * table; tcflag_t  * mode; };
-
-
-f_info * get_table(char *);
-c_info * get_chars();
-struct table_entry * get_full_table();
-
-//struct flags { struct flaginfo table; };
-
-//typedef struct flaginfo 
-
-// struct flaginfo input_flags[];
-// struct flaginfo output_flags[];
-// struct flaginfo control_flags[];
-// struct flaginfo local_flags[];
-/*
-struct flaginfo input_flags[];
-struct flaginfo output_flags[];
-struct flaginfo control_flags[];
-struct flaginfo local_flags[];
-*/
-
- 
  /* 
   * ==========================
   *   termfuncs.
@@ -51,5 +30,5 @@ struct flaginfo local_flags[];
   */
 struct winsize get_term_size();
 void get_settings(struct termios *);
-void set_settings(struct termios *);
+int set_settings(struct termios *);
 int getbaud(int);

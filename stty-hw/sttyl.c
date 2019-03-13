@@ -31,23 +31,22 @@
 #include	"sttyl.h"
 
 /* OPTION PROCESSING */
-void get_option(char *, struct termios *);
+void get_option(char *);
+struct cchars * valid_char_opt(char *);
 
 /* DISPLAY INFO */
 void show_tty(struct termios *info);
 void show_charset(cc_t [], char *);
 void show_flagset(tcflag_t *, char *);
-//void show_flagset(int, f_info [], char *);
 
 /* SETTING VALUES*/
-int change_char(char *, char *, struct termios *);
+void change_char(struct cchars *, char *, struct termios *);
 
 /* HELPER FUNCTIONS */
 void fatal(char *, char *);
 int check_setting(char *, int, struct termios *);
-//void check_setting(int, f_table [], char *);
-tcflag_t * lookup(char *, f_info **);
-f_info * check_array(f_info[], char *);
+tcflag_t * lookup(char *, struct flags **);
+struct flags * check_array(struct flags[], char *);
 
 /* FILE-SCOPE VARIABLES*/
 static char *progname;			//used for error-reporting
@@ -55,240 +54,179 @@ static char *progname;			//used for error-reporting
 
 /*
  *	main()
- *	Purpose: 
- *	 Method: 
+ *	 Method: Load the current termios settings and process command-line
+ *			 arguments. If none, it prints out the current values. Otherwise,
+ *			 check for invalid/missing arguments, update the values, and set
+ *			 the termios struct accordingly.
+ *	 Return: 0 on success, 1 on error. If there is an invalid/missing
+ *			 argument, the corresponding helper function will exit 1.
  */
 int main(int ac, char *av[])
 {
-	int i = 0;
 	struct termios ttyinfo;
-	get_settings(&ttyinfo);						//pull in current settings
-	progname = *av++;							//initialize to program name
+	get_settings(&ttyinfo);							//pull in current settings
+	progname = *av;									//init to program name
 
-	if (ac == 1)								//no arguments, just progname
+	if (ac == 1)									//no args, just progname
 	{
-		show_tty(&ttyinfo);						//show default info
-		return 0;								//and stop
+		show_tty(&ttyinfo);							//show default info
+		return 0;									//and stop
 	}
-
-// 	for(i = 0; *av; av++)
-// 		printf("arg %d is %s\n", i, *av);
-// 
-// 	i = 0;
-	//go through arguments
-	while(*av)
+	
+	while(*++av)
 	{
-		//it is a special-char option, check next argument
-		if(strcmp(*av, "erase") == 0 || strcmp(*av, "kill") == 0)
+		struct cchars * c = valid_char_opt(*av);	//special-char option?
+		
+		if(c != NULL)								//it is
 		{
-			if(av[1])
+			if(av[1])								//check next arg exists
 			{
-				change_char(*av, av[1], &ttyinfo);
-				//i++;
-				av++;
+				change_char(c, av[1], &ttyinfo);	//change it, or fatal()
+				av++;								//extra arg skip
 			}
 			else
-				fatal("missing argument to", *av);
+				fatal("missing argument to", *av);	//no arg for special-char
 		}
-		//set a non-special-char attribute
-		else
-			get_option(*av, &ttyinfo);
-		
-		//i++;
-		av++;
+		else										//a different attribute
+			get_option(*av);
 	}
 
-	set_settings(&ttyinfo);
-	return 0;
+	return set_settings(&ttyinfo);					//0 on success, 1 on error
 }
 
+/*
+ *	valid_char_opt()
+ *	Purpose: Check to see if an argument matches one of the special chars
+ *	  Input: arg, the option to check
+ *	 Return: cchars struct that matches the arg; NULL if no match
+ */
+struct cchars * valid_char_opt(char * arg)
+{
+	int i;
+	
+	struct cchars * chars = get_chars();		//load the char_table
+	
+	for(i = 0; chars[i].c_name != NULL; i++)	//go through all char options
+	{
+		if(strcmp(arg, chars[i].c_name) == 0)	//if it matches arg requested
+			return &chars[i];					//return ptr to that struct
+	}
+
+	return NULL;
+}
+
+/*
+ *	fatal()
+ *	Purpose: print message to stderr and exit
+ *	  Input: err, the type of error that was encounters
+ *			 arg, the value of the argument that caused a problem
+ *	 Return: Exit with 1.
+ */
 void fatal(char *err, char *arg)
 {
 	fprintf(stderr, "%s: %s `%s'\n", progname, err, arg);
 	exit(1);
 }
 
-//int check_char
 
 /*
  *	change_char()
- *	Purpose: check args are valid and update either "erase" or "kill" char
- *	  Input: 
- *	 Errors: 
+ *	Purpose: update a control char (i.e. "erase" or "kill")
+ *	  Input: c, the struct containing the index to update
+ *			 value, the command-line to arg containing the new char
+ *			 info, the struct where the new value is placed
+ *	 Errors: If the "value" argument is more than 1-char long, it is
+ *			 invalid, so print error and exit 1.
+ *	   Note: Bullet #2 in the assignment handout mentions the program is
+ *			 not required to handle caret-letter input. If it did, this
+ *			 is where it would be implemented.
  */
-int change_char(char *command, char *value, struct termios *info)
+void change_char(struct cchars * c, char *value, struct termios *info)
 {
 	//value is not a single char
 	if (strlen(value) > 1)
 		fatal("invalid integer argument", value);
-	
-	int i;
-	c_info * chars = get_chars();
-	
-	for (i = 0; chars[i].c_name != NULL; i++)
-	{
-		if(strcmp(command, chars[i].c_name) == 0)
-		{
-			printf("setting %s to char %c with val %d\n", command, value[0], value[0]);
-			info->c_cc[chars[i].c_value] = value[0];
-			return 0;
-		}
-	}
-	
-	fatal("invalid argument", command);			//not "erase" or "kill"
-	
-// 	if(strcmp(command, "erase") == 0)
-// 		info->c_cc[VERASE] = value[0];				//update VERASE value
-// 	else if(strcmp(command, "kill") == 0)
-// 		info->c_cc[VKILL] = value[0];				//update VKILL value
 
+	//set the value
+	info->c_cc[c->c_value] = value[0];
 	
-	return 1;
+	return;
 }
 
-
-
-
-void get_option(char *option, struct termios *info)
+/*
+ *	get_option()
+ *	Purpose: Turn the given option on/off in the termios struct
+ *	  Input: option, the argument to check and turn on/off
+ *			 info, the termios struct where to make the change
+ *	 Return: 
+ */
+void get_option(char *option)
 {
+	char * original = option;						//"store" the original
+	struct flags *flag = NULL;						//place to put flag info
+	tcflag_t * mode;
 	int status = ON;
-	
+
+	//check if option has leading dash
 	if(option[0] == '-')
 	{
-		status = OFF;
-		option++;
+		status = OFF;								//update status
+		option++;									//trim dash from option
 	}
 	
-	f_info *item = NULL;
-	tcflag_t * mode = lookup(option, &item);
+	//get the appropriate termios flag
+	//tcflag_t * mode = lookup(option, &item);
 
-	//printf("RETURNED FROM LOOKUP\nMode is %lu\n", *mode);
-	
-	if(status == ON)				//turning on
-	{
-		//printf("mode is %lu and val is %lu\n", *mode, item->fl_value);
-		*mode |= item->fl_value;
-	}
-	else							//turning off
-	{
-		//printf("mode is %lu and val is %lu\n", *mode, item->fl_value);
-		*mode &= ~ item->fl_value;
-	}
-	
+	if( (mode = lookup(option, &flag)) == NULL)		//lookup appropriate flag
+		fatal("illegal option", original);			//couldn't find it, exit
 
-/*	if (check_setting(option, status, info) != 0)
-	{
-		fprintf(stderr, "error with check_setting\n");
-	}*/
-	
-
-//	printf("Status is %d\n", status);
-		
-	
+	//Turn on or off according to status		
+	if(status == ON)
+		*mode |= flag->fl_value;					//turning on
+	else
+		*mode &= ~ flag->fl_value;					//turning off
 
 	return;
 }
+
 /*
-//void check_setting(int mode, f_table flags[], char *option)
-int check_setting(char * option, int status, struct termios *info)
-{
-// 	show_flagset(info->c_iflag, input_flags, "iflags");		//input flags
-// 	show_flagset(info->c_cflag, control_flags, "cflags");	//control flags
-// 	show_flagset(info->c_lflag, local_flags, "lflags");		//local flags
-// 	show_flagset(info->c_oflag, output_flags, "oflags");	//output flags
-
-	int i;
-	
-	
-	for(i = 0; flags[i].fl_value != 0; i++)
-	{
-		if(strcmp(option, flags[i].fl_name) == 0)
-		{
-//			printf("MATCHED option, %s\t", flags[i].fl_name);
-		
-			if (mode & flags[i].fl_value)
-				printf("%s \n", flags[i].fl_name);
-			else
-				printf("-%s \n", flags[i].fl_name);
-		}
-		else
-		{
-//			printf("NOPE, %s\n", flags[i].fl_name);
-		}
-			
-	}
-}*/
-
-tcflag_t * lookup(char *option, f_info **flag)
-{
-// 	f_table *info = malloc(sizeof(f_table));
-// 	
-// 	if(info == NULL)
-// 	{
-// 		fprintf(stderr, "error with malloc()ing memory\n");
-// 		return NULL;
-// 	}
-	
-	struct table_entry * all = get_full_table();
+ *	lookup()
+ *	Purpose: 
+ *	  Input: 
+ *	 Return: 
+ */
+tcflag_t * lookup(char *option, struct flags **flag)
+{	
+	struct table * all = get_table();
 	
 	int i;
-	for(i = 0; all[i].table_name != NULL; i++)
+	for(i = 0; all[i].name != NULL; i++)
 	{
-		f_info *info = get_table(all[i].table_name);
-		f_info *selected = check_array(info, option);
+		struct flags *info = get_flags(all[i].name);
+		struct flags *selected = check_array(info, option);
 		
 		if(selected != NULL)
 		{
-			//printf("Found it in table %s. Returning.\n", all[i].table_name);
-			*flag = selected;
-			return all[i].mode;
-		}
-		else
-		{
-			//printf("Not in table %s. Try again?\n", all[i].table_name);
+			*flag = selected;		//update variable in get_option
+			return all[i].mode;		//return the mode to use with mask
 		}
 	}
 	
-	return 0;
-
+	return NULL;
 }
 
 /*
-void get_flag(f_table * store, char * option)
-{
-	
-	if(store = check_array(input_flags, option) == 0)
-		store = input_flags[];
-	
-	if(check_array(control_flags, option) == 0)
-		store = control_flags[];
-	
-	if(check_array(local_flags, option) == 0)
-		store = local_flags[];
-	
-	if(check_array(output_flags, option) == 0)
-		store = output_flags[];
-	
-	if(store == NULL)
-		fatal("invalid attribute", option);
-
-
-
-		
-	return;
-}*/
-
-f_info * check_array(f_info flags[], char *option)
+ *
+ */
+struct flags * check_array(struct flags items[], char *option)
 {
 	int i;
 	
-	for (i = 0; flags[i].fl_name != NULL; i++)
+	for (i = 0; items[i].fl_name != NULL; i++)
 	{
-		if(strcmp(flags[i].fl_name, option) == 0)
+		if(strcmp(items[i].fl_name, option) == 0)
 		{
-//			printf("index of option is %d\n", i);
-			return &flags[i];
-			//return i;
+			return &items[i];
 		}
 	}
 	
@@ -303,23 +241,18 @@ f_info * check_array(f_info flags[], char *option)
 //void show_flagset(int mode, f_info flags[], char *name)
 void show_flagset(tcflag_t * mode, char *kind)
 {
-// 	struct table_entry *table = get_full_table(kind);
-// 	f_info * flags = table->table;
-	
-	
-	f_info * flags = get_table(kind);
-	//printf("Mode for %s is %lu\n", kind, *mode);
-	int i;
-	
-	for (i = 0; flags[i].fl_value != 0; i++)
+	struct flags * flag = get_flags(kind);
+
+	int i;	
+	for (i = 0; flag[i].fl_value != 0; i++)
 	{
 		if(i == 0)
 			printf("%s: ", kind);			
 
-		if (*mode & flags[i].fl_value)			//if ON
-			printf("%s ", flags[i].fl_name);
+		if (*mode & flag[i].fl_value)			//if ON
+			printf("%s ", flag[i].fl_name);
 		else
-			printf("-%s ", flags[i].fl_name);
+			printf("-%s ", flag[i].fl_name);
 	}
 	
 	if (i > 0)
@@ -339,7 +272,7 @@ void show_flagset(tcflag_t * mode, char *kind)
 void show_charset(cc_t info[], char *name)
 {
 	int i;
-	struct cflaginfo * chars = get_chars();
+	struct cchars * chars = get_chars();
 	
 	for(i = 0; chars[i].c_name != NULL; i++)
 	{
@@ -374,12 +307,10 @@ void show_charset(cc_t info[], char *name)
  */
 void show_tty(struct termios *info)
 {
-	int i;
-
 	//get terminal size, baud speed, and load tables
 	struct winsize w = get_term_size();
 	int baud = getbaud(cfgetospeed(info));
-	struct table_entry * all = get_full_table();
+	struct table * all = get_table();
 
 	// print info
 	printf("speed %d baud; ", baud);						//baud speed
@@ -390,15 +321,11 @@ void show_tty(struct termios *info)
 	show_charset(info->c_cc, "cchars");
 	
 	//print all current options located in flag tables
-	for (i = 0; all[i].table_name != NULL; i++)
+	int i;
+	for (i = 0; all[i].name != NULL; i++)
 	{
-		show_flagset(all[i].mode, all[i].table_name);
+		show_flagset(all[i].mode, all[i].name);
 	}
-
-// 	show_flagset(info->c_iflag, get_table("input_flags"), "iflags");	//input flags
-// 	show_flagset(info->c_cflag, get_table("control_flags"), "cflags");	//control flags
-// 	show_flagset(info->c_lflag, get_table("local_flags"), "lflags");	//local flags
-// 	show_flagset(info->c_oflag, get_table("output_flags"), "oflags");	//output flags
 
 	return;
 }

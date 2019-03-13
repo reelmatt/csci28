@@ -54,35 +54,36 @@ void get_settings(struct termios *info)
 	}
 	
 	int i;
-	struct table_entry * all = get_full_table();
-	for (i = 0; all[i].table_name != NULL ; i++)
+	struct table * all = get_table();
+	for (i = 0; all[i].name != NULL ; i++)
 	{
-		if(strcmp(all[i].table_name, "input_flags") == 0)
+		if(strcmp(all[i].name, "input_flags") == 0)
 			all[i].mode = &info->c_iflag;
-		else if (strcmp(all[i].table_name, "output_flags") == 0)
+		else if (strcmp(all[i].name, "output_flags") == 0)
 			all[i].mode = &info->c_oflag;
-		else if (strcmp(all[i].table_name, "control_flags") == 0)
+		else if (strcmp(all[i].name, "control_flags") == 0)
 			all[i].mode = &info->c_cflag;
-		else if (strcmp(all[i].table_name, "local_flags") == 0)
+		else if (strcmp(all[i].name, "local_flags") == 0)
 			all[i].mode = &info->c_lflag;
 		else
-			printf("Unknown attribute table... %s\n", all[i].table_name);
+			printf("Unknown attribute table... %s\n", all[i].name);
 	}
 	
 	return;
 }
 
-void set_settings(struct termios *info)
+int set_settings(struct termios *info)
 {
 	//from setecho-better.c, week 5 course files
 	if ( tcsetattr( 0, TCSANOW, info ) == -1 )
 	{
 		perror("Setting attributes");
-		exit(1);
+		return 1;
+		//exit(1);
 	}
 	
 	//printf("setting attributes SUCCESSFUL\n");
-	return;
+	return 0;
 }
 
 
