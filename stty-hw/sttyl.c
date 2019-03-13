@@ -157,7 +157,6 @@ void change_char(struct cchars * c, char *value, struct termios *info)
  *	get_option()
  *	Purpose: Turn the given option on/off in the termios struct
  *	  Input: option, the argument to check and turn on/off
- *			 info, the termios struct where to make the change
  *	 Return: 
  */
 void get_option(char *option)
@@ -173,14 +172,10 @@ void get_option(char *option)
 		status = OFF;								//update status
 		option++;									//trim dash from option
 	}
-	
-	//get the appropriate termios flag
-	//tcflag_t * mode = lookup(option, &item);
 
 	if( (mode = lookup(option, &flag)) == NULL)		//lookup appropriate flag
 		fatal("illegal option", original);			//couldn't find it, exit
-
-	//Turn on or off according to status		
+		
 	if(status == ON)
 		*mode |= flag->fl_value;					//turning on
 	else
@@ -191,9 +186,12 @@ void get_option(char *option)
 
 /*
  *	lookup()
- *	Purpose: 
- *	  Input: 
- *	 Return: 
+ *	Purpose: Find a given option in the defined tables (in tty_tables.c)
+ *	  Input: option, the argument we are searching for
+ *			 flag, where to store the struct that matched
+ *	 Return: If a match is found, the struct is assigned to the "flag" from
+ *			 input, and the corresponding tcflag_t is returned. Otherwise,
+ *			 NULL is returned to indicate failure.
  */
 tcflag_t * lookup(char *option, struct flags **flag)
 {	
@@ -249,10 +247,10 @@ void show_flagset(tcflag_t * mode, char *kind)
 		if(i == 0)
 			printf("%s: ", kind);			
 
-		if (*mode & flag[i].fl_value)			//if ON
-			printf("%s ", flag[i].fl_name);
+		if (*mode & flag[i].fl_value)
+			printf("%s ", flag[i].fl_name);		//if ON, just print
 		else
-			printf("-%s ", flag[i].fl_name);
+			printf("-%s ", flag[i].fl_name);	//if OFF, add '-'
 	}
 	
 	if (i > 0)

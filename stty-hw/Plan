@@ -4,121 +4,66 @@ Contains: Design details for CSCI E-215 homework 3
 ==================================================
 Project: sttyl
 
-Purpose: Search directories and subdirectories for files matching criteria.
+Purpose: Set a limited number of options for a terminal device interface.
 
 Outline:
-	pfind recursively searches, depth-first, through directories and any
-	subdirectories it encounters, starting with a provided path. If no options
-	are specified by the user, pfind prints all files it encounters. Users are
-	allowed to specified either a search query -- i.e. "*.c" or "Makefile".
-	Users can also specify a file type. If one, or both, options are specified
-	pfind will filter the results.
+	sttyl with no arguments will print the current values for options
+	it knows about. Special characters you can change are erase and
+	kill. Other attributes can be set (turned on) using the name, or
+	unset (turned off) by adding a '-' before the attribute. See usage
+	below for examples.
 
 Arguments:
-	Proper usage for the pfind program is as follows:
-		./pfind starting_path [-name file-or-pattern] [-type {b|c|d|f|l|p|s}]
+	sttyl accepts arguments for the following flags:
+
+			icrnl, hupcl, echo, echoe, opost, icanon, and isig
 	
-	The starting path must be specified, and be the first argument. The -name
-	and -type arguments are optional, can appear in any order, but must not
-	appear more than once. See the Input section below for more details
-	about the options for -name and -type.
-		
-Input:
-	pfind is controlled via the command line. It requires a starting path and
-	optionally allows for a filename/pattern to be specified and/or a file
-	type.
+	Flag arguments with a leading dash, '-', will turn that flag OFF for the
+	tty. Flag arguments without a leading dash, will turn that flag ON. The
+	following command line, for example, will turn "echo" and "icanon" ON,
+	and turn "hupcl" OFF.
 	
-	starting_path: a simple get_path() function prints an error message if
-			 the argument provided begins with a '-', which indicates an
-			 option. Otherwise, whatever the string entered by the user is
-			 stored. If it was an invalid path, an error message will be
-			 called later in the program.
+			./sttyl echo icanon -hupcl
 	
-	[-name]: a pattern to be stored in the "findme" variable. If no argument
-	         exists after the "-name" flag, an error is output and the
-	         program exits 1. Otherwise, whatever argument is present is
-	         stored.
+	sttyl also accepts arguments for the following control chars:
+
+			erase and kill
+			
+	These arguments take a proceeding value of a single char that is used to
+	replace the control char. The following command line, for example, will
+	set "erase" to 'm' and "kill" to '^X'
 	
-	[-type]: Compared with the st_mode value of a given file after lstat() is
-			 called. The following are the types specified in <sys/stat.h>
-			 with the corresponding letters being those used in the system find
-			 command.
-					b: block special
-					c: character special
-					d: directory
-					f: regular file
-					l: symbolic link
-					p: FIFO
-					s: socket
+			./sttyl erase m kill ^X
+	
+	The real stty accepts two-char values in the form of caret-letter, such as
+	"^X". In the command line above, '^X' was obtained by pressing Control-X
+	on the keyboard, as opposed to the '^' caret char AND the 'X' char. As
+	mentioned in bullet #2 of the assignment, this implementation is not
+	required to handle this case, and it does not.
+	
+	sttyl accepts multiple arguments on a single command line (as in the
+	examples above). sttyl also accepts no arguments, and will print info
+	about the tty in this case. See the "Output" section below for what
+	info it outputs.
 
 Output:
-	The output is a list of paths-to-filenames, sorted according to the order
-	of directory entries returned by readdir(). pfind performs a recursive,
-	depth-first search, so the contents of a subdirectory, if any, will precede
-	the remaining entries in the current/parent directory.
+	When setting values for control characters or flags, sttyl has no output.
+	If there is an invalid or missing argument, a message will be output to
+	stderr.
 	
-	pfind uses a helper function, construct_path(), to build the path to the
-	current file being examined. If no user-options are specified, or it
-	matches the options specified, printf() outputs it to the screen.
-	
-	There are two exceptions that relate to directories, the "." and ".."
-	entries. ".." entries will be skipped, both in the output and in the
-	recursive search (see Program Flow for why). "." entries will also be
-	skipped, because they are equivalent to previous output. For example,
-	if you start a pfind search in /usr, "bin" is one of the entries; a
-	directory. pfind will open "bin" and start recursively searching. "."
-	is skipped because that is equivalent to "/usr/bin", which has already
-	been output.
+	When sttyl is called with no arguments, sttyl will output basic info
+	about the tty. The info it prints includes the speed, size of the tty,
+	control chars, and state of all flags. The output is modeled after the
+	implementation of `stty` on macOS, which includes the flag-type as a
+	header -- e.g. "local-flags: ..." -- in the output. On the nice servers,
+	stty does not output those "headers", but the flags are still sorted
+	by type.
 
 Data Structures:
-	All code for the pfind program exists in pfind.c.
 	
-	Several pointers are used, such as a DIR* for the open directory and a
-	struct dirent* to keep track of the current directory entry. A char*
-	pointer is also used that is returned by the construct_path() function.
-	This function malloc()s enough memory to hold the parent (directory) and
-	child (directory entry), the null terminator, and a potential '/' char.
-	
-	If malloc() fails, NULL is returned which will cause lstat() to output an
-	error for a given entry listing in pfind output. If malloc() succeeds, the
-	function will copy into "newstr": 1) just the parent, if parent and child
-	are the same; 2) if parent has a '/' at the end, or child has a leading
-	'/', do not copy an extra slash (ex. a la "find ./subdir/" will output
-	./subdir/ and ./subdir/a, not ./subdir//a); or 3) "parent/child" with 
-	a '/' in between.
 
 Algorithms:
-    The code pfind uses to determine whether or not to output a given
-    directory entry is found in the check_entry() function. It is passed
-    the user-specified "-name" and/or "-type" options, the current directory
-    name (dirname), the current directory entry (fname), and the file mode
-    associated with fname.
-    
-    The default return value for check_entry() is YES, meaning all directory
-    entries WILL be printed UNLESS they do not match any/all options the user
-    specifies. It uses fnmatch() with the FNM_PERIOD flag to compare the
-    current entry with the "findme" pattern specified with "-name". FNM_PERIOD
-    is used so that any leading period in the "fname" must be matched in the
-    pattern in "findme". If no "findme" pattern was given, or the "fname" does
-    not match the patter, return NO and do not print.
-    
-    check_entry() then sees if the user specified an option for "-type" and
-    compares that value with the mode obtained by lstat(). The mode is
-    bitwise-and'ed with the S_IFMT constant specified by <sys/stat.h> and
-    compared with the bitmasked obtained with the get_type() helper function
-    during command-line argument processing. If no "-type" was specified, or
-    the mode does not match, return NO and do not print.
-    
-    Next, it checks for a "." or ".." path, and if the fname and dirname are
-    different -- e.g. fname = . and dirname = ./burrow -- than return NO and
-    do not print. This prevents "."  or ".." sub-directory entries from being
-    output, but allows for the top-level entries to be printed --
-    fname = . and dirname = .
-    
-    The other algorithm present in pfind appears in the construct_path()
-    function. Here, when concatenating a parent and child to create a full
-    path, it checks several conditions to output a valid path. See the Data
-    Structures section above for more info.
+
 
 Program Flow:
      1 - Process user options and store arguments in three variables: path,
@@ -170,10 +115,3 @@ Error Handling:
     
     file_error() takes a path as an argument and is called to output the
     errno related to an lstat() or opendir() call. 
-    
-Files:
-	pfind uses opendir, readdir, and closedir to process directory entries,
-	which are the files on disk. pfind uses readdir() to get the name of a
-	file and lstat() to get information about the file, like the type. See
-	Output, Data Structures, and Program Flow for more information about
-	pfind reads and processes these directory entries.
