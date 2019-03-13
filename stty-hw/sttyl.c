@@ -272,7 +272,7 @@ f_info * check_array(f_info flags[], char *option)
 	{
 		if(strcmp(flags[i].fl_name, option) == 0)
 		{
-			printf("index of option is %d\n", i);
+//			printf("index of option is %d\n", i);
 			return &flags[i];
 			//return i;
 		}
