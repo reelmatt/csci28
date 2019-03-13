@@ -148,16 +148,16 @@ void get_option(char *option, struct termios *info)
 	f_info *item = NULL;
 	tcflag_t * mode = lookup(option, &item);
 
-	printf("RETURNED FROM LOOKUP\nMode is %lu\n", *mode);
+	//printf("RETURNED FROM LOOKUP\nMode is %lu\n", *mode);
 	
 	if(status == ON)				//turning on
 	{
-		printf("mode is %lu and val is %lu\n", *mode, item->fl_value);
+		//printf("mode is %lu and val is %lu\n", *mode, item->fl_value);
 		*mode |= item->fl_value;
 	}
 	else							//turning off
 	{
-		printf("mode is %lu and val is %lu\n", *mode, item->fl_value);
+		//printf("mode is %lu and val is %lu\n", *mode, item->fl_value);
 		*mode &= ~ item->fl_value;
 	}
 	
@@ -225,13 +225,13 @@ tcflag_t * lookup(char *option, f_info **flag)
 		
 		if(selected != NULL)
 		{
-			printf("Found it in table %s. Returning.\n", all[i].table_name);
+			//printf("Found it in table %s. Returning.\n", all[i].table_name);
 			*flag = selected;
 			return all[i].mode;
 		}
 		else
 		{
-			printf("Not in table %s. Try again?\n", all[i].table_name);
+			//printf("Not in table %s. Try again?\n", all[i].table_name);
 		}
 	}
 	
