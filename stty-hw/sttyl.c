@@ -2,22 +2,23 @@
  * ==========================
  *   FILE: ./sttyl.c
  * ==========================
- * Purpose: Search directories and subdirectories for files matching criteria.
+ * Purpose: Set a limited number of options for a terminal device interface.
  *
- * Main features: as seen in the function signatures below, the main features
- *		of pfind can be broken into the main logic, memory allocation, option
- *		processing, and helper functions to output error messages.
+ * Outline: sttyl with no arguments will print the current values for options
+ *			it knows about. Special characters you can change are erase and
+ *			kill. Other attributes can be set (turned on) using the name, or
+ *			unset (turned off) by adding a '-' before the attribute. See usage
+ *			below for examples.
  *
- * Outline: pfind recursively searches, depth-first, through directories and
- *		any subdirectories it encounters, starting with a provided path.
- *		Results are filtered according to user-specified "-name" and/or
- *		"-type" options.
+ * Usage:	./sttyl							-- no options, prints current vals
+ *			./sttyl -echo onlcr erase ^X	-- turns off echo, turns on onlcr
+ *											   and sets the erase char to ^X
  *
- *
- * Data structures: construct_path() will malloc() a block of memory to store
- *		the full path of the current directory entry returned by the call to
- *		readdir(). If it is a directory, this is passed through to be
- *		recursively searched, otherwise, the char * is freed.
+ * Data structures: sttyl is a table-driven program. The tables can be found
+ *		in tty_tables.c where there is an array of structs for each of the
+ *		four flag types and one for the special character array. There is an
+ *		additional table that stores the four flag tables with pointers to
+ *		the tables and to the termios struct read when the program is run.
  */
 
 /* INCLUDES */
@@ -29,16 +30,22 @@
 #include	<sys/ioctl.h>
 #include	"sttyl.h"
 
-
-void show_tty(struct termios *info);
+/* OPTION PROCESSING */
 void get_option(char *, struct termios *);
-int change_char(char *, char *, struct termios *);
+
+/* DISPLAY INFO */
+void show_tty(struct termios *info);
 void show_charset(cc_t [], char *);
 void show_flagset(tcflag_t *, char *);
 //void show_flagset(int, f_info [], char *);
-//void check_setting(int, f_table [], char *);
-int check_setting(char *, int, struct termios *);
+
+/* SETTING VALUES*/
+int change_char(char *, char *, struct termios *);
+
+/* HELPER FUNCTIONS */
 void fatal(char *, char *);
+int check_setting(char *, int, struct termios *);
+//void check_setting(int, f_table [], char *);
 tcflag_t * lookup(char *, f_info **);
 f_info * check_array(f_info[], char *);
 
@@ -64,25 +71,31 @@ int main(int ac, char *av[])
 		return 0;								//and stop
 	}
 
+// 	for(i = 0; *av; av++)
+// 		printf("arg %d is %s\n", i, *av);
+// 
+// 	i = 0;
 	//go through arguments
-	while(av[i])
+	while(*av)
 	{
 		//it is a special-char option, check next argument
-		if(strcmp(av[i], "erase") == 0 || strcmp(av[i], "kill") == 0)
+		if(strcmp(*av, "erase") == 0 || strcmp(*av, "kill") == 0)
 		{
-			if(av[i + 1])
+			if(av[1])
 			{
-				change_char(av[i], av[i + 1], &ttyinfo);
-				i++;
+				change_char(*av, av[1], &ttyinfo);
+				//i++;
+				av++;
 			}
 			else
-				fatal("missing argument to", av[i]);
+				fatal("missing argument to", *av);
 		}
 		//set a non-special-char attribute
 		else
-			get_option(av[i], &ttyinfo);
+			get_option(*av, &ttyinfo);
 		
-		i++;
+		//i++;
+		av++;
 	}
 
 	set_settings(&ttyinfo);
@@ -116,6 +129,7 @@ int change_char(char *command, char *value, struct termios *info)
 	{
 		if(strcmp(command, chars[i].c_name) == 0)
 		{
+			printf("setting %s to char %c with val %d\n", command, value[0], value[0]);
 			info->c_cc[chars[i].c_value] = value[0];
 			return 0;
 		}
