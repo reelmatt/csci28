@@ -78,20 +78,20 @@ struct flags local_flags[] = {
 	{ 0			,	NULL }
 };
 
-struct cchars char_flags[] = {
-	{ VEOF		,	"eof"} ,
-	{ VEOL		,	"eol" },
-	{ VERASE	,	"erase" },
-	{ VINTR		,	"intr" },
-	{ VKILL		,	"kill" },
-//	{ VMIN		,	"min" },
-	{ VQUIT		,	"quit" },
-// 	{ VSTART	,	"start" },
-// 	{ VSTOP		,	"stop" },
-	{ VSUSP		,	"susp" },
-//	{ VTIME		,	"time" },
-	{ 0			,	NULL },
-};
+// struct cchars char_flags[] = {
+// 	{ VEOF		,	"eof"} ,
+// 	{ VEOL		,	"eol" },
+// 	{ VERASE	,	"erase" },
+// 	{ VINTR		,	"intr" },
+// 	{ VKILL		,	"kill" },
+// //	{ VMIN		,	"min" },
+// 	{ VQUIT		,	"quit" },
+// // 	{ VSTART	,	"start" },
+// // 	{ VSTOP		,	"stop" },
+// 	{ VSUSP		,	"susp" },
+// //	{ VTIME		,	"time" },
+// 	{ 0			,	NULL },
+// };
 
 struct table flag_tables[] = {
 	{ "input_flags"		,	input_flags		, NULL },
@@ -113,10 +113,10 @@ struct table * get_table()
 // 	return table;
 // }
 
-struct cchars * get_chars()
-{
-	return char_flags;
-}
+// struct cchars * get_chars()
+// {
+// 	return char_flags;
+// }
 
 struct flags * get_flags(char *table)
 {

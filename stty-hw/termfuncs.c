@@ -1,5 +1,5 @@
-#include <sys/ioctl.h>
 #include <stdio.h>
+#include <sys/ioctl.h>
 #include <stdlib.h>
 #include <termios.h>
 #include <unistd.h>
@@ -7,27 +7,11 @@
 #include "sttyl.h"
 
 /* copied from termfuncs.c from proj0 (more03.c) at beginning of class */
-// int get_term_size(int rows_cols[2])
-// {
-// 	struct winsize w;
-// 	int rv;
-// 	
-// 	//original code used STDOUT_FILENO for fd arg -- why?
-// 	rv = ioctl(0, TIOCGWINSZ, &w);
-// 	if(rv == 0)
-// 	{
-// 		rows_cols[0] = w.ws_row;
-// 		rows_cols[1] = w.ws_col;
-// 	}
-// 	
-// 	return rv;
-// }
-
 struct winsize get_term_size()
 {
 	struct winsize w;
 	
-	if(ioctl(0, TIOCGWINSZ, &w) != 0)
+	if(ioctl(STDOUT_FILENO, TIOCGWINSZ, &w) != 0)
 	{
 		fprintf(stderr, "could not get window size\n");
 		exit(1);
@@ -53,24 +37,9 @@ void get_settings(struct termios *info)
 		exit(1);
 	}
 	
-// 	int i;
-// 	struct table * all = get_table();
-// 	for (i = 0; all[i].name != NULL ; i++)
-// 	{
-// 		if(strcmp(all[i].name, "input_flags") == 0)
-// 			all[i].mode = &info->c_iflag;
-// 		else if (strcmp(all[i].name, "output_flags") == 0)
-// 			all[i].mode = &info->c_oflag;
-// 		else if (strcmp(all[i].name, "control_flags") == 0)
-// 			all[i].mode = &info->c_cflag;
-// 		else if (strcmp(all[i].name, "local_flags") == 0)
-// 			all[i].mode = &info->c_lflag;
-// 		else
-// 			printf("Unknown attribute table... %s\n", all[i].name);
-// 	}
-	
 	return;
 }
+
 
 int set_settings(struct termios *info)
 {
@@ -79,10 +48,8 @@ int set_settings(struct termios *info)
 	{
 		perror("Setting attributes");
 		return 1;
-		//exit(1);
 	}
-	
-	//printf("setting attributes SUCCESSFUL\n");
+
 	return 0;
 }
 
