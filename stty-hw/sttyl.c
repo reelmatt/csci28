@@ -47,6 +47,7 @@ void change_char(struct cchars *, char *, struct termios *);
 void fatal(char *, char *);
 int check_setting(char *, int, struct termios *);
 tcflag_t * lookup(char *, struct flags **);
+struct table_t * new_lookup(char *);
 struct flags * check_array(struct flags[], char *);
 
 /* FILE-SCOPE VARIABLES*/
@@ -175,36 +176,24 @@ void change_char(struct cchars * c, char *value, struct termios *info)
  */
 void get_option(char *option)
 {
-	char * original = option;						//"store" the original
-	struct flags *flag = NULL;						//place to put flag info
-	tcflag_t * mode;
 	int status = ON;
+	char * original = option;					//"store" the original
+	struct table_t * entry = NULL;				//place to put flag info
 
-	//check if option has leading dash
-	if(option[0] == '-')
+	
+	if(option[0] == '-')						//check if a leading dash
 	{
-		status = OFF;								//update status
-		option++;									//trim dash from option
+		status = OFF;							//will turn option off
+		option++;								//trim dash from option
 	}
 
-/* re-written for new struct 
-	struct table_t * selected = lookup(option);
-	if (selected == NULL)
-		fatal();
+	if ( (entry = new_lookup(option)) == NULL)	//lookup appropriate flag
+		fatal("illegal option", original);		//couldn't find it, exit
 		
 	if(status == ON)
-		selected->mode |= selected->flag;
+		*entry->mode |= entry->flag;			//turning on
 	else
-		selected->mode &= ~selected->flag;
-*/
-
-	if( (mode = lookup(option, &flag)) == NULL)		//lookup appropriate flag
-		fatal("illegal option", original);			//couldn't find it, exit
-		
-	if(status == ON)
-		*mode |= flag->fl_value;					//turning on
-	else
-		*mode &= ~flag->fl_value;					//turning off
+		*entry->mode &= ~entry->flag;			//turning off
 
 	return;
 }
@@ -218,39 +207,13 @@ void get_option(char *option)
  *			 input, and the corresponding tcflag_t is returned. Otherwise,
  *			 NULL is returned to indicate failure.
  */
-tcflag_t * lookup(char *option, struct flags **flag)
-{	
-	struct table * all = get_table();
-	
-	int i;
-	for(i = 0; all[i].name != NULL; i++)
-	{
-		struct flags *info = get_flags(all[i].name);
-		struct flags *selected = check_array(info, option);
-		
-		if(selected != NULL)
-		{
-			*flag = selected;		//update variable in get_option
-			return all[i].mode;		//return the mode to use with mask
-		}
-	}
-	
-	return NULL;
-}
-
-/*
- *
- */
-struct flags * check_array(struct flags items[], char *option)
+struct table_t * new_lookup(char *option)
 {
 	int i;
-	
-	for (i = 0; items[i].fl_name != NULL; i++)
+	for (i = 0; table[i].name != NULL; i++)
 	{
-		if(strcmp(items[i].fl_name, option) == 0)
-		{
-			return &items[i];
-		}
+		if(strcmp(option, table[i].name) == 0)
+			return &table[i];
 	}
 	
 	return NULL;
@@ -341,15 +304,11 @@ void show_tty(struct termios *info)
 //	struct table * all = get_table();
 
 	// print info
-	printf("speed %d baud; ", baud);						//baud speed
-	printf("rows %d; ", w.ws_row);							//rows
-	printf("cols %d;\n", w.ws_col);							//cols
-	
-	//print special characters
-	show_charset(info->c_cc, "cchars");
-	
-	//print all current options located in flag tables
-	show_flagset();
+	printf("speed %d baud; ", baud);		//baud speed
+	printf("rows %d; ", w.ws_row);			//rows
+	printf("cols %d;\n", w.ws_col);			//cols
+	show_charset(info->c_cc, "cchars");		//special characters
+	show_flagset();							//current flag states
 
 	return;
 }
