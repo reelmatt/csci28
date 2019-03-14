@@ -10,6 +10,24 @@
 #include <string.h>
 #include "sttyl.h"
 
+
+
+
+
+// struct table_t table[] = {
+// 	{ ICRNL	, "icrnl" , (tcflag_t *) ((char *)(&terminfo) + offsetof(struct termios, c_iflag))},
+// 	{ OPOST	, "opost" , (tcflag_t *) ((char *)(&terminfo) + offsetof(struct termios, c_oflag))},
+// 	{ HUPCL	, "opost" , (tcflag_t *) ((char *)(&terminfo) + offsetof(struct termios, c_cflag))},
+// 	{ ISIG	, "opost" , (tcflag_t *) ((char *)(&terminfo) + offsetof(struct termios, c_lflag))},
+// 	{ ICANON, "opost" , (tcflag_t *) ((char *)(&terminfo) + offsetof(struct termios, c_lflag))},
+// 	{ ECHO	, "opost" , (tcflag_t *) ((char *)(&terminfo) + offsetof(struct termios, c_lflag))},
+// 	{ ECHOE	, "opost" , (tcflag_t *) ((char *)(&terminfo) + offsetof(struct termios, c_lflag))},
+// 	{ ECHOK	, "opost" , (tcflag_t *) ((char *)(&terminfo) + offsetof(struct termios, c_lflag))},
+// 	{ 0		, NULL	  , 0 },
+// }
+
+
+
 /* TABLES */
 struct flags input_flags[] = {
 // 	{ IGNBRK	,	"Ignore BREAK condition on input" },
@@ -89,6 +107,11 @@ struct table * get_table()
 {
 	return flag_tables;
 }
+
+// struct table_t * get_new_table()
+// {
+// 	return table;
+// }
 
 struct cchars * get_chars()
 {

@@ -28,6 +28,7 @@
 #include	<string.h>
 #include	<unistd.h>
 #include	<sys/ioctl.h>
+#include	<ctype.h>
 #include	"sttyl.h"
 
 /* OPTION PROCESSING */
@@ -37,7 +38,7 @@ struct cchars * valid_char_opt(char *);
 /* DISPLAY INFO */
 void show_tty(struct termios *info);
 void show_charset(cc_t [], char *);
-void show_flagset(tcflag_t *, char *);
+void show_flagset();
 
 /* SETTING VALUES*/
 void change_char(struct cchars *, char *, struct termios *);
@@ -50,7 +51,20 @@ struct flags * check_array(struct flags[], char *);
 
 /* FILE-SCOPE VARIABLES*/
 static char *progname;			//used for error-reporting
+static struct termios ttyinfo;	//store the terminal settings
 
+struct table_t {tcflag_t flag; char *name; char *type; tcflag_t *mode; };
+struct table_t table[] = {
+	{ ICRNL	, "icrnl" , "iflag", &ttyinfo.c_iflag },		//input_flags
+	{ OPOST	, "opost" , "oflag", &ttyinfo.c_oflag },		//output_flags
+	{ HUPCL	, "hupcl" , "cflag", &ttyinfo.c_cflag },		//control_flags
+	{ ISIG	, "isig"  , "lflag", &ttyinfo.c_lflag },		//local_flags
+	{ ICANON, "icanon", "lflag", &ttyinfo.c_lflag },
+	{ ECHO	, "echo"  , "lflag", &ttyinfo.c_lflag },
+	{ ECHOE	, "echoe" , "lflag", &ttyinfo.c_lflag },
+	{ ECHOK	, "echok" , "lflag", &ttyinfo.c_lflag },
+	{ 0		, NULL	  , 0 },
+};
 
 /*
  *	main()
@@ -63,7 +77,7 @@ static char *progname;			//used for error-reporting
  */
 int main(int ac, char *av[])
 {
-	struct termios ttyinfo;
+//	struct termios ttyinfo;
 	get_settings(&ttyinfo);							//pull in current settings
 	progname = *av;									//init to program name
 
@@ -173,6 +187,17 @@ void get_option(char *option)
 		option++;									//trim dash from option
 	}
 
+/* re-written for new struct 
+	struct table_t * selected = lookup(option);
+	if (selected == NULL)
+		fatal();
+		
+	if(status == ON)
+		selected->mode |= selected->flag;
+	else
+		selected->mode &= ~selected->flag;
+*/
+
 	if( (mode = lookup(option, &flag)) == NULL)		//lookup appropriate flag
 		fatal("illegal option", original);			//couldn't find it, exit
 		
@@ -237,21 +262,24 @@ struct flags * check_array(struct flags items[], char *option)
  *	  Input: 
  */
 //void show_flagset(int mode, f_info flags[], char *name)
-void show_flagset(tcflag_t * mode, char *kind)
+void show_flagset()
 {
-	struct flags * flag = get_flags(kind);
-
-	int i;	
-	for (i = 0; flag[i].fl_value != 0; i++)
+	char * type = NULL;
+	
+	int i;
+	for(i = 0; table[i].name != NULL; i++)
 	{
-		if(i == 0)
-			printf("%s: ", kind);			
-
-        //modified based on section on 2019-03-13
-		if ((*mode & flag[i].fl_value) == flag[i].fl_value)
-			printf("%s ", flag[i].fl_name);		//if ON, just print
+		if(type == NULL || strcmp(type, table[i].type) != 0)
+		{
+			type = table[i].type;			//switch to new flag type
+			printf("\n%ss: ", type);		//add extra 's' to the type
+		}
+	
+		if ((*table[i].mode & table[i].flag) == table[i].flag)
+			printf("%s ", table[i].name);		//if ON, just print
 		else
-			printf("-%s ", flag[i].fl_name);	//if OFF, add '-'
+			printf("-%s ", table[i].name);		//if OFF, add '-'
+	
 	}
 	
 	if (i > 0)
@@ -281,15 +309,12 @@ void show_charset(cc_t info[], char *name)
 		if(i == 0)
 			printf("%s: ", name);
 		
-		//change to ctype()
-		//if(iscntrl(value))
-		//  printf("%s = ^%c; ", chars[i].c_name, value ^ CHAR_MASK);
-		
+
 		//Print the name and corresponding value, see "Note" above
-		if(value < 32 || value == 127)
-			printf("%s = ^%c; ", chars[i].c_name, value ^ CHAR_MASK);
-		else if (value > 127)   //(value == _POSIX_VDISABLE)
+		if (value == _POSIX_VDISABLE)
 			printf("%s = <undef>; ", chars[i].c_name);
+		else if(iscntrl(value))
+			printf("%s = ^%c; ", chars[i].c_name, value ^ CHAR_MASK);
 		else
 			printf("%s = %c; ", chars[i].c_name, value);
 	}
@@ -313,7 +338,7 @@ void show_tty(struct termios *info)
 	//get terminal size, baud speed, and load tables
 	struct winsize w = get_term_size();
 	int baud = getbaud(cfgetospeed(info));
-	struct table * all = get_table();
+//	struct table * all = get_table();
 
 	// print info
 	printf("speed %d baud; ", baud);						//baud speed
@@ -324,13 +349,11 @@ void show_tty(struct termios *info)
 	show_charset(info->c_cc, "cchars");
 	
 	//print all current options located in flag tables
-	int i;
-	for (i = 0; all[i].name != NULL; i++)
-	{
-		show_flagset(all[i].mode, all[i].name);
-	}
+	show_flagset();
 
 	return;
 }
+
+
 
 

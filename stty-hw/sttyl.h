@@ -18,6 +18,8 @@ struct flags {tcflag_t fl_value; char *fl_name; };
 struct cchars {cc_t c_value; char *c_name; };
 struct table { char *name; struct flags * table; tcflag_t  * mode; };
 
+
+
  /* 
   * ==========================
   *   tty_tables.c
@@ -26,6 +28,7 @@ struct table { char *name; struct flags * table; tcflag_t  * mode; };
 struct flags * get_flags(char *);
 struct cchars * get_chars();
 struct table * get_table();
+struct table_t * get_new_table();
 
  /* 
   * ==========================
