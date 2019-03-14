@@ -6,23 +6,21 @@ README for sttyl
 Summary:
 
 This submission contains the files:
-	README       -- this file, with answers to Q1 and Q3 of the assignment
-	sttyl.c      -- main logic to process options and display "find" results
+	README       -- this file
+	sttyl.c      -- all logic to retrieve, update, and show tty settings
 	Plan         -- design document for this assignment
 	Makefile     -- the Makefile
 	my_script.sh -- my sample test script, including a run of the lib215 script
 	typescript   -- a sample run, performed using my_script.sh
 
 Notes:
-	My pfind program uses some ideas I learned/copied from previous assignments
-	in Bruce's CSCI e26 class in the fall of 2018. Mainly, the idea of the
-	file-scope variable "progname" to keep track of the program name
-	("./pfind") to be used in helper functions that output messages to stderr
-	and exit. Also, construct_path is a helper function that I modified from a
-	"new_string" function I wrote/used in homeworks #4 and #5. For pfind, the
-	function also performs the task of concatenating the parent and child
-	strings; my original "new_string" function only malloc()ed memory and
-	exit(1) if there was an error.
+	Several functions, or parts of functions, were copied from samples
+	provided in the lecture files. When this code has been used, a note on the
+	source appears in the function comments. Any modifications were made by me.
+	For the getbaud() function, I used values from the Open Group standards
+	page, which is link in the comments. Other ideas were taken from section
+	meetings, and a Piazza post. These contributions are also noted where they
+	occur.
 	
 	I wrote my code using a combination of BBEdit on the Mac, and server-side
 	editing using Emacs. Indentation is 4-space wide tabs. With 4-space tabs,

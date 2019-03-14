@@ -10,71 +10,18 @@
 #-------------------------------------
 make clean
 
-make pfind
+make sttyl
 
-#-------------------------------------
-#    create tmp files to store output
-#-------------------------------------
-
-touch my.output
-touch find.output
-
-#-------------------------------------
-#    my positive tests
-#-------------------------------------
-
-#------------------------------------------
-# prints the starting path
-#
-
-./pfind . -name .
-
-find . -name .
-
-#------------------------------------------
-# creates a subdirectory, and searches ".."
-#
-
-mkdir burrow
-cd burrow
-
-../pfind .. > ../my.output
-
-find .. > ../find.output
-
-# compare output
-diff ../my.output ../find.output
-
-# go back and remove test directory
-cd ..
-rm -r burrow
-
-#------------------------------------------
-# test a long directory name
-#
-
-./pfind ~lib215/hw/pfind/pft.d -name cookie > my.output
-
-find ~lib215/hw/pfind/pft.d -name cookie > find.output
-
-# compare output
-diff my.output find.output
-
-#------------------------------------------
-# create and search for symbolic link
-#
-
-ln -s pfind.c pfind-link.tmp
-
-./pfind . -type l
-
-find . -type l
-
-rm pfind-link.tmp
 
 #-------------------------------------
 #    my negative tests
 #-------------------------------------
+
+# lkj
+./sttyl foobar
+
+
+
 
 # demo pathname out of order
 ./pfind -name foo .

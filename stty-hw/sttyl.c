@@ -14,15 +14,14 @@
  *			./sttyl -echo onlcr erase ^X	-- turns off echo, turns on onlcr
  *											   and sets the erase char to ^X
  *
- * Data structures: sttyl is a table-driven program. The tables can be found
- *		in tty_tables.c where there is an array of structs for each of the
- *		four flag types and one for the special character array. There is an
- *		additional table that stores the four flag tables with pointers to
- *		the tables and to the termios struct read when the program is run.
- *
- *     Note: The table design follows the final bullet point Brandon
- *           Williams mentioned in section on 2019-03-13. For further
- *           explanation of the pointer-casting ...
+ * Tables: sttyl is a table-driven program. The tables are defined below.
+ *		There is a single table that contains structs for each of the four
+ *		flag types in termios: c_iflag, c_oflag, c_cflag, and c_lflag. There
+ *		is a separate table that contains structs storing the special
+ *		characters. The table of flags contains an offset corresponding to
+ *		the position in a termios struct where the bit-mask for the flag can
+ *		be found. To read how this is implemented and works, read the Plan
+ *		document.
  */
 
 /* INCLUDES */
@@ -93,7 +92,7 @@ struct table_t * lookup(char *);
 static char *progname;			//used for error-reporting
 
 /*
- *  main()
+ *	main()
  *	 Method: Load the current termios settings and process command-line
  *			 arguments. If none, it prints out the current values. Otherwise,
  *			 check for invalid/missing arguments, update the values, and set
@@ -130,7 +129,7 @@ int main(int ac, char *av[])
 			get_option(*av, &ttyinfo);
 	}
 
-	return set_settings(&ttyinfo);					//0 on success, 1 on error
+	return set_settings(&ttyinfo);					//exit 1 on error, 0 on success
 }
 
 /*
@@ -143,7 +142,7 @@ int main(int ac, char *av[])
 void show_tty(struct termios *info)
 {
 	//get terminal size and baud speed
-	struct winsize w = get_term_size();
+	struct winsize w = get_term_size();		//exit 1 if error getting size
 	int baud = getbaud(cfgetospeed(info));
 
 	//print info
@@ -169,6 +168,11 @@ void show_tty(struct termios *info)
  *			 practice, this adds 64 to values 0-31 and subtracts 64 from
  *			 value 127, the DEL char (This idea was mentioned in piazza
  *			 post @171.). For all other values, they are printable ASCII.
+ *	   Note: Unlike the struct for flags, which stores the type of flag
+ *			 the array, the cchars does not since its identity is defined
+ *			 by its unique table. In this case, for printing out a header,
+ *			 the value of "cchars: " is coded into the print statement rather
+ *			 than a variable.
  */
 void show_charset(struct termios *info)
 {
@@ -206,9 +210,10 @@ void show_charset(struct termios *info)
  *			 Each flag type starts a new line.
  *	 Method: Iterate through the table containing all terminal flags. If
  *			 the flag is the first of its type, store the flag type and
- *			 print it as a header, a la the macOS version of stty. Then,
- *			 using the offset stored in the table, go to the correct place
- *			 in the termios struct to compare with the current flag value.
+ *			 print it as a header, with a new line, a la the macOS version
+ *			 of stty. Then, using the offset stored in the table, go to the
+ *			 correct place in the termios struct to compare with the current
+ *			 flag value.
  */
 void show_flagset(struct termios * info)
 {
@@ -226,10 +231,10 @@ void show_flagset(struct termios * info)
 		}
 
 		//get the pointer to termios struct stored in "entry"
-		tcflag_t * mode = (tcflag_t *)((char *)(info) + table[i].mode);
+		tcflag_t * mode_p = (tcflag_t *)((char *)(info) + table[i].mode);
 
 		//check if the flag is ON or OFF
-		if ((*mode & table[i].flag) == table[i].flag)
+		if ((*mode_p & table[i].flag) == table[i].flag)
 			printf("%s ", table[i].name);		//if ON, just print
 		else
 			printf("-%s ", table[i].name);		//if OFF, add '-'
@@ -279,12 +284,10 @@ int valid_char_opt(char * arg, struct ctable_t **c)
  */
 void change_char(struct ctable_t * c, char *value, struct termios *info)
 {
-	//value is not a single char
-	if (strlen(value) > 1 || ! isascii(value[0]))
-		fatal("invalid integer argument", value);
+	if (strlen(value) > 1 || ! isascii(value[0]))	//not an acceptable char
+		fatal("invalid integer argument", value);	//exit
 
-	//set the value
-	info->c_cc[c->c_value] = value[0];
+	info->c_cc[c->c_value] = value[0];				//set the value
 
 	return;
 }
@@ -335,6 +338,7 @@ struct table_t * lookup(char *option)
 	int i;
 	for (i = 0; table[i].name != NULL; i++)
 	{
+		//option matched table entry
 		if(strcmp(option, table[i].name) == 0)
 			return &table[i];
 	}
@@ -360,8 +364,9 @@ void fatal(char *err, char *arg)
  *	Purpose: Get the current size of the terminal, in rows and cols.
  *	 Return: On error, message output to stderr and exit 1. Otheriwse,
  *			 ioctl() stores the winsize struct in "w" and returns that.
+ *	   Note: ioctl() values copied from termfuncs.c from the more03
+ *			 assignment files at the beginning of class.
  */
-/* copied from termfuncs.c from proj0 (more03.c) at beginning of class */
 struct winsize get_term_size()
 {
 	struct winsize w;
@@ -402,16 +407,14 @@ void get_settings(struct termios *info)
  */
 int set_settings(struct termios *info)
 {
-	//from setecho-better.c, week 5 course files
 	if ( tcsetattr( 0, TCSANOW, info ) == -1 )
 	{
 		perror("Setting attributes");
-		return 1;
+		exit(1);
 	}
 
 	return 0;
 }
-
 
 /*
  *	getbaud()
@@ -445,6 +448,8 @@ int getbaud(int speed)
 		case B9600:		return 9600;	break;
 		case B19200:	return 19200;	break;
 		case B38400:	return 38400;	break;
-		default:		return 0;		break;
+		default:
+			perror("failed to get baud speed");
+			exit(1);
 	}
 }

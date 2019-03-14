@@ -9,8 +9,8 @@ Purpose: Set a limited number of options for a terminal device interface.
 Outline:
 	sttyl with no arguments will print the current values for options
 	it knows about. Special characters you can change are erase and
-	kill. Other attributes can be set (turned on) using the name, or
-	unset (turned off) by adding a '-' before the attribute. See usage
+	kill. Other attributes can be turned on using the name, or turned
+	off by adding a '-' before the attribute. See the Arguments section
 	below for examples.
 
 Arguments:
@@ -54,64 +54,87 @@ Output:
 	When sttyl is called with no arguments, sttyl will output basic info
 	about the tty. The info it prints includes the speed, size of the tty,
 	control chars, and state of all flags. The output is modeled after the
-	implementation of `stty` on macOS, which includes the flag-type as a
-	header -- e.g. "local-flags: ..." -- in the output. On the nice servers,
+	implementation of stty on macOS, which includes the flag-type as a
+	header -- e.g. "lflags: ..." -- in the output. On the nice servers,
 	stty does not output those "headers", but the flags are still sorted
 	by type.
 
 Data Structures:
+	sttyl is a table-driven program. Two structs are defined in sttyl.c: one
+	for the four flag types, and one for the special characters. Both tables
+	store the symbolic constant and the name of the associated flag or char.
+	The table_t struct for flags also stores a string of the type -- iflag,
+	oflag, cflag, and lflag -- and the offset value to find where the bit
+	mask is located in a termios struct.
 	
+	Two arrays, one for the four flag types and one for the special
+	characters, contain one struct per flag or char and are declared in the
+	same sttyl.c file.
+	
+	The method of using an offset value in the table is taken from Brandon
+	Williams' section on 2019-03-13. An offset is used to avoid the need of
+	a global termios struct and can be adapted to be used with any termios
+	struct. This offset value is used to construct a pointer to the correct
+	tcflag_t field for a given flag. To get the pointer, multiple casts are
+	required, and this is done in the show_flagset() and get_option()
+	functions. The specifics vary slightly depending on the function, but the
+	basics are as follows (again, copied from Brandon's section notes):
+	
+		tcflag_t * mode_p = (tcflag_t *)((char *)(info) + offset_val);
+			
+	First, "info", which is the address of the termios struct holding the
+	terminal settings, is cast as a char *. This is to make adding the
+	offset_val (which is an unsigned long), move the correct number of bytes.
+	At this stage, we have the address of the tcflag_t, and can cast it as
+	a tcflag_t *.
+	
+	Storing the flags and chars in these tables makes printing or changing
+	the values easy to do. Printing, done by show_charset() and
+	show_flagset(), loops through each table until the end, signified by the
+	NULL in the "name" member, and processing the data accordingly. To turn
+	a flag on or off, or set a special character, the same for loop is done
+	until a matching struct is found.
 
 Algorithms:
-
+	Printing:
+	
+	
+	Updating:
+	
 
 Program Flow:
-     1 - Process user options and store arguments in three variables: path,
-         name, and type. A path argument cannot being with a '-' as that
-         symbolizes an option. Accepted options are "-name" and "-type".
-         If a "-type" is specified, the helper function get_type() returns
-         the corresponding bitmask specified in <sys/stat.h>.
-     2 - Call on searchdir() with the user options. A path must be specified
-         otherwise it is a syntax error. Name and type need not be specified,
-         and default to NULL and 0 respectively.
-     3 - Treat the path, "dirname", specified on the command line as a
-         directory and try to open with a call to opendir().
-    3a - If opendir() fails, call on process_file() to treat the starting
-         path as a file. Call lstat() to retrieve file info and check if
-         the file type *was* a directory. If so, there was an error with
-         opendir() and we should print an error message and return. Else,
-         compare the file name and info with the criteria specified by the
-         user. If it matches, output the name of the file.
-    3b - If opendir() succeeds, call on process_dir() to iterate through
-         all entries in the directory. For each entry read in by readdir(),
-         call lstat() to retrieve file info and compare the name/info with
-         the criteria specified by the user. If it matches, output the name
-         of the file.
-    3c - Next, check to see if the current entry is a directory, and if so,
-         recursively call searchdir() with the current path as "dirname".
-     4 - If starting path was a file, searchdir() will return -- no directory
-         to close. If starting path was a directory, once each level of
-         recursion is complete, the malloc()ed path name will be freed and
-         directory closed.
+	1 - Load the terminal settings in to a termios struct.
+	2 - If there are no command-line arguments, print the current values
+		for the flags and chars. See Algorithms above, for more info.
+	3 - If there are arguments, loop through and process them accordingly.
+		First check for a special character, erase and kill are supported.
+		This also requires an ASCII char as a second argument. Otherwise,
+		see if it matches a supported flag. If these criteria are met,
+		update the flag or char and move on to the next (see Algorithms
+		and Data Structures for how the updating takes place). If any of
+		the arguments are not valid, print an error message and quit the
+		program (see Error Handling for more).
+	4 - After processing command-line arguments, apply the changes back
+		to the termios struct and return.
 
 Error Handling:
-    There are three helper functions to assist with reporting errors. "find"
-    has a few differently formatted errors that appear for different reasons,
-    and the three helper functions -- syntax_error(), file_error(), and
-    type_error() -- simplify outputting the correct message.
-    
-    syntax_error() takes no arguments and simply outputs an error about
-    correct usage, copied from the homework assignment. It exits 1 after
-    printing the message to stderr.
-    
-    type_error() is used when processing the user's command-line arguments.
-    It takes the "-option" entered and the value proceeding it. It exits 1
-    after printing the message to stderr.
-    
-    get_type() is another helper function used when processing the "-type"
-    flag. pfind only accepts b, c, d, f, l, p, or s as values for "-type".
-    If a letter besides one of those mentioned is entered, it is an
-    "Unkown argument" error, and the program will exit 1.
-    
-    file_error() takes a path as an argument and is called to output the
-    errno related to an lstat() or opendir() call. 
+	sttyl can run into an error due to a bad system call or invalid user
+	argument input.
+	
+	System calls:
+	Calls when getting or setting terminal settings, tcgetattr(),
+	tcsetattr(), cfgetospeed(), and ioctl(), may all produce an error. These
+	functions will return -1 and set errno according to the man page. An error
+	will most likely occur due to the file descriptor not being valid, or a
+	valid tty.
+	
+	Invalid input:
+	When processing command-line arguments, there are three situations where
+	invalid input can occur:
+		1) the special character (erase or kill) is missing an argument
+		2) the argument given for the special character is non-ASCII or
+		   not a single character
+		3) it is not a special character, or a recognized flag argument.
+	In each of these cases, a corresponding error message is output (with
+	the offending value given on the command line), and the program exits 1.
+	
