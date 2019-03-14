@@ -96,12 +96,6 @@ int main(int ac, char *av[])
 	get_settings(&ttyinfo);							//pull in current settings
 	progname = *av;									//init to program name
 
-	printf("address of ttyinfo is %lu\n", &ttyinfo);
-	printf("value of iflag is %lu\n", ttyinfo.c_iflag);
-	printf("value of oflag is %lu\n", ttyinfo.c_oflag);
-	printf("value of cflag is %lu\n", ttyinfo.c_cflag);
-	printf("value of lflag is %lu\n", ttyinfo.c_lflag);
-
 	if (ac == 1)									//no args, just progname
 	{
 		show_tty(&ttyinfo);							//show default info
@@ -330,16 +324,13 @@ void show_tty(struct termios *info)
 	//get terminal size, baud speed, and load tables
 	struct winsize w = get_term_size();
 	int baud = getbaud(cfgetospeed(info));
-//	struct table * all = get_table();
-
-	printf("\nin show_tty, addr of info is %lu\n", info);
 
 	// print info
 	printf("speed %d baud; ", baud);		//baud speed
 	printf("rows %d; ", w.ws_row);			//rows
 	printf("cols %d;\n", w.ws_col);			//cols
 	show_charset(info->c_cc, "cchars");		//special characters
-	show_flagset(info);							//current flag states
+	show_flagset(info);						//current flag states
 
 	return;
 }
