@@ -179,7 +179,7 @@ void get_option(char *option)
 	if(status == ON)
 		*mode |= flag->fl_value;					//turning on
 	else
-		*mode &= ~ flag->fl_value;					//turning off
+		*mode &= ~flag->fl_value;					//turning off
 
 	return;
 }
@@ -247,7 +247,8 @@ void show_flagset(tcflag_t * mode, char *kind)
 		if(i == 0)
 			printf("%s: ", kind);			
 
-		if (*mode & flag[i].fl_value)
+        //modified based on section on 2019-03-13
+		if ((*mode & flag[i].fl_value) == flag[i].fl_value)
 			printf("%s ", flag[i].fl_name);		//if ON, just print
 		else
 			printf("-%s ", flag[i].fl_name);	//if OFF, add '-'
@@ -280,10 +281,14 @@ void show_charset(cc_t info[], char *name)
 		if(i == 0)
 			printf("%s: ", name);
 		
+		//change to ctype()
+		//if(iscntrl(value))
+		//  printf("%s = ^%c; ", chars[i].c_name, value ^ CHAR_MASK);
+		
 		//Print the name and corresponding value, see "Note" above
 		if(value < 32 || value == 127)
 			printf("%s = ^%c; ", chars[i].c_name, value ^ CHAR_MASK);
-		else if (value > 127)
+		else if (value > 127)   //(value == _POSIX_VDISABLE)
 			printf("%s = <undef>; ", chars[i].c_name);
 		else
 			printf("%s = %c; ", chars[i].c_name, value);
