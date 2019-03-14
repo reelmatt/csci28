@@ -23,6 +23,7 @@
 
 /* INCLUDES */
 #include	<stdio.h>
+#include	<stddef.h>
 #include	<termios.h>
 #include	<stdlib.h>
 #include	<string.h>
@@ -32,13 +33,13 @@
 #include	"sttyl.h"
 
 /* OPTION PROCESSING */
-void get_option(char *);
+void get_option(char *, struct termios *);
 struct cchars * valid_char_opt(char *);
 
 /* DISPLAY INFO */
-void show_tty(struct termios *info);
+void show_tty(struct termios *);
 void show_charset(cc_t [], char *);
-void show_flagset();
+void show_flagset(struct termios *);
 
 /* SETTING VALUES*/
 void change_char(struct cchars *, char *, struct termios *);
@@ -52,18 +53,31 @@ struct flags * check_array(struct flags[], char *);
 
 /* FILE-SCOPE VARIABLES*/
 static char *progname;			//used for error-reporting
-static struct termios ttyinfo;	//store the terminal settings
+//static struct termios ttyinfo;	//store the terminal settings
 
-struct table_t {tcflag_t flag; char *name; char *type; tcflag_t *mode; };
+//struct table_t {tcflag_t flag; char *name; char *type; tcflag_t *mode; };
+// struct table_t table[] = {
+// 	{ ICRNL	, "icrnl" , "iflag", &ttyinfo.c_iflag },		//input_flags
+// 	{ OPOST	, "opost" , "oflag", &ttyinfo.c_oflag },		//output_flags
+// 	{ HUPCL	, "hupcl" , "cflag", &ttyinfo.c_cflag },		//control_flags
+// 	{ ISIG	, "isig"  , "lflag", &ttyinfo.c_lflag },		//local_flags
+// 	{ ICANON, "icanon", "lflag", &ttyinfo.c_lflag },
+// 	{ ECHO	, "echo"  , "lflag", &ttyinfo.c_lflag },
+// 	{ ECHOE	, "echoe" , "lflag", &ttyinfo.c_lflag },
+// 	{ ECHOK	, "echok" , "lflag", &ttyinfo.c_lflag },
+// 	{ 0		, NULL	  , 0 },
+// };
+
+struct table_t {tcflag_t flag; char *name; char *type; unsigned long mode; };
 struct table_t table[] = {
-	{ ICRNL	, "icrnl" , "iflag", &ttyinfo.c_iflag },		//input_flags
-	{ OPOST	, "opost" , "oflag", &ttyinfo.c_oflag },		//output_flags
-	{ HUPCL	, "hupcl" , "cflag", &ttyinfo.c_cflag },		//control_flags
-	{ ISIG	, "isig"  , "lflag", &ttyinfo.c_lflag },		//local_flags
-	{ ICANON, "icanon", "lflag", &ttyinfo.c_lflag },
-	{ ECHO	, "echo"  , "lflag", &ttyinfo.c_lflag },
-	{ ECHOE	, "echoe" , "lflag", &ttyinfo.c_lflag },
-	{ ECHOK	, "echok" , "lflag", &ttyinfo.c_lflag },
+	{ ICRNL	, "icrnl" , "iflag", offsetof(struct termios, c_iflag)},
+	{ OPOST	, "opost" , "oflag", offsetof(struct termios, c_oflag)},
+	{ HUPCL	, "hupcl" , "cflag", offsetof(struct termios, c_cflag)},
+	{ ISIG	, "isig" , "lflag", offsetof(struct termios, c_lflag)},
+	{ ICANON, "icanon" , "lflag", offsetof(struct termios, c_lflag)},
+	{ ECHO	, "echo" , "lflag", offsetof(struct termios, c_lflag)},
+	{ ECHOE	, "echoe" , "lflag", offsetof(struct termios, c_lflag)},
+	{ ECHOK	, "echok" , "lflag", offsetof(struct termios, c_lflag)},
 	{ 0		, NULL	  , 0 },
 };
 
@@ -78,9 +92,15 @@ struct table_t table[] = {
  */
 int main(int ac, char *av[])
 {
-//	struct termios ttyinfo;
+	struct termios ttyinfo;
 	get_settings(&ttyinfo);							//pull in current settings
 	progname = *av;									//init to program name
+
+	printf("address of ttyinfo is %lu\n", &ttyinfo);
+	printf("value of iflag is %lu\n", ttyinfo.c_iflag);
+	printf("value of oflag is %lu\n", ttyinfo.c_oflag);
+	printf("value of cflag is %lu\n", ttyinfo.c_cflag);
+	printf("value of lflag is %lu\n", ttyinfo.c_lflag);
 
 	if (ac == 1)									//no args, just progname
 	{
@@ -103,7 +123,7 @@ int main(int ac, char *av[])
 				fatal("missing argument to", *av);	//no arg for special-char
 		}
 		else										//a different attribute
-			get_option(*av);
+			get_option(*av, &ttyinfo);
 	}
 
 	return set_settings(&ttyinfo);					//0 on success, 1 on error
@@ -174,7 +194,7 @@ void change_char(struct cchars * c, char *value, struct termios *info)
  *	  Input: option, the argument to check and turn on/off
  *	 Return: 
  */
-void get_option(char *option)
+void get_option(char *option, struct termios *info)
 {
 	int status = ON;
 	char * original = option;					//"store" the original
@@ -189,11 +209,13 @@ void get_option(char *option)
 
 	if ( (entry = new_lookup(option)) == NULL)	//lookup appropriate flag
 		fatal("illegal option", original);		//couldn't find it, exit
+	
+	tcflag_t * new_mode = (tcflag_t *)((char *)(info) + entry->mode);
 		
 	if(status == ON)
-		*entry->mode |= entry->flag;			//turning on
+		*new_mode |= entry->flag;			//turning on
 	else
-		*entry->mode &= ~entry->flag;			//turning off
+		*new_mode &= ~entry->flag;			//turning off
 
 	return;
 }
@@ -225,8 +247,10 @@ struct table_t * new_lookup(char *option)
  *	  Input: 
  */
 //void show_flagset(int mode, f_info flags[], char *name)
-void show_flagset()
+void show_flagset(struct termios * info)
 {
+//	printf("show_flagset")
+
 	char * type = NULL;
 	
 	int i;
@@ -237,8 +261,13 @@ void show_flagset()
 			type = table[i].type;			//switch to new flag type
 			printf("\n%ss: ", type);		//add extra 's' to the type
 		}
+
+//		printf("in flagset, offset is %lu\t", table[i].mode);
+//		printf("addr of info is %lu\n", &info);
+		tcflag_t * mode = (tcflag_t *)((char *)(info) + table[i].mode);
+//		printf("mode is %lu\t", *mode);
 	
-		if ((*table[i].mode & table[i].flag) == table[i].flag)
+		if ((*mode & table[i].flag) == table[i].flag)
 			printf("%s ", table[i].name);		//if ON, just print
 		else
 			printf("-%s ", table[i].name);		//if OFF, add '-'
@@ -303,12 +332,14 @@ void show_tty(struct termios *info)
 	int baud = getbaud(cfgetospeed(info));
 //	struct table * all = get_table();
 
+	printf("\nin show_tty, addr of info is %lu\n", info);
+
 	// print info
 	printf("speed %d baud; ", baud);		//baud speed
 	printf("rows %d; ", w.ws_row);			//rows
 	printf("cols %d;\n", w.ws_col);			//cols
 	show_charset(info->c_cc, "cchars");		//special characters
-	show_flagset();							//current flag states
+	show_flagset(info);							//current flag states
 
 	return;
 }
