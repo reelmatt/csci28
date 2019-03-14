@@ -19,6 +19,10 @@
  *		four flag types and one for the special character array. There is an
  *		additional table that stores the four flag tables with pointers to
  *		the tables and to the termios struct read when the program is run.
+ *
+ *     Note: The table design follows the final bullet point Brandon
+ *           Williams mentioned in section on 2019-03-13. For further
+ *           explanation of the pointer-casting ...
  */
 
 /* INCLUDES */
@@ -89,7 +93,7 @@ struct table_t * lookup(char *);
 static char *progname;			//used for error-reporting
 
 /*
- *	main()
+ *  main()
  *	 Method: Load the current termios settings and process command-line
  *			 arguments. If none, it prints out the current values. Otherwise,
  *			 check for invalid/missing arguments, update the values, and set
@@ -109,9 +113,9 @@ int main(int ac, char *av[])
 		show_tty(&ttyinfo);							//show default info
 		return 0;									//and stop
 	}
-	
+
 	while(*++av)
-	{	
+	{
 		if( valid_char_opt(*av, &c) == YES )		//special-char option?
 		{
 			if(av[1])								//check next arg exists
@@ -158,19 +162,18 @@ void show_tty(struct termios *info)
  *	  Input: info, the struct containing terminal information
  *	 Output: A header identifying output as "cchars: ", followed by
  *			 ';' delimited "type = char" values.
- *	 Method: For disabled values, as denoted by _POSIX_VDISABLE, print 
+ *	 Method: For disabled values, as denoted by _POSIX_VDISABLE, print
  *			 "<undef>" (courtesy of the 2019-03-13 section by Brandon
  *			 Williams). For unprintable values, use ^X notation, where X
  *			 is the value XORed with the CHAR_MASK, 64 or ASCII '@'. In
  *			 practice, this adds 64 to values 0-31 and subtracts 64 from
  *			 value 127, the DEL char (This idea was mentioned in piazza
  *			 post @171.). For all other values, they are printable ASCII.
- *	   Note: 
  */
 void show_charset(struct termios *info)
 {
 	int i;
-	
+
 	//iterate through the cchars table (defined at top)
 	for(i = 0; cchars[i].c_name != NULL; i++)
 	{
@@ -180,7 +183,7 @@ void show_charset(struct termios *info)
 
 		//get value from termios struct for the current cchar
 		cc_t value = info->c_cc[cchars[i].c_value];
-				
+
 		//print the name and corresponding value, see "Method" above
 		if (value == _POSIX_VDISABLE)
 			printf("%s = <undef>; ", cchars[i].c_name);
@@ -211,7 +214,7 @@ void show_flagset(struct termios * info)
 {
 	int i;
 	char * type = NULL;
-	
+
 	//iterate through the table of flags (defined at top)
 	for(i = 0; table[i].name != NULL; i++)
 	{
@@ -219,23 +222,23 @@ void show_flagset(struct termios * info)
 		if(type == NULL || strcmp(type, table[i].type) != 0)
 		{
 			type = table[i].type;				//switch to new flag type
-			printf("\n%ss: ", type);			//print extra 's' to the flag type
+			printf("\n%ss: ", type);			//print extra 's' to header
 		}
 
 		//get the pointer to termios struct stored in "entry"
 		tcflag_t * mode = (tcflag_t *)((char *)(info) + table[i].mode);
-		
+
 		//check if the flag is ON or OFF
 		if ((*mode & table[i].flag) == table[i].flag)
 			printf("%s ", table[i].name);		//if ON, just print
 		else
 			printf("-%s ", table[i].name);		//if OFF, add '-'
 	}
-	
+
 	//if printed flags were printed, add a tailing newline
 	if (i > 0)
 		printf("\n");
-		
+
 	return;
 }
 
@@ -249,13 +252,13 @@ void show_flagset(struct termios * info)
 int valid_char_opt(char * arg, struct ctable_t **c)
 {
 	int i;
-	
+
 	for(i = 0; cchars[i].c_name != NULL; i++)	//go through all char options
 	{
 		if(strcmp(arg, cchars[i].c_name) == 0)	//if it matches arg requested
 		{
 			*c = &cchars[i];					//store ptr to that struct
-			return YES;								//return YES
+			return YES;							//return YES
 		}
 	}
 
@@ -290,7 +293,9 @@ void change_char(struct ctable_t * c, char *value, struct termios *info)
  *	get_option()
  *	Purpose: Turn the given option on/off in the termios struct.
  *	  Input: option, the argument to check and turn on/off
- *	 Return: 
+ *	 Return: If the option is not found in the table, fatal() is called
+ *			 to print an error message and exit 1. Otherwise, the flag
+ *			 is set to ON or OFF.
  */
 void get_option(char *option, struct termios *info)
 {
@@ -306,10 +311,10 @@ void get_option(char *option, struct termios *info)
 
 	if ( (entry = lookup(option)) == NULL)		//lookup appropriate flag
 		fatal("illegal argument", original);	//couldn't find it, exit
-	
+
 	//store pointer to termios struct stored in "entry"
 	tcflag_t * mode_p = (tcflag_t *)((char *)(info) + entry->mode);
-		
+
 	if(status == ON)
 		*mode_p |= entry->flag;					//turn ON
 	else
@@ -333,7 +338,7 @@ struct table_t * lookup(char *option)
 		if(strcmp(option, table[i].name) == 0)
 			return &table[i];
 	}
-	
+
 	return NULL;
 }
 
@@ -360,14 +365,14 @@ void fatal(char *err, char *arg)
 struct winsize get_term_size()
 {
 	struct winsize w;
-	
+
 	if(ioctl(STDOUT_FILENO, TIOCGWINSZ, &w) != 0)
 	{
 		fprintf(stderr, "could not get window size\n");
 		exit(1);
 	}
-	
-	return w;	
+
+	return w;
 }
 
 /*
@@ -384,7 +389,7 @@ void get_settings(struct termios *info)
 		perror("cannot get tty info for stdin");
 		exit(1);
 	}
-	
+
 	return;
 }
 
