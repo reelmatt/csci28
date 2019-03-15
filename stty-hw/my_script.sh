@@ -17,38 +17,23 @@ make sttyl
 #    my negative tests
 #-------------------------------------
 
-# lkj
+# illegal arguments
 ./sttyl foobar
+./sttyl foo bar
 
+# missing argument
+./sttyl erase
+./sttyl kill
 
-
-
-# demo pathname out of order
-./pfind -name foo .
-
-find -name foo .
-
-# invalid type option
-./pfind -type q
-
-find -type q
-
-# pathname cannot start with '-', treated as "-option"
-./pfind -foopath
-
-find -foopath
-
-#-------------------------------------
-#    remove tmp files
-#-------------------------------------
-rm my.output find.output
+# invalid integer argument (not a valid special char)
+./sttyl erase foo
 
 #-------------------------------------
 #    check memory usage
 #-------------------------------------
-valgrind --tool=memcheck --leak-check=yes ./pfind .
+valgrind --tool=memcheck --leak-check=yes ./sttyl
 
 #-------------------------------------
 #    run the course test-script
 #-------------------------------------
-~lib215/hw/pfind/test.pfind
+~lib215/hw/sttyl/test.sttyl
