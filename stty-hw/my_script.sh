@@ -27,13 +27,9 @@ make sttyl
 
 # invalid integer argument (not a valid special char)
 ./sttyl erase foo
-
-#-------------------------------------
-#    check memory usage
-#-------------------------------------
-valgrind --tool=memcheck --leak-check=yes ./sttyl
+./sttyl erase +m
 
 #-------------------------------------
 #    run the course test-script
 #-------------------------------------
-~lib215/hw/sttyl/test.sttyl
+~lib215/hw/stty/test.stty

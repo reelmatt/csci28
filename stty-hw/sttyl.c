@@ -129,7 +129,7 @@ int main(int ac, char *av[])
 			get_option(*av, &ttyinfo);
 	}
 
-	return set_settings(&ttyinfo);					//exit 1 on error, 0 on success
+	return set_settings(&ttyinfo);			//exit 1 on error, 0 on success
 }
 
 /*
