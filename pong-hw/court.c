@@ -1,10 +1,12 @@
 #include <curses.h>
+#include "court.h"
+#include "clock.h"
+#include "pong.h"
 
-#define BORDER 3
-
-void print_row();
-void print_col();
-void update_header();
+#define ROW_SYMBOL '-'
+#define COL_SYMBOL '|'
+static void print_row();
+static void print_col();
 
 /*
  *  print_row()
@@ -17,7 +19,7 @@ void print_row(int start)
     
     move(start, BORDER);
     for(i = BORDER; i < COLS - BORDER - 1; i++)
-        addch('-');
+        addch(ROW_SYMBOL);
     
     return;
 }
@@ -26,14 +28,20 @@ void print_col()
 {
     int i;
     for(i = BORDER + 1; i < LINES - BORDER - 1; i++)
-        mvaddch(i, BORDER, '|');
+        mvaddch(i, BORDER, COL_SYMBOL);
     
     return; 
 }
 
+/*
+ *	print_court()
+ *	Purpose: print the # balls left, time, and walls
+ */
 void print_court()
 {
-    update_header();
+    print_balls(NUM_BALLS);
+    print_time(); 
+    
     print_row(BORDER);                  //top row
     print_col();                        //left edge
     print_row((LINES - BORDER - 1));    //bottom row
@@ -41,9 +49,12 @@ void print_court()
     return;
 }
 
-void update_header()
+/*
+ *	print_balls()
+ *	Purpose: print the number of balls left to play
+ */
+void print_balls(int balls)
 {
     move(BORDER - 1, BORDER);
-    //printw("%s: %2d\t%s:  %2d:%2d", "BALLS LEFT", 3, "TOTAL TIME", 2, 19);
-    printw("%s: %2d", "BALLS LEFT", 3);
+    printw("%s: %2d", "BALLS LEFT", balls);
 }

@@ -1,3 +1,5 @@
+#define	TICKS_PER_SEC	50		/* affects speed	*/
+
 void clock_init();
-void show_time();
+void print_time();
 void clock_tick();

@@ -1,6 +1,7 @@
 #include <curses.h>
+#include "court.h"
+#include "clock.h"
 
-#define BORDER 3
 #define SECOND 60
 
 struct timer {
@@ -8,11 +9,6 @@ struct timer {
 };
 
 static struct timer clock;
-
-// void clock_init();
-// void show_time();
-// void clock_tick();
-
 
 void clock_init()
 {
@@ -23,17 +19,25 @@ void clock_init()
     return;
 }
 
-void show_time()
+void print_time()
 {
-    move(BORDER - 1, BORDER);
-    printw("\t\t\t%s: %.2d:%.2d", "TOTAL TIME", clock.mins, clock.secs);
+    move(BORDER -1 , BORDER + 20);
+    printw("%s: %.2d:%.2d", "TOTAL TIME", clock.mins, clock.secs);
+    move(LINES-1, COLS-1);						//park cursor
     refresh();
     return;
 }
 
+/*
+ *	clock_tick()
+ *	Purpose: Update timer struct every second
+ *	 Method: Once the number of ticks equals TICKS_PER_SEC, increment
+ *			 the number of seconds. When it reaches 60 seconds, reset
+ *			 to 0 and increment the number of minutes.
+ */
 void clock_tick()
 {
-    if(++clock.ticks == SECOND)
+    if(++clock.ticks == TICKS_PER_SEC)
     {
         if(++clock.secs == 60)
         {
@@ -42,10 +46,8 @@ void clock_tick()
         }
         
         clock.ticks = 0;
-        
-        show_time();
+        print_time();
     }
-    
     
     return;
 }

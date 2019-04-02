@@ -1,8 +1,13 @@
 #include <curses.h>
 #include <signal.h>
+#include <stdlib.h>
 #include "paddle.h"
+#include "ball.h"
+#include "pong.h"
+#include "court.h"
 #include "bounce.h"
 
+//#define DEBUG
 #define	DFL_SYMBOL	'#'
 #define PAD_SIZE 5
 
@@ -12,72 +17,117 @@ struct pppaddle {
     int pad_mintop, pad_maxbot;
 };
 
-static struct pppaddle paddle;
+//static struct pppaddle paddle;
 static void draw_paddle();
+// static void refresh_paddle(struct pppaddle *);
 
 
-void draw_paddle()
+
+
+void draw_paddle(struct pppaddle * pp)
 {
     int i;
 
-    for(i = paddle.pad_top; i < paddle.pad_bot; i++)
-        mvaddch(i, paddle.pad_col, paddle.pad_char);
+    for(i = pp->pad_top; i < pp->pad_bot; i++)
+        mvaddch(i, pp->pad_col, pp->pad_char);
 
-    move(0, 30);
-    printw("pad_top = %.2d, pad_bot = %.2d", paddle.pad_top, paddle.pad_bot);
+	#ifdef DEBUG
+		move(0, 30);
+		printw("pad_top = %.2d, pad_bot = %.2d", pp->pad_top, pp->pad_bot);
+	#endif
 
+	move(LINES-1, COLS-1);						//park cursor
     refresh();
     return; 
 }
 
-void paddle_init()
+/*
+ *	new_paddle()
+ *	Purpose: instantiate a new paddle struct
+ */
+struct pppaddle * new_paddle()
 {
-    paddle.pad_char = DFL_SYMBOL;
-    paddle.pad_mintop = 3;
-    paddle.pad_maxbot = LINES - 3;
-    paddle.pad_col = COLS - 3;
-    paddle.pad_top = (LINES / 2) - (PAD_SIZE / 2);
-    paddle.pad_bot = paddle.pad_top + PAD_SIZE;
+	struct pppaddle * temp = malloc(sizeof(struct pppaddle));
+	
+	if(temp == NULL)
+	{
+		perror("couldn't make a paddle");
+		wrap_up(1);
+	}
+	
+	paddle_init(temp);
+	
+	return temp;
+}
+
+void paddle_init(struct pppaddle * pp)
+{	
+	pp->pad_char = DFL_SYMBOL;
+	pp->pad_mintop = BORDER;
+	pp->pad_maxbot = LINES - BORDER;
+	pp->pad_col = COLS - BORDER;
+	pp->pad_top = (LINES / 2) - (PAD_SIZE / 2);
+	pp->pad_bot = pp->pad_top + PAD_SIZE;
+
+    draw_paddle(pp);
     
-    draw_paddle();
+    return;
 }
 
-void paddle_up()
+// void refresh_paddle(struct pppaddle * pp)
+// {
+// 	
+// }
+
+/*
+ *	paddle_up()
+ *	Purpose: check the position of a paddle, and move up if space
+ *	  Input: pp, pointer to a paddle struct
+ *	 Method: Check if the top-most part of the paddle is at the border,
+ *			 If there is room to move, 
+ */
+void paddle_up(struct pppaddle * pp)
 {
-    if( (paddle.pad_top - 1) > paddle.pad_mintop)
+    if( (pp->pad_top - 1) > pp->pad_mintop)
     {
-        mvaddch(paddle.pad_bot - 1, paddle.pad_col, BLANK);
-        --paddle.pad_top;
-        --paddle.pad_bot;
-        draw_paddle();
+        mvaddch(pp->pad_bot - 1, pp->pad_col, BLANK);
+        --pp->pad_top;
+        --pp->pad_bot;
+        mvaddch(pp->pad_top, pp->pad_col, DFL_SYMBOL);
+        move(LINES-1, COLS-1);						//park cursor
+//         draw_paddle(pp);
     }
 }
 
-void paddle_down()
+void paddle_down(struct pppaddle * pp)
 {
-    if( (paddle.pad_bot + 1) < paddle.pad_maxbot)
+    if( (pp->pad_bot + 1) < pp->pad_maxbot)
     {
-        mvaddch(paddle.pad_top, paddle.pad_col, BLANK);
-        ++paddle.pad_top;
-        ++paddle.pad_bot;
-        draw_paddle();
+        mvaddch(pp->pad_top, pp->pad_col, BLANK);
+        ++pp->pad_top;
+        ++pp->pad_bot;
+        mvaddch(pp->pad_bot - 1, pp->pad_col, DFL_SYMBOL);
+        move(LINES-1, COLS-1);						//park cursor
+//         draw_paddle(pp);
     }
 }
 
-int paddle_contact(int y, int x)
+/*
+ *	paddle_contact()
+ *	Purpose: Determine if a ball's current (y, x) position hits a paddle
+ *	  Input: y, ball's vertical coordinate
+ *			 x, ball's horizontal coordinate
+ *			 pp, pointer to a paddle struct
+ *	 Return: CONTACT, if the (y, x) is touching the paddle
+ *			 NO_CONTACT, all other cases
+ */
+int paddle_contact(int y, int x, struct pppaddle * pp)
 {
     //in the right-most col
-    if(y >= paddle.pad_top && y <= paddle.pad_bot)
+    if(y >= pp->pad_top && y <= pp->pad_bot)
     {
-
-        return 1;
-//         if(y > paddle.pad_mintop && y < paddle.pad_maxbot)
-//         {
-//             return 1;
-//         }
-        
-        
+        return CONTACT;        
     }
     
-    return 0;
+    return NO_CONTACT;
 }
