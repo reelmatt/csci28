@@ -58,3 +58,8 @@ void print_balls(int balls)
     move(BORDER - 1, BORDER);
     printw("%s: %2d", "BALLS LEFT", balls);
 }
+
+void exit_message()
+{
+	printw("You lasted %.2d:%.2d");
+}

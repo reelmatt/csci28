@@ -1,5 +1,5 @@
 #define NUM_BALLS 3
-#define	BLANK		' '
+#define	BLANK ' '
 
 
 void alarm_handler(int);

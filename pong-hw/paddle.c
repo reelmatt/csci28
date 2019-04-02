@@ -22,8 +22,6 @@ static void draw_paddle();
 // static void refresh_paddle(struct pppaddle *);
 
 
-
-
 void draw_paddle(struct pppaddle * pp)
 {
     int i;
@@ -55,19 +53,24 @@ struct pppaddle * new_paddle()
 		wrap_up(1);
 	}
 	
-	paddle_init(temp);
+	int court_height = LINES - (BORDER * 2);
+	int size = (court_height / 3);
+	int start_pos = (LINES / 2) - (size / 2);
+	
+	paddle_init(temp, start_pos, size);
 	
 	return temp;
 }
 
-void paddle_init(struct pppaddle * pp)
+void paddle_init(struct pppaddle * pp, int pos, int range)
 {	
 	pp->pad_char = DFL_SYMBOL;
 	pp->pad_mintop = BORDER;
 	pp->pad_maxbot = LINES - BORDER;
+	
 	pp->pad_col = COLS - BORDER;
-	pp->pad_top = (LINES / 2) - (PAD_SIZE / 2);
-	pp->pad_bot = pp->pad_top + PAD_SIZE;
+	pp->pad_top = pos;
+	pp->pad_bot = pp->pad_top + range;
 
     draw_paddle(pp);
     

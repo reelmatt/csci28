@@ -10,8 +10,6 @@
 #include "pong.h"
 
 #define	DFL_SYMBOL	'O'
-#define	X_INIT		10		/* starting col		*/
-#define	Y_INIT		10		/* starting row		*/
 #define MAX_DELAY   10
 
 //#define DEBUG
