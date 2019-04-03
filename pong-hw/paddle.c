@@ -16,7 +16,6 @@
 
 //CONSTANTS
 #define	DFL_SYMBOL	'#'
-#define PAD_SIZE 5
 
 //PADDLE STRUCT
 struct pppaddle {
@@ -151,14 +150,14 @@ void paddle_down(struct pppaddle * pp)
 int paddle_contact(int y, int x, struct pppaddle * pp)
 {
     //in the right-most col
-	if(x == (pp->pad_col))
-	{
+	//if(x == (pp->pad_col))
+	//{
 		//within the vertical range of the paddle
 		if(y >= pp->pad_top && y <= pp->pad_bot)
 		{
 			return CONTACT;        
 		}
-    }
+   // }
     
     return NO_CONTACT;
 }

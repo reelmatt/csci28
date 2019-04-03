@@ -2,6 +2,7 @@
  * ==========================
  *   FILE: ./paddle.h
  * ==========================
+ * Purpose: Header file for paddle.c
  */
 
 //Forward defintion

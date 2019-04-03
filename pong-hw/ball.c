@@ -43,11 +43,11 @@ struct ppball {
  *	 Return: a pointer to the struct allocated, NULL if malloc
  *			 fails.
  */
-struct ppball * new_ball(struct ppball * blah)
+struct ppball * new_ball()
 {
 	struct ppball * temp = malloc(sizeof(struct ppball));
 
-	if(temp != NULL)
+	if(temp == NULL)
 	{
 		wrap_up();
 		fprintf(stderr, "./pong: Couldn't allocate memory for a ball.\n");
@@ -173,27 +173,27 @@ void ball_move(struct ppball * bp)
  *			 NO_CONTACT, if no bounce/contact
  *			 LOSE, if goes out of play
  */
-int bounce_or_lose(struct ppball *bp, struct pppaddle *pp)
+int bounce_or_lose(struct ppball *bp, struct pppaddle *pp, struct ppcourt *cp)
 {
 	int	return_val = NO_CONTACT;
 
-	if ( bp->y_pos == (BORDER + 1) )                	//top
+	if ( bp->y_pos == (get_top() + 1) )			//top
 	{
 	    bp->y_dir = 1;
 	    return_val = BOUNCE;
 	}
-	else if ( bp->y_pos == (LINES - 1 - BORDER - 1) )   //bottom
+	else if ( bp->y_pos == (get_bot() - 1) )	//bottom
 	{
 		bp->y_dir = -1;
 		return_val = BOUNCE;
 	}
 
-    if ( bp->x_pos == (BORDER + 1) )                    //left
+    if ( bp->x_pos == (get_left() + 1) )		//left
     {
 		bp->x_dir = 1;
 		return_val = BOUNCE;
     }
-	else if ( bp->x_pos == (COLS - BORDER - 1) )        //right
+	else if ( bp->x_pos == (get_right() - 1) )	//right
 	{
 	    if( paddle_contact(bp->y_pos, bp->x_pos, pp) == CONTACT )
 	    {

@@ -1,3 +1,10 @@
+/*
+ * ==========================
+ *   FILE: ./pong.h
+ * ==========================
+ * Purpose: Header file for pong.c
+ */
+
 #define NUM_BALLS 3
 #define	BLANK ' '
 

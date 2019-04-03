@@ -1,12 +1,20 @@
 /*
- *  court.h header file
+ * ==========================
+ *   FILE: ./court.h
+ * ==========================
+ * Purpose: Header file for court.c
  */
-
 #define BORDER 3
 #define HEADER (BORDER - 1)
 
 struct ppball;
+struct ppcourt;
 
-void print_court(struct ppball *);
+struct ppcourt * new_court();
+void print_court(struct ppcourt *, struct ppball *);
 void print_balls(int);
-void exit_message();
+int get_right();
+int get_left();
+int get_top();
+int get_bot();
+void court_init(int, int, int, int);

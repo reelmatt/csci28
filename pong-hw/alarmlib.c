@@ -1,3 +1,13 @@
+/*
+ * ==========================
+ *   FILE: ./alarmlib.c
+ * ==========================
+ * Purpose: Timer functions for higher resolution clock
+ *
+ * Note: All the following code and comments are copied from the
+ *		 CSCI-28 course website, without modification.
+ */
+
 #include	<sys/time.h>
 #include	<signal.h>
 #include	<errno.h>

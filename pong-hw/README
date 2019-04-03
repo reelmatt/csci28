@@ -1,7 +1,7 @@
 README for sttyl
 
   Student: Matthew Thomas
-  Date: 3/16/2019
+  Date: 4/6/2019
 
 Summary:
 
@@ -10,8 +10,8 @@ This submission contains the files:
 	sttyl.c      -- all logic to retrieve, update, and show tty settings
 	Plan         -- design document for this assignment
 	Makefile     -- the Makefile
-	my_script.sh -- my sample test script, including a run of the lib215 script
-	typescript   -- a sample run, performed using my_script.sh
+	my_script.sh -- my sample test script, to compile pong
+	typescript   -- run of my_script to show program compiles with no errors
 
 Notes:
 	Several functions, or parts of functions, were copied from samples
@@ -23,5 +23,5 @@ Notes:
 	occur.
 	
 	I wrote my code using a combination of BBEdit on the Mac, and server-side
-	editing using Emacs. Indentation is 4-space wide tabs. With 4-space tabs,
-	all lines should be under 80-cols wide.
+	editing using Emacs. Indentation is 4-space wide tabs. Before submission,
+	I ran the Emacs command 'M-x untabify' to convert tabs to spaces.

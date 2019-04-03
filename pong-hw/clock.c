@@ -11,9 +11,9 @@
 #include "clock.h"
 
 //CONSTANTS
-#define SECOND 60
-#define TIME_LEN 17 //length of outputted time string
+#define MINUTE 60
 #define TIME_FORMAT "TOTAL TIME: %.2d:%.2d"
+#define TIME_LEN 17 						//length of outputted time string
 
 //STRUCT
 struct timer {
@@ -81,7 +81,7 @@ void clock_tick()
     if(++clock.ticks == TICKS_PER_SEC)
     {
     	//enough seconds for a min
-        if(++clock.secs == 60)
+        if(++clock.secs == MINUTE)
         {
             clock.secs = 0;
             clock.mins++;

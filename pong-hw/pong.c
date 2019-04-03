@@ -4,24 +4,28 @@
  * ==========================
  * Purpose: Play a one-player pong game.
  *
- * Outline: sttyl with no arguments will print the current values for options
- *			it knows about. Special characters you can change are erase and
- *			kill. Other attributes can be set (turned on) using the name, or
- *			unset (turned off) by adding a '-' before the attribute. See usage
- *			below for examples.
+ * Outline: The goal of the game is to last as long as you can. You get
+ *			three balls before the game ends. To move the paddle up and
+ *			down, press the 'k' and 'm' keys respectively. When the ball
+ *			goes past the paddle, the game briefly pauses, then resets,
+ *			serving the ball from a random position, with a random direction
+ *			and speed.
  *
- * Usage:	./sttyl							-- no options, prints current vals
- *			./sttyl -echo onlcr erase ^X	-- turns off echo, turns on onlcr
- *											   and sets the erase char to ^X
+ * Objects: pong is written with object-oriented programming in mind. The key
+ *			elements of the game exist in respective .c files, controlled by
+ *			public (non-static) functions exposed in .h files. For pong, the
+ *			objects include the ball and paddle, of which multiple can be
+ *			instantiated (with further development, this could lead to a
+ *			two-player, or multi-ball pong game). A separate object also
+ *			exists for the clock, which keeps track (in minutes and seconds)
+ *			how long the player has been playing. To keep the code modular,
+ *			functions that exist to draw the court are also separated out
+ *			into its own file.
  *
- * Tables: sttyl is a table-driven program. The tables are defined below.
- *		There is a single table that contains structs for each of the four
- *		flag types in termios: c_iflag, c_oflag, c_cflag, and c_lflag. There
- *		is a separate table that contains structs storing the special
- *		characters. The table of flags contains an offset corresponding to
- *		the position in a termios struct where the bit-mask for the flag can
- *		be found. To read how this is implemented and works, read the Plan
- *		document.
+ *    Note: Some of the code (like the main loop) was copied and/or heavily
+ *			inspired by code found in the assignment handout, or sample
+ *			course code, such as that found in 'bounce2d.c'. See each
+ *			function for any further comments.
  */
 
 /* INCLUDES */
@@ -38,20 +42,23 @@
 #include "pong.h"
 
 /* CONSTANTS */
-#define DEBUG
-#define MIN_LINES 10
-#define MIN_COLS 40
+#define MIN_LINES 10		//minimum terminal row size
+#define MIN_COLS 40			//minimum terminal column size
+#define EXIT_MSG_LEN 16		//to help center exit message
 
 /* LOCAL FUNCTIONS */
 static void set_up();
 static void up_paddle();
 static void down_paddle();
 static void check_screen();
-int balls_left = NUM_BALLS;
-void new_round();
+static void check_state();
+static void exit_message();
+//static void new_round();
 
-static struct pppaddle * paddle;	//the paddle
-static struct ppball * ball;		//the ball
+/* LOCAL VARIABLES -- OBJECT INSTANCES */
+static struct pppaddle * paddle;
+static struct ppball * ball;
+// static struct ppcourt * court;
 
 /*
  *	main()
@@ -62,6 +69,8 @@ static struct ppball * ball;		//the ball
  *	 Return: 0 on success, exit non-zero on error. When fatal error occurs,
  *			 function will call wrap_up() which will reset the terminal
  *			 settings and call exit().
+ *	   Note: The structure is mostly copied from the assignment spec, with
+ *			 modifications to fit the object-oriented design of the program.
  */
 int main ()
 {
@@ -69,7 +78,7 @@ int main ()
     set_up();
     serve(ball);
     
-    while( get_balls(ball) >= 0 && (c = getch()) != 'Q')
+    while( get_balls(ball) >= 0 && (c = getch()) != 'Q')	//block on keyboard
     {
         if(c == 'k')
             up_paddle();
@@ -77,7 +86,8 @@ int main ()
             down_paddle();	
     }
     
-    wrap_up(0);
+    exit_message();
+    wrap_up();
     return 0;
 }
 
@@ -89,21 +99,45 @@ void set_up()
 {
 	//Set up terminal
 	initscr();							// turn on curses
+	check_screen();						// check screen size
 	noecho();							// turn off echo
 	cbreak();							// turn off buffering
 	srand(getpid());					// seed rand() generator
-	check_screen();						// check screen size
-	
-	//Initialize structs
-	clock_init();						// start the clock
+
+	//Initialize objects
+	court_init(BORDER, LINES - BORDER - 1, BORDER, COLS - BORDER - 1);
+//	court = new_court();				// create a court
 	paddle = new_paddle();				// create a paddle
 	ball = new_ball();					// create a ball
-	print_court(ball);					// print court
+	clock_init();						// create the clock
+	print_court(NULL, ball);			// print court
 
 	//Signal handlers
 	signal(SIGINT, SIG_IGN);			// ignore SIGINT
-	signal( SIGALRM, alarm_handler );	// setup ALRM handler
-	set_ticker( 1000 / TICKS_PER_SEC );	// send an ALRM per tick
+	signal(SIGALRM, alarm_handler);		// setup ALRM handler
+	set_ticker(1000 / TICKS_PER_SEC);	// send an ALRM per tick
+}
+
+/*
+ *	up_paddle()
+ *	Purpose: Move the paddle up and check if it made contact with ball
+ */
+void up_paddle()
+{
+    paddle_up(paddle);
+    check_state();
+    return;
+}
+
+/*
+ *	down_paddle()
+ *	Purpose: Move the paddle down and check if it made contact with ball
+ */
+void down_paddle()
+{
+    paddle_down(paddle);
+    check_state();
+    return;
 }
 
 /*
@@ -125,50 +159,46 @@ void check_screen()
 	}
 }
 
-void new_round()
+/*
+ *	check_state()
+ *	Purpose: After ball or paddle movement, see if it is LOSE. If yes,
+ *			 start a new round.
+ */
+void check_state()
 {
-	if(get_balls(ball) > 0)			//there are still more balls left
+	if( bounce_or_lose(ball, paddle, NULL) == LOSE)
 	{
-		sleep(2);					//wait a bit
-		serve(ball);				//and start again
+		if(get_balls(ball) > 0)			//there are still more balls left
+		{
+			sleep(2);					//wait a bit
+			serve(ball);				//and start again
+		}
+		else							//we're done
+		{
+			set_ticker(0);				//@@TEMPORARY -- TRY AND DELETE (DUPLICATE)
+			exit_message();				//print final time
+			wrap_up();					//clean up...
+			exit(0);					//...and quit
+		}
 	}
-	else							//we're done, clean up and quit
-	{
-		wrap_up();
-		exit(0);
-	}
+	
+	return;
 }
 
 /*
- *	up_paddle()
- *	Purpose: Move the paddle up and check if it made contact with ball
+ *	exit_message()
+ *	Purpose: Display the final 'score'
  */
-void up_paddle()
+void exit_message()
 {
-    paddle_up(paddle);
-    
-    if( bounce_or_lose(ball, paddle) == LOSE)
-		new_round();
-    
-    return;
+	int y = (LINES / 2);
+	int x = (COLS / 2) - (EXIT_MSG_LEN / 2);
+	standout();
+	mvprintw(y, x, "You lasted %.2d:%.2d", get_mins(), get_secs());
+	standend();
+	refresh();
+	sleep(2);
 }
-
-/*
- *	down_paddle()
- *	Purpose: 
- */
-void down_paddle()
-{
-    paddle_down(paddle);
-    
-    if( bounce_or_lose(ball, paddle) == LOSE)
-		new_round();
-    
-    return;
-}
-
-
-
 
 /* SIGARLM handler: decr directional counters, move when they hit 0	*/
 /* note: may have too much going on in this handler			*/
@@ -178,22 +208,10 @@ void alarm_handler(int s)
 
 	clock_tick();
 	ball_move(ball);
-	
-	if(bounce_or_lose(ball, paddle) == LOSE)
-		new_round();
-    
+	check_state();	
+  
 	signal(SIGALRM, alarm_handler);		/* re-enable handler	*/
 }
-
-/*
- *	new_round()
- *	Purpose: 
- */
-// void new_round()
-// {
-// 	print_balls(get_balls(ball));
-// 	serve(ball);
-// }
 
 /*
  *	wrap_up()
@@ -207,8 +225,8 @@ void wrap_up()
 	if(ball)								//if ball was malloc'ed
 		free(ball);							//free it
 
-	if(get_mins() != 0 || get_secs() != 0)	//check the clock started
-		exit_message();						//print time
+// 	if(get_mins() != 0 || get_secs() != 0)	//check the clock started
+// 		exit_message();						//print time
 
     set_ticker(0);							//stop ticker
     endwin();								//close curses
@@ -226,3 +244,18 @@ void park_cursor()
 	return;
 }
 
+
+/*
+void new_round()
+{
+	if(get_balls(ball) > 0)			//there are still more balls left
+	{
+		sleep(2);					//wait a bit
+		serve(ball);				//and start again
+	}
+	else							//we're done, clean up and quit
+	{
+		wrap_up();
+		exit(0);
+	}
+}*/
