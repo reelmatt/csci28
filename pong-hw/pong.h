@@ -3,4 +3,5 @@
 
 
 void alarm_handler(int);
-void wrap_up(int);
+void wrap_up();
+void park_cursor();

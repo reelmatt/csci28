@@ -39,13 +39,16 @@
 
 /* CONSTANTS */
 #define DEBUG
-
+#define MIN_LINES 10
+#define MIN_COLS 40
 
 /* LOCAL FUNCTIONS */
 static void set_up();
 static void up_paddle();
 static void down_paddle();
+static void check_screen();
 int balls_left = NUM_BALLS;
+void new_round();
 
 static struct pppaddle * paddle;	//the paddle
 static struct ppball * ball;		//the ball
@@ -66,19 +69,12 @@ int main ()
     set_up();
     serve(ball);
     
-    while( balls_left >= 0 && (c = getch()) != 'Q')
+    while( get_balls(ball) >= 0 && (c = getch()) != 'Q')
     {
         if(c == 'k')
             up_paddle();
         else if (c == 'm')
-            down_paddle();
-
-        #ifdef DEBUG
-			else if(c == 'f')
-				go_fast(ball);
-			else if (c == 's')
-				go_slow(ball);
-		#endif		
+            down_paddle();	
     }
     
     wrap_up(0);
@@ -95,13 +91,14 @@ void set_up()
 	initscr();							// turn on curses
 	noecho();							// turn off echo
 	cbreak();							// turn off buffering
-	srand(getpid());					//seed rand() generator
+	srand(getpid());					// seed rand() generator
+	check_screen();						// check screen size
 	
 	//Initialize structs
-	clock_init();						//start the clock
-	print_court();						//print court
-	paddle = new_paddle();				//create a paddle
-	ball = new_ball();					//create a ball
+	clock_init();						// start the clock
+	paddle = new_paddle();				// create a paddle
+	ball = new_ball();					// create a ball
+	print_court(ball);					// print court
 
 	//Signal handlers
 	signal(SIGINT, SIG_IGN);			// ignore SIGINT
@@ -110,19 +107,48 @@ void set_up()
 }
 
 /*
+ *	check_screen()
+ *	Purpose: Check the terminal is at least MIN_COLS x MIN_LINES big
+ *	  Error: If the window does not meet one or both of these dimensions,
+ *			 the terminal is reset to normal, and an error message is output
+ *			 to inform the user to resize and try again.
+ */
+void check_screen()
+{
+	if(LINES < MIN_LINES || COLS < MIN_COLS)
+	{
+		wrap_up();
+		fprintf(stderr, "Terminal must be a minimum of %dx%d. "
+						"Please resize and try again.\n",
+						MIN_COLS, MIN_LINES);
+		exit(1);
+	}
+}
+
+void new_round()
+{
+	if(get_balls(ball) > 0)			//there are still more balls left
+	{
+		sleep(2);					//wait a bit
+		serve(ball);				//and start again
+	}
+	else							//we're done, clean up and quit
+	{
+		wrap_up();
+		exit(0);
+	}
+}
+
+/*
  *	up_paddle()
- *	Purpose: 
+ *	Purpose: Move the paddle up and check if it made contact with ball
  */
 void up_paddle()
 {
     paddle_up(paddle);
     
     if( bounce_or_lose(ball, paddle) == LOSE)
-    {
-    	balls_left--;
-		print_balls(balls_left);
-		serve(ball);
-    }
+		new_round();
     
     return;
 }
@@ -136,14 +162,12 @@ void down_paddle()
     paddle_down(paddle);
     
     if( bounce_or_lose(ball, paddle) == LOSE)
-    {
-    	balls_left--;
-    	print_balls(balls_left);
-    	serve(ball);
-    }
+		new_round();
     
     return;
 }
+
+
 
 
 /* SIGARLM handler: decr directional counters, move when they hit 0	*/
@@ -155,33 +179,50 @@ void alarm_handler(int s)
 	clock_tick();
 	ball_move(ball);
 	
-	if(bounce_or_lose(ball, paddle) == LOSE && balls_left > 0)
-    {
-    	balls_left--;
-		print_balls(balls_left);
-		sleep(2);
-		serve(ball);
-    }
-
+	if(bounce_or_lose(ball, paddle) == LOSE)
+		new_round();
+    
 	signal(SIGALRM, alarm_handler);		/* re-enable handler	*/
 }
 
+/*
+ *	new_round()
+ *	Purpose: 
+ */
+// void new_round()
+// {
+// 	print_balls(get_balls(ball));
+// 	serve(ball);
+// }
 
-/* stop ticker and curses */
-void wrap_up(int status)
+/*
+ *	wrap_up()
+ *	Purpose: free memory, stop ticker, close curses
+ */
+void wrap_up()
 {
-	if(paddle)
-		free(paddle);
+	if(paddle)								//if paddle was malloc'ed
+		free(paddle);						//free it
 
-	if(ball)
-		free(ball);
+	if(ball)								//if ball was malloc'ed
+		free(ball);							//free it
 
-    set_ticker(0);
-    endwin();
+	if(get_mins() != 0 || get_secs() != 0)	//check the clock started
+		exit_message();						//print time
+
+    set_ticker(0);							//stop ticker
+    endwin();								//close curses
     
-    if(status != 0)
-    	exit(status);
+    return;
 }
 
-
+/*
+ *	park_cursor()
+ *	Purpose: Helper function to park the cursor in lower-right of screen
+ */
+void park_cursor()
+{
+	move(LINES - 1, COLS - 1);
+	return;
+}
 

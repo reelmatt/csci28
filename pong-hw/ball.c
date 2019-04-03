@@ -1,6 +1,12 @@
+/*
+ * ==========================
+ *   FILE: ./ball.c
+ * ==========================
+ */
+
+//INCLUDES
 #include <curses.h>
 #include <signal.h>
-#include "bounce.h"
 #include <stdlib.h>
 #include <unistd.h>
 #include "clock.h"
@@ -9,79 +15,27 @@
 #include "ball.h"
 #include "pong.h"
 
+//CONSTANTS
 #define	DFL_SYMBOL	'O'
 #define MAX_DELAY   10
 
-//#define DEBUG
 
+static void ball_init(struct ppball *);
+static int start_pos();
 static int start_dir();
 static int delay();
 void clear_ball(struct ppball *);
 static void draw_ball(struct ppball *);
 
-//DEBUGGING FUNCTIONS
-void print_ball_loc(struct ppball *);
-void print_ball_dir(struct ppball *);
-
-/*
- *	struct for the ball
- */
+//struct for the ball
 struct ppball {
-    int	x_pos, x_dir,
-        y_pos, y_dir,
-        y_delay, y_count,
-        x_delay, x_count;
-    char symbol;
-} ;
-
-/*
- *	start_dir()
- *	Purpose: Randomly pick starting direction
- *	 Return: Either -1 or 1
- */
-int start_dir()
-{
-    if( (rand() % 2) == 0)
-        return -1;
-    else
-        return 1;
-}
-
-/*
- *	start_pos()
- *	Purpose: Randomly pick starting position
- *	 Return: A position within the BORDER of the playing screen
- */
-int start_pos()
-{
-	int pos = rand() % (LINES - BORDER);
-	
-	return (BORDER + 1 + pos);
-	
-}
-
-/*
- *	delay()
- *	Purpose: Randomly pick a delay value
- *	 Return: A number between 0 to MAX_DELAY (non-inclusve)
- */
-int delay()
-{
-    return 1 + (rand() % (MAX_DELAY - 1));
-}
-
-
-/*
- *	random_number()
- *	Purpose: generate a random number between min and max
- *	  Input: min, the lowest possible value
- *			 max, the highest possible value
- *	 Return: the randomly generated number
- */
-int random_number(int min, int max)
-{
-	return ( min + (rand() % max) );
-}
+    int	remain,				//number of balls left
+    	x_pos, y_pos,		//positions
+        x_dir, y_dir,		//directions
+        x_delay, y_delay,	//ticker count
+        x_count, y_count;	//delay
+    char symbol;			//ball representation
+};
 
 /*
  *	new_ball()
@@ -89,16 +43,18 @@ int random_number(int min, int max)
  *	 Return: a pointer to the struct allocated, NULL if malloc
  *			 fails.
  */
-struct ppball * new_ball()
+struct ppball * new_ball(struct ppball * blah)
 {
 	struct ppball * temp = malloc(sizeof(struct ppball));
 
-	if(temp == NULL)
+	if(temp != NULL)
 	{
-		perror("couldn't make a ball");
-		wrap_up(1);
+		wrap_up();
+		fprintf(stderr, "./pong: Couldn't allocate memory for a ball.\n");
+		exit(1);
 	}
 	
+	temp->remain = NUM_BALLS;		//start with NUM_BALLS remaining
 	return temp;
 }
 
@@ -109,15 +65,35 @@ struct ppball * new_ball()
  */
 void ball_init(struct ppball * bp)
 {
+	//positions
     bp->y_pos = start_pos();
 	bp->x_pos = start_pos();
+
+	//directions
 	bp->y_dir = start_dir();
 	bp->x_dir = start_dir();
+
+	//delay
 	bp->y_count = bp->y_delay = delay();
 	bp->x_count = bp->x_delay = delay();
+
+	//assign symbol ('O' by default)
 	bp->symbol = DFL_SYMBOL;
 	
+	//lose one ball 'life' every initialization
+	bp->remain--;
+	
 	return;
+}
+
+/*
+ *	get_balls()
+ *	Purpose: Public function to access number of balls remaining
+ *	  Input: bp, pointer to a ball struct
+ */
+int get_balls(struct ppball * bp)
+{
+	return bp->remain;
 }
 
 /*
@@ -129,6 +105,7 @@ void serve(struct ppball * bp)
 {   
     ball_init(bp);
     draw_ball(bp);
+	print_balls(bp->remain);
     
     return;
 }
@@ -141,12 +118,11 @@ void serve(struct ppball * bp)
 void draw_ball(struct ppball * bp)
 {
 	mvaddch(bp->y_pos, bp->x_pos, bp->symbol);	//print new ball
-	move(LINES-1, COLS-1);						//park cursor
+	park_cursor();
 	refresh();
 	
 	return;
 }
-
 
 /*
  *	ball_move()
@@ -191,8 +167,8 @@ void ball_move(struct ppball * bp)
 /* 
  *	bounce_or_lose()
  *	Purpose: if a ball hits walls, change its direction
- *	  Input: bp, pointer to the ball struct
- *			 pp, pointer to the paddle struct
+ *	  Input: bp, pointer to a ball struct
+ *			 pp, pointer to a paddle struct
  *	 Return: BOUNCE, if hits walls or paddle
  *			 NO_CONTACT, if no bounce/contact
  *			 LOSE, if goes out of play
@@ -221,9 +197,9 @@ int bounce_or_lose(struct ppball *bp, struct pppaddle *pp)
 	{
 	    if( paddle_contact(bp->y_pos, bp->x_pos, pp) == CONTACT )
 	    {
-            bp->x_dir = -1;
-            bp->x_delay = delay();
-            bp->y_delay = delay();
+            bp->x_dir = -1;			//bounce direction
+            bp->x_delay = delay();	//new, random, delay
+            bp->y_delay = delay();	//new, random, delay
             return_val = BOUNCE;	    
 	    }
 	    else
@@ -236,6 +212,11 @@ int bounce_or_lose(struct ppball *bp, struct pppaddle *pp)
 	return return_val;
 }
 
+/*
+ *	clear_ball()
+ *	Purpose: clear old ball from screen when it goes out of bounds
+ *	  Input: bp, pointer to a ball struct
+ */
 void clear_ball(struct ppball * bp)
 {
 	bp->y_delay = 0;
@@ -243,33 +224,49 @@ void clear_ball(struct ppball * bp)
 	mvaddch(bp->y_pos, bp->x_pos, BLANK);				//remove old ball
 }
 
-/* DEBUGGING FUNCTIONS */
-void go_fast(struct ppball * bp)
+/*
+ *	start_dir()
+ *	Purpose: Randomly pick starting direction
+ *	 Return: Either -1 or 1
+ */
+int start_dir()
 {
-    bp->x_delay--;
-    bp->y_delay--;
-    
-    print_ball_dir(bp);
+    if( (rand() % 2) == 0)
+        return -1;
+    else
+        return 1;
 }
 
-/* DEBUGGING FUNCTION */
-void go_slow(struct ppball * bp)
+/*
+ *	start_pos()
+ *	Purpose: Randomly pick starting position
+ *	 Return: A position within the BORDER of the playing screen
+ */
+int start_pos()
 {
-    bp->x_delay++;
-    bp->y_delay++;
-    
-    print_ball_dir(bp);
+	int pos = rand() % (LINES - BORDER);
+	
+	return (BORDER + 1 + pos);
 }
 
-void print_ball_loc(struct ppball * bp)
+/*
+ *	delay()
+ *	Purpose: Randomly pick a delay value
+ *	 Return: A number between 0 to MAX_DELAY (non-inclusve)
+ */
+int delay()
 {
-    move(0, 1);
-    printw("Y_pos = %2d and X_pos = %2d", bp->y_pos, bp->x_pos);
-    refresh();
+    return 1 + (rand() % (MAX_DELAY - 1));
 }
 
-void print_ball_dir(struct ppball *bp)
+/*
+ *	random_number()
+ *	Purpose: generate a random number between min and max
+ *	  Input: min, the lowest possible value
+ *			 max, the highest possible value
+ *	 Return: the randomly generated number
+ */
+int random_number(int min, int max)
 {
-	move(1, 1);
-    printw("Y_DELAY = %.2d and X_DELAY = %.2d", bp->y_dir, bp->x_dir);
+	return ( min + (rand() % max) );
 }
