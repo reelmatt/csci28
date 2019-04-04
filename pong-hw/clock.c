@@ -2,6 +2,20 @@
  * ==========================
  *   FILE: ./clock.c
  * ==========================
+ * Purpose: 
+ *
+ * Interface:
+ *		new_paddle()		-- allocates memory and inits a new paddle
+ *		paddle_up()			-- determines if room to move up, and does so
+ *		paddle_down()		-- determines if room to move down, and does so
+ *		paddle_contact()	-- determines if ball is touching paddle
+ *
+ * Internal functions:
+ *		paddle_init()		-- initializes paddle's vars, and draws on screen
+ *		draw_paddle()		-- draws full paddle from top-to-bottom
+ *
+ * Notes:
+ *
  */
 
 //INCLUDES
@@ -12,8 +26,7 @@
 
 //CONSTANTS
 #define MINUTE 60
-#define TIME_FORMAT "TOTAL TIME: %.2d:%.2d"
-#define TIME_LEN 17 						//length of outputted time string
+
 
 //STRUCT
 struct timer {
@@ -21,6 +34,19 @@ struct timer {
 };
 
 static struct timer clock;
+
+
+/*
+ * ===========================================================================
+ * INTERNAL FUNCTIONS
+ * ===========================================================================
+ */
+
+/*
+ * ===========================================================================
+ * EXTERNAL INTERFACE
+ * ===========================================================================
+ */
 
 /*
  *	clock_init()
@@ -35,18 +61,7 @@ void clock_init()
     return;
 }
 
-/*
- *	print_time()
- *	Purpose: Print elapsed time, right-adjusted above top border
- */
-void print_time()
-{
-    move(HEADER, (COLS - BORDER - 1 - TIME_LEN));
-    printw(TIME_FORMAT, clock.mins, clock.secs);
-	park_cursor();
-    refresh();
-    return;
-}
+
 
 /*
  *	get_mins()

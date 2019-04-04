@@ -4,17 +4,19 @@
  * ==========================
  * Purpose: Header file for court.c
  */
-#define BORDER 3
-#define HEADER (BORDER - 1)
 
+/* Opaque structs */
 struct ppball;
 struct ppcourt;
 
-struct ppcourt * new_court();
-void print_court(struct ppcourt *, struct ppball *);
-void print_balls(int);
-int get_right();
-int get_left();
-int get_top();
-int get_bot();
+/* CONSTANTS */
+#define BORDER 3
+
 void court_init(int, int, int, int);
+
+void print_court(int);
+void print_balls(int);
+int get_right_edge();
+int get_left_edge();
+int get_top_edge();
+int get_bot_edge();
