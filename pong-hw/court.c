@@ -2,26 +2,27 @@
  * ===========================================================================
  *   FILE: ./court.c
  * ===========================================================================
- * Purpose: Create a court for pong, and print it to the screen
+ * Purpose: Create a court for pong, and print it to the screen.
  *
  * Interface:
- 
- *		new_ball()			-- allocates memory for a new ball
- *		serve()				-- inits new values for a ball and draws it
- *		ball_move()			-- 
- *		bounce_or_lose()	-- 
- *		get_balls_left()	-- returns the number of balls (lives) left
+ *		court_init()		-- Init the static court with row/col values
+ *		print_court()		-- Print the # balls left, time, and walls
+ *		print_balls()		-- Print the number of balls left to play
+ *		print_time()		-- Print elapsed time
+ *		get_top_edge()		-- Return the position of the top row
+ *		get_right_edge()	-- Return the position of the right column
+ *		get_bot_edge()		-- Return the position of the bottom row
+ *		get_left_edge()		-- Return the position of the left column
  *
  * Internal functions:
- *		ball_init()			-- (re-)initializes balls vars
- *		start_pos()			-- generates random starting position
- *		start_dir()			-- generates random starting direction
- *		delay()				-- generates random delay value
- *		clear_ball()		-- stops ball and clears it from the screen
- *		draw_ball()			-- draws the ball in a new position
+ *		print_row()			-- Print a row
+ *		print_col()			-- Print a column
  *
  * Notes:
- *
+ *		The court is file-scoped to court.c. The clock is responsible for
+ *		storing where the borders to the game are, printing the borders,
+ *		and updating the two headers tracking game progress -- BALLS LEFT
+ *		and TOTAL TIME.
  */
 
 /* INCLUDES */
@@ -46,7 +47,6 @@ struct ppcourt {
 };
 
 static struct ppcourt court;
-
 
 /*
  * ===========================================================================
@@ -112,31 +112,6 @@ void court_init(int top, int right, int bot, int left)
 	return;
 }
 
-/* get_right_edge() -- return the position of the right column */
-int get_right_edge()
-{
-	return court.right;
-}
-
-/* get_left_edge() -- return the position of the left column */
-int get_left_edge()
-{
-	return court.left;
-}
-
-/* get_top_edge() -- return the position of the top row */
-int get_top_edge()
-{
-	return court.top;
-}
-
-/* get_bot_edge() -- return the position of the bottom row */
-int get_bot_edge()
-{
-	return court.bot;
-}
-
-
 /*
  *	print_court()
  *	Purpose: print the # balls left, time, and walls
@@ -155,8 +130,6 @@ void print_court(int balls)
 	refresh();
     return;
 }
-
-
 
 /*
  *	print_time()
@@ -183,3 +156,26 @@ void print_balls(int balls)
     return;
 }
 
+/* get_right_edge() -- return the position of the right column */
+int get_right_edge()
+{
+	return court.right;
+}
+
+/* get_left_edge() -- return the position of the left column */
+int get_left_edge()
+{
+	return court.left;
+}
+
+/* get_top_edge() -- return the position of the top row */
+int get_top_edge()
+{
+	return court.top;
+}
+
+/* get_bot_edge() -- return the position of the bottom row */
+int get_bot_edge()
+{
+	return court.bot;
+}

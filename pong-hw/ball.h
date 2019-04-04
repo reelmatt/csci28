@@ -5,18 +5,17 @@
  * Purpose: Header file for ball.c
  */
 
-
-//CONSTANTS
+/* CONSTANTS */
 #define LOSE -1
 #define NO_CONTACT 0
 #define CONTACT 1
 #define BOUNCE 1
 
-//Opaque structs
+/* OPAQUE STRUCTS */
 struct ppball;
 struct pppaddle;
 
-//Public functions
+/* EXTERNAL INTERFACE */
 struct ppball * new_ball();
 void ball_move(struct ppball *);
 int bounce_or_lose(struct ppball *, struct pppaddle *);

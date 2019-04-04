@@ -6,16 +6,15 @@
  *
  * Internal functions:
  *		ball_init()			-- (re-)initializes balls vars
- *		clear_ball()		-- stops ball and clears it from the screen
  *		draw_ball()			-- draws the ball in a new position
  *		rand_number()		-- generates random number between a min and max
  *		start_dir()			-- generates random starting direction
  *
  * Interface:
  *		new_ball()			-- allocates memory for a new ball
+ *		ball_move()			-- move ball if enough time has passed
+ *		bounce_or_lose()	-- detect when ball hits walls/paddle or misses
  *		serve()				-- inits new values for a ball and draws it
- *		ball_move()			-- 
- *		bounce_or_lose()	-- 
  *		get_balls_left()	-- returns the number of balls (lives) left
  *
  * Notes:
@@ -53,7 +52,6 @@ struct ppball {
  * ===========================================================================
  */
 static void ball_init(struct ppball *);
-static void clear_ball(struct ppball *);
 static void draw_ball(struct ppball *);
 static int start_dir();
 static int rand_number(int, int);
@@ -84,18 +82,6 @@ void ball_init(struct ppball * bp)
 	bp->remain--;
 	
 	return;
-}
-
-/*
- *	clear_ball()
- *	Purpose: clear old ball from screen when it goes out of bounds
- *	  Input: bp, pointer to a ball struct
- */
-void clear_ball(struct ppball * bp)
-{
-	bp->y_delay = 0;
-	bp->x_delay = 0;
-	mvaddch(bp->y_pos, bp->x_pos, BLANK);				//remove old ball
 }
 
 /*
@@ -168,6 +154,101 @@ struct ppball * new_ball()
 }
 
 /*
+ *	ball_move()
+ *	Purpose: Move ball if enough time has passed
+ *	  Input: bp, pointer to a ball struct
+ *	 Method: The ball has a given delay and a count to keep track when to
+ *			 refresh next. If the counter reaches 0, that indicates it is
+ *			 time to move the x or y position of the ball. After updating
+ *			 the struct values, the counter is reset to the delay and will
+ *			 move again after the next delay period.
+ */
+void ball_move(struct ppball * bp)
+{
+	int moved = 0 ;
+	int y_cur = bp->y_pos;				// old spot
+	int x_cur = bp->x_pos;				// old spot
+
+	//Check vertical counters
+	if ( bp->y_delay > 0 && --bp->y_count == 0 )
+	{
+		bp->y_pos += bp->y_dir;			// move ball
+		bp->y_count = bp->y_delay;		// reset counter
+		moved = 1;
+	}
+
+	//Check horizontal counters
+	if ( bp->x_delay > 0 && --bp->x_count == 0 )
+	{
+		bp->x_pos += bp->x_dir;			// move ball
+		bp->x_count = bp->x_delay;		// reset counter
+		moved = 1;
+	}
+
+	if (moved)
+	{
+		mvaddch(y_cur, x_cur, BLANK);	// remove old ball
+		draw_ball(bp);					// draw new one
+	}
+	
+	return;
+}
+
+/* 
+ *	bounce_or_lose()
+ *	Purpose: Detect when a ball hits outer walls/paddle, or misses
+ *	  Input: bp, pointer to a ball struct
+ *			 pp, pointer to a paddle struct
+ *	 Return: BOUNCE, if hits walls or paddle
+ *			 NO_CONTACT, if no bounce/contact
+ *			 LOSE, if goes out of play
+ *	   Note: Values are +/- 1 from the edges to account for where the border
+ *			 is, and what will cause this function to return BOUNCE of LOSE.
+ *			 We want to detect when the ball is just inside the borders and
+ *			 whether or not that will bounce. If the +/- 1 values were not
+ *			 present, the ball would overwrite where the borders are before
+ *			 bouncing or not.
+ */
+int bounce_or_lose(struct ppball *bp, struct pppaddle *pp)
+{
+	int	return_val = NO_CONTACT;
+
+	if ( bp->y_pos == (get_top_edge() + 1) )			// top
+	{
+	    bp->y_dir = 1;
+	    return_val = BOUNCE;
+	}
+	else if ( bp->y_pos == (get_bot_edge() - 1) )		// bottom
+	{
+		bp->y_dir = -1;
+		return_val = BOUNCE;
+	}
+
+    if ( bp->x_pos == (get_left_edge() + 1) )			// left
+    {
+		bp->x_dir = 1;
+		return_val = BOUNCE;
+    }
+	else if ( bp->x_pos == (get_right_edge() - 1) )		// right
+	{
+	    if( paddle_contact(bp->y_pos, pp) == CONTACT )	// it hit the paddle
+	    {
+            bp->x_dir = -1;
+            bp->x_delay = rand_number(1, MAX_DELAY);	// new, random, delay
+            bp->y_delay = rand_number(1, MAX_DELAY);	// new, random, delay
+            return_val = BOUNCE;	    
+	    }
+	    else
+	    {
+	    	mvaddch(bp->y_pos, bp->x_pos, BLANK);		// remove old ball
+	        return_val = LOSE;
+	    }
+	}
+
+	return return_val;
+}
+
+/*
  *	get_balls()
  *	Purpose: Public function to access number of balls remaining
  *	  Input: bp, pointer to a ball struct
@@ -190,95 +271,4 @@ void serve(struct ppball * bp)
 	print_balls(bp->remain);
     
     return;
-}
-
-/*
- *	ball_move()
- *	Purpose: Move ball if enough time has passed
- *	  Input: bp, pointer to a ball struct
- *	 Method: The ball has a given delay and a count to keep track when to
- *			 refresh next. If the counter reaches 0, that indicates it is
- *			 time to move the x or y position of the ball. After updating
- *			 the struct values, the counter is reset to the delay and will
- *			 move again after the next delay period.
- */
-void ball_move(struct ppball * bp)
-{
-	int moved = 0 ;
-	int y_cur = bp->y_pos ;		// old spot
-	int x_cur = bp->x_pos ;		// old spot
-
-	//Check vertical counters
-	if ( bp->y_delay > 0 && --bp->y_count == 0 )
-	{
-		bp->y_pos += bp->y_dir;			// move ball
-		bp->y_count = bp->y_delay;		// reset counter
-		moved = 1;
-	}
-
-	//Check horizontal counters
-	if ( bp->x_delay > 0 && --bp->x_count == 0 )
-	{
-		bp->x_pos += bp->x_dir;			// move ball
-		bp->x_count = bp->x_delay;		// reset counter
-		moved = 1;
-	}
-
-	if (moved)
-	{
-		mvaddch(y_cur, x_cur, BLANK);				//remove old ball
-		draw_ball(bp);
-	}
-	return;
-}
-
-/* 
- *	bounce_or_lose()
- *	Purpose: if a ball hits walls, change its direction
- *	  Input: bp, pointer to a ball struct
- *			 pp, pointer to a paddle struct
- *	 Return: BOUNCE, if hits walls or paddle
- *			 NO_CONTACT, if no bounce/contact
- *			 LOSE, if goes out of play
- *	   Note: Values are +/- 1 from the edges to account for where
- *			 the border is, and what will cause this function to
- *			 return BOUNCE or LOSE.
- */
-int bounce_or_lose(struct ppball *bp, struct pppaddle *pp)
-{
-	int	return_val = NO_CONTACT;
-
-	if ( bp->y_pos == (get_top_edge() + 1) )			//top
-	{
-	    bp->y_dir = 1;
-	    return_val = BOUNCE;
-	}
-	else if ( bp->y_pos == (get_bot_edge() - 1) )	//bottom
-	{
-		bp->y_dir = -1;
-		return_val = BOUNCE;
-	}
-
-    if ( bp->x_pos == (get_left_edge() + 1) )		//left
-    {
-		bp->x_dir = 1;
-		return_val = BOUNCE;
-    }
-	else if ( bp->x_pos == (get_right_edge() - 1) )	//right
-	{
-	    if( paddle_contact(bp->y_pos, pp) == CONTACT )
-	    {
-            bp->x_dir = -1;								//bounce direction
-            bp->x_delay = rand_number(1, MAX_DELAY);	//new, random, delay
-            bp->y_delay = rand_number(1, MAX_DELAY);	//new, random, delay
-            return_val = BOUNCE;	    
-	    }
-	    else
-	    {
-            clear_ball(bp);
-	        return_val = LOSE;
-	    }
-	}
-
-	return return_val;
 }

@@ -1,8 +1,8 @@
 /*
- * ==========================
+ * ===========================================================================
  *   FILE: ./paddle.c
- * ==========================
- * Purpose: 
+ * ===========================================================================
+ * Purpose: Create a paddle for pong and provide an interface to control it.
  *
  * Interface:
  *		new_paddle()		-- allocates memory and inits a new paddle
@@ -15,7 +15,7 @@
  *		draw_paddle()		-- draws full paddle from top-to-bottom
  *
  * Notes:
- *
+ *		The paddle.c file 
  */
 
 /* INCLUDES */
@@ -37,16 +37,56 @@ struct pppaddle {
     int pad_mintop, pad_maxbot;		// boundaries
 };
 
-/* INTERNAL FUNCTIONS */
-static void draw_paddle();
-static void paddle_init(struct pppaddle *, int, int);
-
-
 /*
  * ===========================================================================
  * INTERNAL FUNCTIONS
  * ===========================================================================
  */
+static void draw_paddle();
+static void paddle_init(struct pppaddle *, int, int);
+
+/*
+ *	draw_paddle()
+ *	Purpose: Draw the paddle pointed to by pp
+ *	  Input: pp, pointer to a paddle struct
+ *	   Note: As mentioned in comments for new_paddle(), a MIN_LINES constant
+ *			 defined in pong.c ensures a minimum court height of 3, and
+ *			 therefore a paddle height of at least 1. No special cases are
+ *			 needed to print a paddle char where one might not exist.
+ */
+void draw_paddle(struct pppaddle * pp)
+{
+    int i;
+
+    for(i = pp->pad_top; i < pp->pad_bot; i++)
+        mvaddch(i, pp->pad_col, pp->pad_char);
+
+	park_cursor();
+    refresh();
+    return; 
+}
+
+/*
+ *	paddle_init()
+ *	Purpose: instantiate a new paddle struct
+ *	  Input: pp, pointer to a paddle struct
+ *			 top, the starting (top) position of the paddle
+ *			 height, how tall the paddle is
+ */
+void paddle_init(struct pppaddle * pp, int top, int height)
+{	
+	pp->pad_char = DFL_SYMBOL;
+	pp->pad_mintop = BORDER;
+	pp->pad_maxbot = LINES - BORDER;
+	
+	pp->pad_col = get_right_edge();
+	pp->pad_top = top;
+	pp->pad_bot = pp->pad_top + height;
+
+    draw_paddle(pp);
+    
+    return;
+}
 
 /*
  * ===========================================================================
@@ -87,49 +127,6 @@ struct pppaddle * new_paddle()
 	
 	paddle_init(paddle, paddle_top, paddle_height);
 	return paddle;
-}
-
-/*
- *	paddle_init()
- *	Purpose: instantiate a new paddle struct
- *	  Input: pp, pointer to a paddle struct
- *			 top, the starting (top) position of the paddle
- *			 height, how tall the paddle is
- */
-void paddle_init(struct pppaddle * pp, int top, int height)
-{	
-	pp->pad_char = DFL_SYMBOL;
-	pp->pad_mintop = BORDER;
-	pp->pad_maxbot = LINES - BORDER;
-	
-	pp->pad_col = get_right_edge();
-	pp->pad_top = top;
-	pp->pad_bot = pp->pad_top + height;
-
-    draw_paddle(pp);
-    
-    return;
-}
-
-/*
- *	draw_paddle()
- *	Purpose: Draw the paddle pointed to by pp
- *	  Input: pp, pointer to a paddle struct
- *	   Note: As mentioned in comments for new_paddle(), a MIN_LINES constant
- *			 defined in pong.c ensures a minimum court height of 3, and
- *			 therefore a paddle height of at least 1. No special cases are
- *			 needed to print a paddle char where one might not exist.
- */
-void draw_paddle(struct pppaddle * pp)
-{
-    int i;
-
-    for(i = pp->pad_top; i < pp->pad_bot; i++)
-        mvaddch(i, pp->pad_col, pp->pad_char);
-
-	park_cursor();
-    refresh();
-    return; 
 }
 
 /*

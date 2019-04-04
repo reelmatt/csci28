@@ -184,7 +184,7 @@ void is_min_size()
 }
 
 /*
- *	check_state()
+ *	is_next_round()
  *	Purpose: After ball or paddle movement, see if it is LOSE. If yes,
  *			 start a new round.
  */
@@ -192,20 +192,15 @@ void is_next_round()
 {
 	if( bounce_or_lose(ball, paddle) == LOSE)
 	{
-		if(get_balls_left(ball) > 0)	//more balls left
+		if(get_balls_left(ball) > 0)	//more balls left			
 		{
-			millisleep(500);			//wait a bit @@stops the ticker
-			signal(SIGALRM, alarm_handler);		// setup ALRM handler
-			set_ticker(1000 / TICKS_PER_SEC);	// send an ALRM per tick
-// 			sleep(1);
-			serve(ball);				//and start again
-			
+			serve(ball);				// start again
 		}
-		else							//no more balls
+		else							// no more balls
 		{
-			exit_message();				//print final time
-			wrap_up();					//clean up...
-			exit(0);					//...and quit
+			exit_message();				// print final time
+			wrap_up();					// clean up...
+			exit(0);					// ...and quit
 		}
 	}
 	

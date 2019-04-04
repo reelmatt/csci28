@@ -5,15 +5,11 @@
  * Purpose: Header file for paddle.c
  */
 
-// Opaque struct
+/* OPAQUE STRUCT */
 struct pppaddle;
 
-// Create and init a new paddle
+/* EXTERNAL INTERFACE */
 struct pppaddle * new_paddle();
-
-// Movement
 void paddle_up(struct pppaddle *);
 void paddle_down(struct pppaddle *);
-
-// Detect if object is touching the paddle
 int paddle_contact(int, struct pppaddle *);

@@ -2,45 +2,35 @@
  * ==========================
  *   FILE: ./clock.c
  * ==========================
- * Purpose: 
+ * Purpose: Create a static clock in the file, that is accessed via other
+ *			files to print/update time.
  *
  * Interface:
- *		new_paddle()		-- allocates memory and inits a new paddle
- *		paddle_up()			-- determines if room to move up, and does so
- *		paddle_down()		-- determines if room to move down, and does so
- *		paddle_contact()	-- determines if ball is touching paddle
- *
- * Internal functions:
- *		paddle_init()		-- initializes paddle's vars, and draws on screen
- *		draw_paddle()		-- draws full paddle from top-to-bottom
+ *		clock_init()	-- Initialize clock struct to zeroes
+ *		clock_tick()	-- Update timer struct every second
+ *		get_mins()		-- Access the 'mins' value in the clock
+ *		get_secs()		-- Access the 'secs' value in the clock
  *
  * Notes:
- *
+ *		The clock is file-scoped to clock.c. It is updated via a call to
+ *		clock_tick() every time a SIGALRM fires. The other functions are
+ *		used to print a running clock, and an exit message with the final
+ *		play time.
  */
 
-//INCLUDES
-#include <curses.h>
-#include "pong.h"
-#include "court.h"
+/* INCLUDES */
 #include "clock.h"
+#include "court.h"
 
-//CONSTANTS
+/* CONSTANTS */
 #define MINUTE 60
 
-
-//STRUCT
+/* CLOCK STRUCT */
 struct timer {
     int mins, secs, ticks;
 };
 
 static struct timer clock;
-
-
-/*
- * ===========================================================================
- * INTERNAL FUNCTIONS
- * ===========================================================================
- */
 
 /*
  * ===========================================================================
@@ -59,28 +49,6 @@ void clock_init()
     clock.ticks = 0;
     
     return;
-}
-
-
-
-/*
- *	get_mins()
- *	Purpose: Public function to access 'mins' value in timer struct
- *	 Return: The current value of 'clock.mins'
- */
-int get_mins()
-{
-	return clock.mins;
-}
-
-/*
- *	get_secs()
- *	Purpose: Public function to access 'secs' value in timer struct
- *	 Return: The current value of 'clock.secs'
- */
-int get_secs()
-{
-	return clock.secs;
 }
 
 /*
@@ -107,4 +75,24 @@ void clock_tick()
     }
     
     return;
+}
+
+/*
+ *	get_mins()
+ *	Purpose: Public function to access 'mins' value in timer struct
+ *	 Return: The current value of 'clock.mins'
+ */
+int get_mins()
+{
+	return clock.mins;
+}
+
+/*
+ *	get_secs()
+ *	Purpose: Public function to access 'secs' value in timer struct
+ *	 Return: The current value of 'clock.secs'
+ */
+int get_secs()
+{
+	return clock.secs;
 }
