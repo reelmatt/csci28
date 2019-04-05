@@ -1,7 +1,7 @@
 /*
- * ==========================
+ * ===========================================================================
  *   FILE: ./clock.c
- * ==========================
+ * ===========================================================================
  * Purpose: Create a static clock in the file, that is accessed via other
  *			files to print/update time.
  *
@@ -60,10 +60,10 @@ void clock_init()
  */
 void clock_tick()
 {
-	//enough ticks for a second
+	// enough ticks for a second
     if(++clock.ticks == TICKS_PER_SEC)
     {
-    	//enough seconds for a min
+    	// enough seconds for a min
         if(++clock.secs == MINUTE)
         {
             clock.secs = 0;

@@ -12,6 +12,7 @@ struct ppcourt;
 /* CONSTANTS */
 #define BORDER 3
 
+/* EXTERNAL INTERFACE */
 void court_init(int, int, int, int);
 void print_court(int);
 void print_balls(int);

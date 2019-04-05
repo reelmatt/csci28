@@ -29,11 +29,10 @@
 #include <curses.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include "court.h"
-#include "clock.h"
-#include "pong.h"
-#include "court.h"
 #include "ball.h"
+#include "clock.h"
+#include "court.h"
+#include "pong.h"
 
 /* CONSTANTS */
 #define ROW_SYMBOL '-'
@@ -43,7 +42,7 @@
 
 /* COURT STRUCT */
 struct ppcourt {
-	int top, right, left, bot;	//dimensions of court
+	int top, right, bot, left;	//dimensions of court
 };
 
 static struct ppcourt court;
@@ -106,8 +105,8 @@ void court_init(int top, int right, int bot, int left)
 {
 	court.top = top;
 	court.right = right;
-	court.left = left;
 	court.bot = bot;
+	court.left = left;
 	
 	return;
 }
@@ -117,6 +116,12 @@ void court_init(int top, int right, int bot, int left)
  *	Purpose: print the # balls left, time, and walls
  *	   Note: The column has +1 added to court.top so the column
  *			 doesn't overwrite the top row.
+ *     Note: There are no calls to park_cursor() or refresh() as
+ *           these occur in both print_balls() and print_time()
+ *           because those calls will happen more frequently than
+ *           print_court(). As such, explicit calls to park_cursor()
+ *           and refresh() are not necessary in this function as they
+ *           will have already happened.
  */
 void print_court(int balls)
 {
@@ -125,9 +130,7 @@ void print_court(int balls)
     print_row(court.bot, court.left, court.right);
     
     print_balls(balls);
-	print_time(); 
-	park_cursor();
-	refresh();
+	print_time();
     return;
 }
 
@@ -153,6 +156,8 @@ void print_time()
 void print_balls(int balls)
 {
     mvprintw(court.top - 1, court.left, "BALLS LEFT: %2d", balls);
+    park_cursor();
+    refresh();
     return;
 }
 

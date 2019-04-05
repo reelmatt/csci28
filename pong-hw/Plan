@@ -35,13 +35,48 @@ pong.c
 
 ball.c
 
+
 clock.c
+    This file is responsible for keeping track of the time elapsed since the
+    start of the game. For each SIGALRM that is triggered, clock_tick() is
+    called. This function updates the static clock, file-scoped to clock.c,
+    to keep track of the elapsed seconds and minutes.
+    
+    Display of the time is handled via other files, notably, the print_time()
+    function in court.c and the exit_message() function in pong.c to display
+    the player's final time (score).
 
 court.c
-
+    This file handles all information relating to the court-dimensions and
+    printing all features, minus the ball and the paddle. Information is
+    stored in a struct that contains the top, right, bottom, and left sides
+    of the court (or where the walls/paddle should be drawn). Two pieces of
+    game-status information are printed in a header, one row above the top
+    wall: BALLS LEFT and TOTAL TIME. court.c contains the logic for where
+    to print this information and how to format it, but the actual info is
+    either passed in -- print_balls() -- or obtained through a functional
+    interface -- get_mins() and get_secs() -- for the timer struct in clock.c.
+    
+    Other external interface functions exist for court.c to allow other files
+    to see where the outer-walls exist. There is one function for each wall,
+    all taking the form of get_wall_edge(), where "wall" is either top, right,
+    bot, or left, with a return type of int to indicate the row or column the
+    wall is.
+        
 paddle.c
 
-	
+
+
+Signal Handling:
+    This program uses the non-portable signal() instead of sigaction() to
+    handle signals. One area for improvement would be to switch these calls
+    to sigaction() to have greater control over default actions when signals
+    occur. One benefit this would provide, as pointed out in Piazza posts
+    @247 and @249, is ensuring standard system handling of getch() calls.
+    Some systems will return an EINTR error while others will return to
+    getch() waiting for keyboard input. Changing all signal calls to
+    sigaction() would allow for changing this default to always return an
+    error when the signal handler triggers.
 
 Program Flow:
 	1 - Start by initializing curses, signal handlers, and objects for each
@@ -81,5 +116,66 @@ Error Handling:
 	paddle of size one). If these minimum dimensions are not met, pong will
 	close curses so it can output a message to stderr, and exit.
 	
+	On a SIGWINCH signal, a resize_handler() fires which closes the game and
+	prints a message to stderr that window-resizing is not supported. A future
+	improvement could be made to more gracefully handle this error to either
+	restart the game, or adapt to the new terminal dimensions (see Piazza
+	post @239).
+	
 Race condition:
+	As noted in the assignment handout, the design of this pong game includes
+	a race condition where, depending on the timing of operations and SIGALRM
+	firings, the printing to the screen may be unexpected (e.g. the paddle
+	moves to draw its new position, but a SIGARLM triggers a ball movement
+	and draw; the paddle char might appear next to the ball).
+	
+	While not implemented in this submission, my approach to handling this
+	race condition would be to use signals for keyboard input -- instead of
+	blocking with getch() -- and keep track of the order of signals with a
+	queue.
+	
+	To use signals for keyboard input, I would use aio_read() to store
+	keyboard input in a "struct aiocb" buffer. A SIGIO signal handler would
+	also be needed to indicate a key was pressed. Instead of processing timer
+	ticks in the SIGALRM handler and key presses in the SIGIO handler, the
+	only responsibility of each would be to log their respective requests
+	in a queue.  These "requests" would be stored in the queue as symbolic
+	constants, such as ALARM and INPUT, for example.
+	
+	Then, back in the main while loop, the queue would be processed in order;
+	first in, first out. If the next queue entry is an ALARM, a function would
+	be called to add a clock_tick(), update the ball, and check
+	bounce_or_lose(), much like the alarm_handler() function does in the
+	current implementation. If the next queue entry is an INPUT, a function
+	would be called to check which key was pressed and respond accordingly
+	(i.e. exit on 'Q', and move the paddle up or down for 'k' and 'm'
+	respectively).
+	
+    To accomplish this, I would write a set of queue functions to store
+    the signal requests in an integer array. Some key functions needed for
+    mainting the queue are described below:
+           push() - Adds/inserts a value to the queue. Values are added to the
+                    end of the array, pointed to by 'end'.
+            pop() - Removes and returns the value at the front of the queue,
+                    pointed to by 'front'.
+        is_full() - A helper function to aid with push()ing to the queue. If
+                    the queue is full, an error would be returned to be
+                    handled back in the main loop.
+    
+    To clarify, the queue (an int array), is a fixed size and circular. When
+    requests in the queue are retrieved, pop(), and processed in the main
+    while loop, the 'front' of the queue increments by one. When new requests
+    are added, push(), the 'end' increments by one. And, being a circular
+    queue, when the 'end' passes the size of the int array, it loops back
+    around to array[0] if there is room left in the array (i.e. is_full()
+    returns false).
+
+    This handles the race condition problem because all of the heavy
+    processing, moving/printing to the curses window, is handled in the main
+    loop, rather than in signal handlers. The two signal handlers, one for
+    SIGALRMs and one for SIGIOs, just add an int to a queue. The main loop
+    then processes the queue, one request at a time, thereby preventing
+    a conflict between two signals that overlap each other.
+	
+	
 	
