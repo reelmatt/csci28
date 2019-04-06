@@ -240,7 +240,6 @@ void exit_message()
     refresh();
 
     // Keep it on screen for 2 seconds
-    //millisleep(2000);
     sleep(2);
     return;
 }
