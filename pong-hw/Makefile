@@ -22,7 +22,7 @@ ball.o: ball.c
 
 clock.o: clock.c
 	$(CC) $(CFLAGS) -c clock.c
-	
+
 court.o: court.c
 	$(CC) $(CFLAGS) -c court.c
 
