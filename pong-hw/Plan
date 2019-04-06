@@ -119,9 +119,7 @@ Program Flow:
             When BOUNCE, the ball has contacted one of the three court walls.
                 Change the ball's direction and keep it moving.
             When LOSE, the ball has hit the right-edge of the screen WITHOUT
-                coming in contact with the paddle. Stop the ball from moving
-                and pause the game for one second to signal the end of a
-                round.
+                coming in contact with the paddle.
     5 - If a ball is lost, and there are more balls left to play, decrement
         count by one and serve the ball again.
     6 - When there are no more balls left to play, display a bolded message
