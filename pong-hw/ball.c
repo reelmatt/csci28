@@ -17,8 +17,6 @@
  *		serve()				-- inits new values for a ball and draws it
  *		get_balls_left()	-- returns the number of balls (lives) left
  *
- * Notes:
- *
  */
 
 /* INCLUDES */
@@ -38,12 +36,12 @@
 
 /* BALL STRUCT */
 struct ppball {
-    int	remain,				//number of balls left
-    	x_pos, y_pos,		//positions
-        x_dir, y_dir,		//directions
-        x_delay, y_delay,	//ticker count
-        x_count, y_count;	//delay
-    char symbol;			//ball representation
+    int	remain,				// number of balls left
+    	x_pos, y_pos,		// positions
+        x_dir, y_dir,		// directions
+        x_delay, y_delay,	// ticker count
+        x_count, y_count;	// delay
+    char symbol;			// ball representation
 };
 
 /*
@@ -60,25 +58,32 @@ static int rand_number(int, int);
  *	ball_init()
  *	Purpose: Initialize a ball struct's values
  *	  Input: bp, pointer to the ball struct to initialize
+ *     Note: For the position values, +/- 1 keeps the ball within the court
+ *           boundaries. The functions to retrieve the edge values return
+ *           the column or row the borders are drawn; the ball should start
+ *           *within* those boundaries.
+ *     Note: The x_count and x_delay start with a random value between 1 and
+ *           half the MAX_DELAY. A default terminal window will often be
+ *           wider than it is tall, so 
  */
 void ball_init(struct ppball * bp)
 {
-	//positions
-    bp->y_pos = rand_number(get_top_edge(), get_bot_edge());
-	bp->x_pos = rand_number(get_left_edge(), get_right_edge());
+	// positions
+    bp->y_pos = rand_number(get_top_edge() + 1, get_bot_edge() - 1);
+	bp->x_pos = rand_number(get_left_edge() + 1, get_right_edge() - 1);
 
-	//directions
+	// directions
 	bp->y_dir = start_dir();
 	bp->x_dir = start_dir();
 
-	//delay
+	// delay
 	bp->y_count = bp->y_delay = rand_number(1, MAX_DELAY);
-	bp->x_count = bp->x_delay = rand_number(1, MAX_DELAY);
+	bp->x_count = bp->x_delay = rand_number(1, (MAX_DELAY / 2));
 
-	//assign symbol ('O' by default)
+	// assign symbol ('O' by default)
 	bp->symbol = DFL_SYMBOL;
 	
-	//lose one ball (life) every initialization
+	// lose one ball (life) every initialization
 	bp->remain--;
 	
 	return;
@@ -162,6 +167,8 @@ struct ppball * new_ball()
  *			 time to move the x or y position of the ball. After updating
  *			 the struct values, the counter is reset to the delay and will
  *			 move again after the next delay period.
+ *     Note: Most of the main logic in this function was copied, unchanged,
+ *           from the bounce2d.c file on the course site.
  */
 void ball_move(struct ppball * bp)
 {
@@ -169,7 +176,7 @@ void ball_move(struct ppball * bp)
 	int y_cur = bp->y_pos;				// old spot
 	int x_cur = bp->x_pos;				// old spot
 
-	//Check vertical counters
+	// Check vertical counters
 	if ( bp->y_delay > 0 && --bp->y_count == 0 )
 	{
 		bp->y_pos += bp->y_dir;			// move ball
@@ -177,7 +184,7 @@ void ball_move(struct ppball * bp)
 		moved = 1;
 	}
 
-	//Check horizontal counters
+	// Check horizontal counters
 	if ( bp->x_delay > 0 && --bp->x_count == 0 )
 	{
 		bp->x_pos += bp->x_dir;			// move ball
@@ -208,6 +215,10 @@ void ball_move(struct ppball * bp)
  *			 whether or not that will bounce. If the +/- 1 values were not
  *			 present, the ball would overwrite where the borders are before
  *			 bouncing or not.
+ *     Note: Most of the main logic in this function was copied, unchanged,
+ *           from the bounce2d.c file on the course site. Changes were made
+ *           for detecting bounces on the right-side of the court (where
+ *           the paddle is).
  */
 int bounce_or_lose(struct ppball *bp, struct pppaddle *pp)
 {
@@ -233,9 +244,10 @@ int bounce_or_lose(struct ppball *bp, struct pppaddle *pp)
 	{
 	    if( paddle_contact(bp->y_pos, pp) == CONTACT )	// it hit the paddle
 	    {
+            // new, random, delay (keep horizontal movement faster)
+            bp->x_delay = rand_number(1, (MAX_DELAY / 2));
+            bp->y_delay = rand_number(1, MAX_DELAY);
             bp->x_dir = -1;
-            bp->x_delay = rand_number(1, MAX_DELAY);	// new, random, delay
-            bp->y_delay = rand_number(1, MAX_DELAY);	// new, random, delay
             return_val = BOUNCE;	    
 	    }
 	    else

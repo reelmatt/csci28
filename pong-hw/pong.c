@@ -56,9 +56,9 @@
 #include "pong.h"
 
 /* CONSTANTS */
-#define MIN_LINES 11		//minimum terminal row size
-#define MIN_COLS 40			//minimum terminal column size
-#define EXIT_MSG_LEN 16		//to help center exit message
+#define MIN_LINES 11		// minimum terminal row size
+#define MIN_COLS 40			// minimum terminal column size
+#define EXIT_MSG_LEN 16		// to help center exit message
 
 /* LOCAL VARIABLES -- OBJECT INSTANCES */
 static struct pppaddle * paddle;
@@ -110,6 +110,8 @@ int main ()
 /*
  *	set_up()
  *	Purpose: Prepare terminal for the game
+ *     Note: Some of the lines were copied from bounce2d.c. Most have been
+ *           added, by me, to create/initialize objects for use in this file.
  */
 void set_up()
 {
@@ -226,19 +228,20 @@ void resize_handler(int s)
  */
 void exit_message()
 {
-	//Get coordinates to center message
+	// Get coordinates to center message
 	int y = (LINES / 2);
 	int x = (COLS / 2) - (EXIT_MSG_LEN / 2);
 	
-	//Print time in reverse-text
+	// Print time in reverse-text
 	standout();
 	mvprintw(y, x, "You lasted %.2d:%.2d", get_mins(), get_secs());
 	standend();
+	park_cursor();
 	refresh();
 	
-	//Keep it on screen for 2 seconds
-	millisleep(2000);
-	
+	// Keep it on screen for 2 seconds
+	//millisleep(2000);
+	sleep(2);
 	return;
 }
 
@@ -290,14 +293,14 @@ void park_cursor()
  */
 void wrap_up()
 {
-	if(paddle)								//if paddle was malloc'ed
-		free(paddle);						//free it
+	if(paddle)								// if paddle was malloc'ed
+		free(paddle);						// free it
 
-	if(ball)								//if ball was malloc'ed
-		free(ball);							//free it
+	if(ball)								// if ball was malloc'ed
+		free(ball);							// free it
 
-    set_ticker(0);							//stop ticker
-    endwin();								//close curses
+    set_ticker(0);							// stop ticker
+    endwin();								// close curses
     
     return;
 }

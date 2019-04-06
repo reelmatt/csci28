@@ -14,8 +14,6 @@
  *		paddle_init()		-- initializes paddle's vars, and draws on screen
  *		draw_paddle()		-- draws full paddle from top-to-bottom
  *
- * Notes:
- *		The paddle.c file 
  */
 
 /* INCLUDES */
@@ -58,7 +56,7 @@ void draw_paddle(struct pppaddle * pp)
 {
     int i;
 
-    for(i = pp->pad_top; i < pp->pad_bot; i++)
+    for(i = pp->pad_top; i <= pp->pad_bot; i++)
         mvaddch(i, pp->pad_col, pp->pad_char);
 
 	park_cursor();
@@ -77,11 +75,11 @@ void paddle_init(struct pppaddle * pp, int top, int height)
 {	
 	pp->pad_char = DFL_SYMBOL;
 	pp->pad_mintop = BORDER;
-	pp->pad_maxbot = LINES - BORDER;
+	pp->pad_maxbot = LINES - BORDER - 1;    // -1 because LINES are 0-indexed
 	
 	pp->pad_col = get_right_edge();
-	pp->pad_top = top;
-	pp->pad_bot = pp->pad_top + height;
+    pp->pad_top = top;
+	pp->pad_bot = pp->pad_top + height - 1; // -1 because LINES are 0-indexed
 
     draw_paddle(pp);
     
@@ -108,21 +106,21 @@ struct pppaddle * new_paddle()
 	
 	if(paddle == NULL)
 	{
-		//close curses
+		// close curses
 		wrap_up();
 		
-		//output to stderr and exit
+		// output to stderr and exit
 		fprintf(stderr, "./pong: Couldn't allocate memory for a paddle.");
 		exit(1);
 	}
 	
-	//-1 for court height to exclude bottom row
+	// -1 for court height to exclude bottom row
 	int court_height = get_bot_edge() - get_top_edge() - 1;
 
-	//set paddle size to 1/3 the court size
+	// set paddle size to 1/3 the court size
 	int paddle_height = (court_height / 3);
 
-	//set top of paddle to mid-point minus half the paddle height
+	// set top of paddle to mid-point minus half the paddle height
 	int paddle_top = (LINES / 2) - (paddle_height / 2);
 	
 	paddle_init(paddle, paddle_top, paddle_height);
@@ -139,10 +137,10 @@ struct pppaddle * new_paddle()
  */
 void paddle_up(struct pppaddle * pp)
 {
-	//If moved by 1, would it be at 'mintop'?
+	// if moved by 1, would it be at 'mintop'?
     if( (pp->pad_top - 1) > pp->pad_mintop)
     {
-        mvaddch(pp->pad_bot - 1, pp->pad_col, BLANK);
+        mvaddch(pp->pad_bot, pp->pad_col, BLANK);
         --pp->pad_top;
         --pp->pad_bot;
         mvaddch(pp->pad_top, pp->pad_col, DFL_SYMBOL);
@@ -162,13 +160,13 @@ void paddle_up(struct pppaddle * pp)
  */
 void paddle_down(struct pppaddle * pp)
 {
-	//If moved by 1, would it be at 'maxbot'?
+	// if moved by 1, would it be at 'maxbot'?
     if( (pp->pad_bot + 1) < pp->pad_maxbot)
     {
         mvaddch(pp->pad_top, pp->pad_col, BLANK);
         ++pp->pad_top;
         ++pp->pad_bot;
-        mvaddch(pp->pad_bot - 1, pp->pad_col, DFL_SYMBOL);
+        mvaddch(pp->pad_bot, pp->pad_col, DFL_SYMBOL);
         
 		park_cursor();
 		refresh();
@@ -185,7 +183,7 @@ void paddle_down(struct pppaddle * pp)
  */
 int paddle_contact(int y, struct pppaddle * pp)
 {
-	//within the vertical range of the paddle
+	// within the vertical range of the paddle
 	if(y >= pp->pad_top && y <= pp->pad_bot)
 	{
 		return CONTACT;        

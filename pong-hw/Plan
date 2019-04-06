@@ -31,10 +31,25 @@ Data Structures:
 	object, and how they relate to the big picture, see the sections below.
 
 pong.c
-	This file 
+	This file contains the main logic/loop for the game. As described in
+	further detail in the "Program Flow" section, the terminal/curses is
+	set up and all objects (ball, paddle, court, clock) are created via
+	calls to their respective .c files.
 
 ball.c
-
+    This file is responsible for creating an instance of a ball. Each ball
+    keeps track of its position, speed, direction, and number of balls
+    remaining. Position, direction, and speed (delay + count) are randomly
+    generated, within a range, when initialized. Upon making contact with
+    the paddle, the speed (delay) value will change, randomly.
+    
+    serve() is one of the external interface functions that (re)initializes
+    the ball's internal values, and decrements the number of balls remaining
+    by one. The ball_move() function checks the current count (decreased with
+    every SIGALRM), and sees if it is time to move yet (it has decreased
+    'delay' number of times). bounce_or_lose() is another key function that
+    checks to see if the ball has made contact with a wall, a paddle (pointed
+    to by *pp), or has gone out of play.
 
 clock.c
     This file is responsible for keeping track of the time elapsed since the
@@ -64,7 +79,19 @@ court.c
     wall is.
         
 paddle.c
-
+    This file is responsible for creating an instance of a paddle. Each paddle
+    keeps track of its boundaries (top and bottom rows), as well as its current
+    position on the screen (top, bottom, and column).
+    
+    A paddle is controlled through player keyboard-input, with 'k' triggering
+    a call to paddle_up() and 'm' triggering a call to paddle_down(). These
+    functions check if the paddle has reached the boundaries of the court,
+    and if not, erases the old top/bottom of the paddle and draws a char in
+    the new vertical position.
+    
+    paddle_contact() is a key external interface function that checks if an
+    object (in this game's case, the y coordinate of a ball), and sees if
+    that is within the paddle's current coordinates. 
 
 
 Signal Handling:
