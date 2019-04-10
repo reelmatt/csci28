@@ -1,0 +1,26 @@
+Script started on Sat 06 Apr 2019 01:32:32 PM EDT
+mst611@ice2:~/csci28/pong-hw$ sh -v my_script.sh 
+#/bin/sh -v
+#
+# My test script to test my submission for sttyl.
+# It removes any previous compilations, and re-compiles
+# the program fresh.
+#
+
+#-------------------------------------
+#    compile program
+#-------------------------------------
+make clean
+rm -f *.o pong
+make pong
+gcc -Wall -g -c pong.c
+gcc -Wall -g -c alarmlib.c
+gcc -Wall -g -c ball.c
+gcc -Wall -g -c clock.c
+gcc -Wall -g -c court.c
+gcc -Wall -g -c paddle.c
+gcc -o pong pong.o alarmlib.o ball.o clock.o court.o paddle.o -lcurses
+mst611@ice2:~/csci28/pong-hw$ exit
+exit
+
+Script done on Sat 06 Apr 2019 01:32:41 PM EDT
