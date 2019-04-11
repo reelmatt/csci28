@@ -32,12 +32,21 @@ char * next_cmd(char *prompt, FILE *fp)
 		if ( c == '\n' )
 			break;
 
+		/* comment? */
+		if (c == '#' && pos = 0)
+		{
+			//eat up the rest of the line
+			break;	//ignore all the rest
+		}
+		
+
 		/* no, add to buffer */
 		fs_addch(&s, c);
 		pos++;
 	}
 	if ( c == EOF && pos == 0 )		/* EOF and no input	*/
 		return NULL;			/* say so		*/
+		
 	fs_addch(&s, '\0');			/* terminate string	*/
 	return fs_getstr(&s);
 }

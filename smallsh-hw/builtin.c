@@ -66,6 +66,46 @@ int is_export(char **args, int *resultp)
 	return 0;
 }
 
+/*
+ *
+ */
+int is_cd()
+{
+
+}
+
+
+/*
+ *	The Bourne shell: Cause the shell to exit with a status of n. If n is
+ *	omitted, the exit status is that of the last command executed. A trap on
+ *	EXIT is executed before the shell terminates.
+ *
+ *	dash shell states: Terminate the shell process. If exitstatus is given it
+ *	is used as the exit status of the shell; otherwise the exit status of the
+ *	preceding command is used.
+ */
+int is_exit(char **args)
+{
+	if( strcmp(args[0], "exit") == 0) {
+		if( args[1] != NULL )
+			if ( isdigit(args[1]) )
+				exit args[1];
+			else
+				exit 2;		//syntax error
+		
+		exit 0;				//exit with last command's status
+	}
+	return 0;
+}
+
+/*
+ *
+ */
+int is_read()
+{
+
+}
+
 int assign(char *str)
 /*
  * purpose: execute name=val AND ensure that name is legal
