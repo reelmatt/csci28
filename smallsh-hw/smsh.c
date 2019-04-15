@@ -3,6 +3,7 @@
 #include	<unistd.h>
 #include	<signal.h>
 #include	<sys/wait.h>
+// #include    <fcntl.h>
 #include	"smsh.h"
 #include	"splitline.h"
 #include	"varlib.h"
@@ -22,15 +23,36 @@
 
 void	setup();
 
-int main()
+int main(int ac, char ** av)
 {
 	char	*cmdline, *subline, *prompt, **arglist;
 	int	result;
+	int script_fd;
+// 	int script_fd = -1;
+    FILE * script = NULL;
 
 	prompt = DFL_PROMPT ;
 	setup();
 
-	while ( (cmdline = next_cmd(prompt, stdin)) != NULL ){
+    if(ac >= 2)
+    {
+//         printf("this is a shell script...\n");
+//         printf("file name is: %s\n", av[1]);
+        
+        script = fopen(av[1], "r");
+        
+        if (script == NULL)
+        {
+            fprintf(stderr, "Can't open %s\n", av[1]);
+            exit(127);
+        }
+        
+        prompt = "";
+//         script_fd = open(av[1], O_RDONLY);
+    }
+    FILE * to_run = (script) ? script : stdin;
+    
+	while ( (cmdline = next_cmd(prompt, to_run)) != NULL ){
 	    subline = varsub(cmdline);
 // 	    printf("Subline is: %s\n", subline);
 	    
