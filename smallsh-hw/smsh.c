@@ -36,8 +36,8 @@ int main(int ac, char ** av)
 
     if(ac >= 2)
     {
-//         printf("this is a shell script...\n");
-//         printf("file name is: %s\n", av[1]);
+        printf("this is a shell script...\n");
+        printf("file name is: %s\n", av[1]);
         
         script = fopen(av[1], "r");
         
