@@ -7,6 +7,7 @@
 #include	"splitline.h"
 #include	"varlib.h"
 #include	"process.h"
+#include    "builtin.h"
 
 /**
  **	small-shell version 5
@@ -23,15 +24,19 @@ void	setup();
 
 int main()
 {
-	char	*cmdline, *prompt, **arglist;
+	char	*cmdline, *subline, *prompt, **arglist;
 	int	result;
 
 	prompt = DFL_PROMPT ;
 	setup();
 
 	while ( (cmdline = next_cmd(prompt, stdin)) != NULL ){
-		if ( (arglist = splitline(cmdline)) != NULL  ){
-			result = process(arglist);
+	    subline = varsub(cmdline);
+// 	    printf("Subline is: %s\n", subline);
+	    
+		//if ( (arglist = splitline(cmdline)) != NULL  ){
+		if ( (arglist = splitline(subline)) != NULL  ){
+            result = process(arglist);
 			freelist(arglist);
 		}
 		free(cmdline);

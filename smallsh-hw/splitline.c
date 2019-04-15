@@ -33,7 +33,7 @@ char * next_cmd(char *prompt, FILE *fp)
 			break;
 
 		/* comment? */
-		if (c == '#' && pos = 0)
+		if (c == '#' && pos == 0)
 		{
 			//eat up the rest of the line
 			break;	//ignore all the rest

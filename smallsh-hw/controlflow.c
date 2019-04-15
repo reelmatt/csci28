@@ -8,7 +8,7 @@
 #include	"smsh.h"
 #include	"process.h"
 
-enum states   { NEUTRAL, WANT_THEN, THEN_BLOCK };
+enum states   { NEUTRAL, WANT_THEN, THEN_BLOCK, ELSE_BLOCK };
 enum results  { SUCCESS, FAIL };
 
 static int if_state  = NEUTRAL;
@@ -24,6 +24,8 @@ int ok_to_execute()
  * details: if in THEN_BLOCK and if_result was SUCCESS then yes
  *          if in THEN_BLOCK and if_result was FAIL    then no
  *          if in WANT_THEN  then syntax error (sh is different)
+ *   notes: Copied from starter-code for assignment 5. Code added to handle
+ *          else blocks.
  */
 {
 	int	rv = 1;		/* default is positive */
@@ -36,6 +38,10 @@ int ok_to_execute()
 		rv = 1;
 	else if ( if_state == THEN_BLOCK && if_result == FAIL )
 		rv = 0;
+	else if ( if_state == ELSE_BLOCK && if_result == SUCCESS )
+		rv = 0;
+	else if ( if_state == ELSE_BLOCK && if_result == FAIL )
+		rv = 1;
 	return rv;
 }
 
@@ -43,9 +49,14 @@ int is_control_command(char *s)
 /*
  * purpose: boolean to report if the command is a shell control command
  * returns: 0 or 1
+ *   notes: Copied from starter-code for assignment 5. Code added to handle
+ *          else blocks.
  */
 {
-    return (strcmp(s,"if")==0 || strcmp(s,"then")==0 || strcmp(s,"fi")==0);
+    return (strcmp(s, "if") == 0 ||
+            strcmp(s, "then") == 0 ||
+            strcmp(s, "else") == 0 ||
+            strcmp(s, "fi") == 0);
 }
 
 
@@ -54,6 +65,8 @@ int do_control_command(char **args)
  * purpose: Process "if", "then", "fi" - change state or detect error
  * returns: 0 if ok, -1 for syntax error
  *   notes: I would have put returns all over the place, Barry says "no"
+ *   notes: Copied from starter-code for assignment 5. Code added to handle
+ *          else blocks.
  */
 {
 	char	*cmd = args[0];
@@ -77,12 +90,21 @@ int do_control_command(char **args)
 			rv = 0;
 		}
 	}
+	else if ( strcmp(cmd, "else") == 0) {
+	    if( if_state != THEN_BLOCK )
+	        rv = syn_err("else unexpected");
+	    else {
+	        if_state = ELSE_BLOCK;
+	        rv = 0;
+	    }
+	}
 	else if ( strcmp(cmd,"fi")==0 ){
-		if ( if_state != THEN_BLOCK )
-			rv = syn_err("fi unexpected");
-		else {
+		if ( if_state == THEN_BLOCK || if_state == ELSE_BLOCK) {
 			if_state = NEUTRAL;
 			rv = 0;
+		}
+		else {
+			rv = syn_err("fi unexpected");
 		}
 	}
 	else 

@@ -53,11 +53,12 @@ int process(char *args[])
  */
 int do_command(char **args)
 {
-	void varsub(char **);
+// 	void varsub(char **);
+    char * varsub(char *);
 	int  is_builtin(char **, int *);
 	int  rv;
 
-	varsub(args);
+// 	varsub(args);
 	if ( is_builtin(args, &rv) )
 		return rv;
 	rv = execute(args);

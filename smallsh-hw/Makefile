@@ -6,7 +6,7 @@
 CC = cc -Wall  -g
 
 
-OBJS = smsh5.o splitline.o process.o varlib.o controlflow.o builtin.o \
+OBJS = smsh.o splitline.o process.o varlib.o controlflow.o builtin.o \
 		flexstr.o
 
 smsh: $(OBJS)
@@ -24,8 +24,8 @@ flexstr.o: flexstr.c flexstr.h splitline.h
 process.o: process.c smsh.h builtin.h varlib.h controlflow.h process.h 
 	$(CC) -c -Wall process.c
 
-smsh5.o: smsh5.c smsh.h splitline.h varlib.h process.h 
-	$(CC) -c -Wall smsh5.c
+smsh.o: smsh.c smsh.h splitline.h varlib.h process.h 
+	$(CC) -c -Wall smsh.c
 
 splitline.o: splitline.c splitline.h smsh.h flexstr.h 
 	$(CC) -c -Wall splitline.c
