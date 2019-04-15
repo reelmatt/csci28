@@ -34,4 +34,4 @@ varlib.o: varlib.c varlib.h
 	$(CC) -c -Wall varlib.c
 
 clean:
-	rm -f *.o 
+	rm -f *.o smsh
