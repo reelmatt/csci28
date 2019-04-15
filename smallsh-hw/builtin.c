@@ -216,79 +216,110 @@ int okname(char *str)
 // }
 #define	is_delim(x) ((x)==' '|| (x)=='\t' || (x)=='\0')
 
+enum states { LEAVE, EXTRACT };
+
 char * varsub(char * args)
 {
 	int	i = 0;
+	char special_str[10] = "\0";
+	
 	char	*newstr, *replace_str;
 	FLEXSTR s;
 	FLEXSTR to_sub;
 // 	char * str;
     fs_init(&s, 0);
-    fs_init(&to_sub, 0);
+
+    int sub_mode = LEAVE;
     
+    //go char-by-char until end-of-line
     while (args[i] != '\0')
     {
-        // go until we reach the start of a var
-        while(args[i] != '$' && args[i] != '\0')
+
+        //if a $ or an escape char '\', handle
+        if(args[i] == '\\')
+        {
+            printf("ESCAPE char...\n");
+             fs_addch(&s, args[++i]);   //add char after escape
+             i++;
+//                  sub_mode = LEAVE;
+             continue;
+        }
+        //var signifier
+        else if (args[i] == '$')
+        {
+            i++;
+            if(args[i] == '$')
+            {
+                printf("getpid()\n");
+                sprintf(special_str, "%d", getpid());
+            }
+            else if (args[i] == '?')
+            {
+                printf("get_exit()\n");
+                sprintf(special_str, "%d", get_exit());
+            }
+            else if (isdigit(args[i]))
+            {
+                fprintf(stderr, "bad var name, cannot begin with digit\n");
+                continue;
+            }
+            else
+            {
+                fs_init(&to_sub, 0);
+                printf("EXTRACTING...\n");
+                printf("first is %c\n", args[i]);
+                
+                //extract the var
+                while(isalnum(args[i]) || args[i] == '_')
+                {
+                    printf("%c", args[i]);
+                    fs_addch(&to_sub, args[i]);
+                    i++;
+                }
+                fs_addch(&to_sub, '\0'); //null-terminate string
+                printf("\n");
+//                     sub_mode = EXTRACT;
+//                 i++;
+            }
+            
+            //something to replace
+            newstr = fs_getstr(&to_sub);
+            printf("special_str == %s\n", special_str);
+            printf("newstr == %s\n", newstr);
+        
+            replace_str = VLlookup(newstr);
+            if( replace_str == NULL )
+                replace_str = "";
+    //         printf("Mode is %d\n", sub_mode);
+        
+            printf("replace_str == %s\n", replace_str);
+            fs_free(&to_sub);
+            fs_addstr(&s, replace_str);
+        
+        }
+        //just regular chars
+        else
         {
             fs_addch(&s, args[i]);
             i++;
-        }
-        
-        //trim off leading $ so to_sub is the actual var name
-        if(args[i] == '$')
-        {
-            i++;
-        }
-        
-//        i++;        //trim off '$'
-        
-        //error condition
-        if(isdigit((int) args[i]))
-        {
-            printf("var cannot begin with digit\n");
             continue;
         }
         
-        // go until we reach the END of a var
-//        while(! is_delim(args[i]) )
-        while(isalnum(args[i]) || args[i] == '_')
-        {
-            fs_addch(&to_sub, args[i]);
-            i++;
-        }
-        
-        fs_addch(&to_sub, '\0');            //null-terminate string
-        newstr = fs_getstr(&to_sub);
-//         printf("string is %s\n", newstr);
-        
-//         if(no string was read in...)
-        replace_str = VLlookup(newstr);
-        if( replace_str == NULL )
-            replace_str = "";
-        
-        fs_free(&to_sub);   //do with varlib function
-        fs_addstr(&s, replace_str);
-        
-//         fs_addch(&s, ' ');
-        
-    }
 
+        
+
+                //         if(no string was read in...)
+//                 fs_free(&to_sub);   //do with varlib function
+//                 fs_addstr(&s, replace_str);       
+
+//         i++;
+        printf("going for another while loop\n");
+    }
+    
+    printf("POST-while loop\n");
+    fs_addch(&s, '\0');         //null-terminate full string
     char * return_str = fs_getstr(&s);
+    printf("return_str is %s\n", return_str);
     fs_free(&s);
     return return_str;
-/*
-		FLEXSTR	s;
-		char    *str;
-
-		fs_init(&s,0);		// initialize the string
-		fs_addch(&s,'a');		// append a char
-		fs_addch(&s,'b');		// and another char
-		fs_addstr(&s, "xyz");		// and a bunch of chars
-		str = fs_getstr(&s);		// retrieve string
-		printf("string is %s", str);	// print it
-		free(str);			// it was malloc-ed
-		fs_free(&s);			// deallocate space in FLEXSTR
-*/
-
 }

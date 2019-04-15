@@ -21,6 +21,7 @@
 
 #define	DFL_PROMPT	"> "
 
+static int last_exit = 12;
 void	setup();
 
 int main(int ac, char ** av)
@@ -59,6 +60,7 @@ int main(int ac, char ** av)
 		//if ( (arglist = splitline(cmdline)) != NULL  ){
 		if ( (arglist = splitline(subline)) != NULL  ){
             result = process(arglist);
+            last_exit = result;
 			freelist(arglist);
 		}
 		free(cmdline);
@@ -83,4 +85,9 @@ void fatal(char *s1, char *s2, int n)
 {
 	fprintf(stderr,"Error: %s,%s\n", s1, s2);
 	exit(n);
+}
+
+int get_exit()
+{
+    return last_exit;
 }
