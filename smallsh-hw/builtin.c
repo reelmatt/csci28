@@ -235,8 +235,15 @@ char * varsub(char * args)
             i++;
         }
         
-        i++;        //trim off '$'
+        //trim off leading $ so to_sub is the actual var name
+        if(args[i] == '$')
+        {
+            i++;
+        }
         
+//        i++;        //trim off '$'
+        
+        //error condition
         if(isdigit((int) args[i]))
         {
             printf("var cannot begin with digit\n");
@@ -251,7 +258,7 @@ char * varsub(char * args)
             i++;
         }
         
-        fs_addch(&to_sub, '\0');
+        fs_addch(&to_sub, '\0');            //null-terminate string
         newstr = fs_getstr(&to_sub);
 //         printf("string is %s\n", newstr);
         
@@ -263,7 +270,7 @@ char * varsub(char * args)
         fs_free(&to_sub);   //do with varlib function
         fs_addstr(&s, replace_str);
         
-        fs_addch(&s, ' ');
+//         fs_addch(&s, ' ');
         
     }
 
