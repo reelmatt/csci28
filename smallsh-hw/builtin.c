@@ -238,7 +238,7 @@ char * varsub(char * args)
         //if a $ or an escape char '\', handle
         if(args[i] == '\\')
         {
-            printf("ESCAPE char...\n");
+//             printf("ESCAPE char...\n");
              fs_addch(&s, args[++i]);   //add char after escape
              i++;
 //                  sub_mode = LEAVE;
@@ -250,12 +250,12 @@ char * varsub(char * args)
             i++;
             if(args[i] == '$')
             {
-                printf("getpid()\n");
+//                 printf("getpid()\n");
                 sprintf(special_str, "%d", getpid());
             }
             else if (args[i] == '?')
             {
-                printf("get_exit()\n");
+//                 printf("get_exit()\n");
                 sprintf(special_str, "%d", get_exit());
             }
             else if (isdigit(args[i]))
@@ -266,33 +266,33 @@ char * varsub(char * args)
             else
             {
                 fs_init(&to_sub, 0);
-                printf("EXTRACTING...\n");
-                printf("first is %c\n", args[i]);
+//                 printf("EXTRACTING...\n");
+//                 printf("first is %c\n", args[i]);
                 
                 //extract the var
                 while(isalnum(args[i]) || args[i] == '_')
                 {
-                    printf("%c", args[i]);
+//                     printf("%c", args[i]);
                     fs_addch(&to_sub, args[i]);
                     i++;
                 }
                 fs_addch(&to_sub, '\0'); //null-terminate string
-                printf("\n");
+//                 printf("\n");
 //                     sub_mode = EXTRACT;
 //                 i++;
             }
             
             //something to replace
             newstr = fs_getstr(&to_sub);
-            printf("special_str == %s\n", special_str);
-            printf("newstr == %s\n", newstr);
+//             printf("special_str == %s\n", special_str);
+//             printf("newstr == %s\n", newstr);
         
             replace_str = VLlookup(newstr);
             if( replace_str == NULL )
                 replace_str = "";
     //         printf("Mode is %d\n", sub_mode);
         
-            printf("replace_str == %s\n", replace_str);
+//             printf("replace_str == %s\n", replace_str);
             fs_free(&to_sub);
             fs_addstr(&s, replace_str);
         
@@ -313,13 +313,13 @@ char * varsub(char * args)
 //                 fs_addstr(&s, replace_str);       
 
 //         i++;
-        printf("going for another while loop\n");
+//         printf("going for another while loop\n");
     }
     
-    printf("POST-while loop\n");
+//     printf("POST-while loop\n");
     fs_addch(&s, '\0');         //null-terminate full string
     char * return_str = fs_getstr(&s);
-    printf("return_str is %s\n", return_str);
+//     printf("return_str is %s\n", return_str);
     fs_free(&s);
     return return_str;
 }
