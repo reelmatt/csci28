@@ -123,8 +123,8 @@ int is_exit(char **args, int *resultp)
 	{
 		if( args[1] != NULL )
 		{
-			if ( isdigit((int) args[1]) )
-			    exit((int) args[1]);
+			if ( isdigit(args[1]))
+			    exit(args[1]);
 // 				*resultp = (int) args[1];
 			else
 			{

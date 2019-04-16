@@ -21,29 +21,44 @@ char * next_cmd(char *prompt, FILE *fp)
  */
 {
 	int	c;				/* input char		*/
+	int prev_c = '\0';
 	FLEXSTR	s;				/* the command		*/
 	int	pos = 0;
 
 	fs_init(&s, 0);				/* initialize the str	*/
 	printf("%s", prompt);				/* prompt user	*/
+	
+// 	printf("Start of input: ");
 	while( ( c = getc(fp)) != EOF ) 
 	{
 		/* end of command? */
 		if ( c == '\n' )
 			break;
 
-		/* comment? */
-		if (c == '#' && pos == 0)
+		// comment?
+		if (c == '#' && (prev_c == '\0' || prev_c == ' ' || prev_c == '\t') )
 		{
+// 			printf("Start of comment...\n");
+			while( (c = getc(fp)) != EOF)
+			{
+				if (c == '\n')
+					break;
+			}
+			
+			break;
 			//eat up the rest of the line
-			break;	//ignore all the rest
+// 			break;	//ignore all the rest
 		}
 		
-
+// 		printf("%c", c);
 		/* no, add to buffer */
 		fs_addch(&s, c);
 		pos++;
+		prev_c = c;
 	}
+	
+// 	printf("\nEnding cmdline\n");
+	
 	if ( c == EOF && pos == 0 )		/* EOF and no input	*/
 		return NULL;			/* say so		*/
 		
