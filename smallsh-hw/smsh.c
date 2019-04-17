@@ -48,7 +48,6 @@ int main(int ac, char ** av)
         
         prompt = "";
     }
-//     FILE * to_run = (script) ? script : stdin;
     
 	while ( (cmdline = next_cmd(prompt, to_run)) != NULL ){
 // 		printf("cmdline: %s\n\n\n", cmdline);
