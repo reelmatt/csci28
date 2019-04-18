@@ -155,6 +155,7 @@ int init_for_loop(char **args)
 			fs_addch(&name, *args[0]++);
 		}
 		
+		fs_addch(&name, '\0');
 		fl->varname = fs_getstr(&name);
 		fs_free(&name);
 		
