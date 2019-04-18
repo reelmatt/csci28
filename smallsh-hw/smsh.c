@@ -3,9 +3,11 @@
 #include	<unistd.h>
 #include	<signal.h>
 #include	<sys/wait.h>
+#include	<stdbool.h>
 // #include    <fcntl.h>
 #include	"smsh.h"
 #include	"splitline.h"
+#include	"controlflow.h"
 #include	"varlib.h"
 #include	"process.h"
 #include    "builtin.h"
@@ -21,51 +23,162 @@
 
 #define	DFL_PROMPT	"> "
 
+
 static int last_exit = 12;
-void	setup();
+static int parsing_for = false;
+
+static void setup();
+static void io_setup();
+static FILE * open_script(char *);
+static int run_command(char * cmd);
+
+void io_setup(FILE ** fp, char ** pp, int args, char ** av)
+{
+	if(args >= 2)
+	{
+		*fp = open_script(av[1]);
+		*pp = "";
+	}
+	else
+	{
+		*fp = stdin;
+		*pp = DFL_PROMPT;
+	}
+	
+	return;
+}
+
+FILE * open_script(char * file)
+{
+	FILE * fp = fopen(file, "r");
+	
+	if(fp == NULL)
+	{
+		fprintf(stderr, "Can't open %s\n", file);
+		exit(127);
+	}
+	
+	return fp;
+}
 
 int main(int ac, char ** av)
 {
-	char	*cmdline, *subline, *prompt, **arglist;
-	int	result;
-	int script_fd;
+	FILE * source;
+	char *cmdline, *prompt;
+	int result;
 
-    FILE * to_run = stdin;
-
-	prompt = DFL_PROMPT ;
-	setup();
-
-	// check if a script is specified
-    if(ac >= 2)
-    {   
-        to_run = fopen(av[1], "r");
-        
-        if (to_run == NULL)
-        {
-            fprintf(stderr, "Can't open %s\n", av[1]);
-            exit(127);
-        }
-        
-        prompt = "";
-    }
+	setup();    
+    io_setup(&source, &prompt, ac, av);
     
-	while ( (cmdline = next_cmd(prompt, to_run)) != NULL ){
-// 		printf("cmdline: %s\n\n\n", cmdline);
-// 		if( if_parse_for_loop() )
-// 		{
-// 			load_for_loop();
-// 			
-// 		}
-	    subline = varsub(cmdline);
+    // get next line from 'source' and process accordingly
+	while ( (cmdline = next_cmd(prompt, source)) != NULL )
+	{
+		// parsing for loop, direct input here
+		if( is_parsing_for() )
+		{
+// 			printf("parsing for...\n");
+// 			if (load_for_loop(cmdline) == true)
+// 			{
+// 				
+// 			}
+			
+			
+			/*if (is_done())		//&& ok_to_execute()?
+			{
+				
+			}
+			
+			//done loading
+			if (rv == true) //&& ok_to_execute()?
+			{
+				//loop over for loop struct
+				char * cmd;
+				while( (cmd = get_next_cmd()) != NULL)
+				{
+					result = run_command(cmd);				
+				}
+			}*/
+			// will be true when done loading, false while in process
+			if (load_for_loop(cmdline) == true)
+			{
+				char * to_run;
+				
+// 				char *name = get_for_name();
+// 				char **vals = get_for_vals();
+// 				char **cmds = get_for_cmds();
+// 				
+// 				while (*vals)
+// 				{
+// 				
+// 				}
+				
+		// 		while another command in for loop
+// 				while( (to_run = get_next_cmd()) != NULL)
+// 				{
+// 					result = run_command(to_run);
+// 				}
+// 				printf("Done loading the for loop. Now on to processing\n");
+// 				char ** for_vars = get_for_vars();
+// 
+				char **for_vars = get_for_vars();
+				
+				while(*for_vars)
+				{
+					char * name = get_for_name();
+// 					printf("name = %s, val = %s\n", name, *for_vars);
+					
+					VLstore(name, *for_vars);
+				
+					char ** for_commands = get_for_commands();
+					while(*for_commands)
+					{
+						result = run_command(*for_commands);
+						for_commands++;
+// 						free(cmdline);
+					}
+				
+					for_vars++;
+				}
+				parsing_for = false;
+			}
 
-		if ( (arglist = splitline(subline)) != NULL  ){
-            result = process(arglist);
-            last_exit = result;
-			freelist(arglist);
+			//
+			continue;			
 		}
-		free(cmdline);
+		
+		//all other commands/syntax
+		result = run_command(cmdline);
 	}
 	return result;
+}
+
+int run_command(char * cmd)
+{
+	char *subline = varsub(cmd);
+	char **arglist;
+	int result = 0;
+	
+	if ( (arglist = splitline(subline)) != NULL )
+	{
+		result = process(arglist);
+		last_exit = result;
+// 		freelist(arglist);
+	}
+	
+// 	free(cmd);
+	return result;	
+}
+
+int do_for(char * cmdline)
+{
+	
+	return false;
+}
+
+int loop_thru_for()
+{
+	
+	return 0;
 }
 
 void setup()
@@ -85,6 +198,17 @@ void fatal(char *s1, char *s2, int n)
 {
 	fprintf(stderr,"Error: %s,%s\n", s1, s2);
 	exit(n);
+}
+
+void set_for(int state)
+{
+	parsing_for = state;
+	return;
+}
+
+int get_for()
+{
+	return parsing_for;
 }
 
 int get_exit()

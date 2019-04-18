@@ -8,14 +8,14 @@
 #include	<ctype.h>
 #include	<stdlib.h>
 #include    <unistd.h>
+#include	<stdbool.h>
 #include	"smsh.h"
 #include	"varlib.h"
 #include    "flexstr.h"
 #include    "splitline.h"
 #include	"builtin.h"
 
-#define YES 1
-#define NO 0
+
 
 int is_builtin(char **args, int *resultp)
 /*
@@ -92,6 +92,8 @@ int is_cd(char **args, int *resultp)
 // https://www.stev.org/post/cgethomedirlocationinlinux
 // https://stackoverflow.com/questions/2910377/get-home-directory-in-linux
 
+//VLlookup("HOME");
+
         if (args[1] == NULL && chdir(getenv("HOME")) == 0)
             *resultp = 0;     //go to HOME directory
         else if (args[1] != NULL && chdir(args[1]) == 0)
@@ -151,7 +153,7 @@ int is_read(char **args, int *resultp)
     
     if ( strcmp(args[0], "read") == 0)
     {
-    	if( valid_var(args[1]) == YES )
+    	if( valid_var(args[1]) == true )
     	{
     		char c;
 			FLEXSTR s;
@@ -199,17 +201,17 @@ int valid_var(char * var)
 	int len = strlen(var);
 	
 	if (isdigit(var[0]))
-		return NO;
+		return false;
 
 	for(i = 0; i < len; i++)
 	{
 		if( isalnum(var[i]) || var[i] == '_')
 			continue;
 		else
-			return NO;
+			return false;
 	}
 	
-	return YES;
+	return true;
 }
 
 int assign(char *str)

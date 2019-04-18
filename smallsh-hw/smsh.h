@@ -5,5 +5,6 @@
 void fatal(char *, char *, int);
 
 int get_exit();
+void set_for(int);
 
 #endif
