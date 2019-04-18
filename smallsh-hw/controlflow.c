@@ -9,6 +9,7 @@
 #include	<stdlib.h>
 #include	"smsh.h"
 #include	"controlflow.h"
+#include	"splitline.h"
 #include	"process.h"
 #include	"flexstr.h"
 #include	"varlib.h"
@@ -238,9 +239,13 @@ int init_for_loop(char **args)
 // returns TRUE when done loading for loop, FALSE otherwise
 int load_for_loop(char *args)
 {
+// 	printf("in load_for_loop, what is starting args?\n%s\n", args);
+	
+	char **arglist = splitline(args);
+	
 	if(for_state == WANT_DO)
 	{
-		if(strcmp(args, "do") == 0)
+		if(strcmp(arglist[0], "do") == 0)
 		{
 			
 			for_state = WANT_DONE;
@@ -253,8 +258,9 @@ int load_for_loop(char *args)
 	}
 	else if (for_state == WANT_DONE)
 	{
-		if(strcmp(args, "done") == 0)
+		if(strcmp(arglist[0], "done") == 0)
 		{
+		/*
 // 			printf("in the done tract, freeing about to happen\n");
 			
 			
@@ -277,11 +283,11 @@ int load_for_loop(char *args)
 // 			
 // 			if (fl)					//if for_loop struct was malloc'ed
 // 				free(fl);			//free it for next time
-			
+			*/
 			for_state = NEUTRAL;	//reset state
 			return true;
 		}
-		
+		/*
 // 		FLEXSTR cmd;
 // 		fs_init(&cmd, 0);
 // 		
@@ -291,7 +297,7 @@ int load_for_loop(char *args)
 // 			args++;
 // 		
 // 		}
-
+*/
 		fl_append(&fl.commands, args);
 
 	}
@@ -303,6 +309,7 @@ int load_for_loop(char *args)
 	return false;
 }
 
+/* CLEANED UP MAIN ENOUGH FOR NOW -- WASN'T WORKING ANYWAY
 char * get_next_cmd()
 {
 	char **vars = fl_getlist(&fl.varvalues);
@@ -321,7 +328,7 @@ char * get_next_cmd()
 	}
 	
 	return NULL;
-}
+}*/
 
 char ** get_for_commands()
 {
