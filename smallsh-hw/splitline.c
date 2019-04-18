@@ -36,19 +36,19 @@ char * next_cmd(char *prompt, FILE *fp)
 			break;
 
 		// comment?
-		if (c == '#' && (prev_c == '\0' || prev_c == ' ' || prev_c == '\t') )
-		{
-// 			printf("Start of comment...\n");
-			while( (c = getc(fp)) != EOF)
-			{
-				if (c == '\n')
-					break;
-			}
-			
-			break;
-			//eat up the rest of the line
-// 			break;	//ignore all the rest
-		}
+// 		if (c == '#' && (prev_c == '\0' || prev_c == ' ' || prev_c == '\t') )
+// 		{
+// // 			printf("Start of comment...\n");
+// 			while( (c = getc(fp)) != EOF)
+// 			{
+// 				if (c == '\n')
+// 					break;
+// 			}
+// 			
+// 			break;
+// 			//eat up the rest of the line
+// // 			break;	//ignore all the rest
+// 		}
 		
 // 		printf("%c", c);
 		/* no, add to buffer */

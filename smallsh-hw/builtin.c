@@ -17,7 +17,8 @@
 
 char * get_replacement(char * args, int *);
 char var_or_comment(char * str, FLEXSTR s, char **prev);
-int valid_var(char * var);
+
+void remove_comment(char * args);
 
 int is_builtin(char **args, int *resultp)
 /*
@@ -183,24 +184,6 @@ int is_read(char **args, int *resultp)
     return 0;
 }
 
-int valid_var(char * var)
-{
-	int i;
-	int len = strlen(var);
-	
-	if (isdigit(var[0]))
-		return false;
-
-	for(i = 0; i < len; i++)
-	{
-		if( isalnum(var[i]) || var[i] == '_')
-			continue;
-		else
-			return false;
-	}
-	
-	return true;
-}
 
 int assign(char *str)
 /*
@@ -232,29 +215,11 @@ int okname(char *str)
 	}
 	return ( cp != str );	/* no empty strings, either */
 }
-/*
- * step through args.  REPLACE any arg with leading $ with the
- * value for that variable or "" if no match.
- * note: this is NOT how regular sh works
- */
-// void varsub(char **args)
-// {
-// 	int	i;
-// 	char	*newstr;
-// 
-// 	for( i = 0 ; args[i] != NULL ; i++ )
-// 		if ( args[i][0] == '$' ){
-// 			newstr = VLlookup( args[i]+1 );
-// 			if ( newstr == NULL )
-// 				newstr = "";
-// 			free(args[i]);
-// 			args[i] = strdup(newstr);
-// 		}
-// }
+
 #define	is_delim(x) ((x)==' '|| (x)=='\t' || (x)=='\0')
 
-enum states { LEAVE, EXTRACT };
 
+/* OLD VERSION -- TO DELETE
 char * varsub(char * args)
 {
 	int	i = 0;
@@ -354,7 +319,7 @@ char * varsub(char * args)
     fs_free(&s);
     return return_str;
 }
-
+*/
 
 char * varsub2(char * args)
 {
@@ -365,51 +330,60 @@ char * varsub2(char * args)
 	
 	while ( (c = args[0]) )
 	{
-// 		printf("checking %c\n", c);
+		// escape char
 		if (c == '\\')
 		{
 			args++;
-			fs_addch(&s, args[0]);	//add escaped-char
+			fs_addch(&s, args[0]);
 		}
+		// variable sub
 		else if (c == '$')
 		{
-// 			printf("get_replacement\n");
 			args++;	//trim the $
 			char *newstr = get_replacement(args, &check);
 			args += (check - 1);
-// 			printf("newstr is %s\n", newstr);
 
 			fs_addstr(&s, newstr);
-			//add to full string &s
-			
 		}
+		// comment
 		else if (c == '#' && is_delim(prev) ) //current char is # and prev was whitespace
 		{
 			//ignore the rest
+			remove_comment(args);
+			break;
 		}
+		// regular char
 		else
 		{
-			fs_addch(&s, c);	//no special, add as-is
+			fs_addch(&s, c);
 		}
 		
 		prev = c;
 		args++;
 	}
 	
-// 	printf("\nending varsub2\n");
 	fs_addch(&s, '\0');
 	char * return_str = fs_getstr(&s);
 	fs_free(&s);
 	return return_str;
 }
 
+void remove_comment(char * args)
+{
+	while(args[0])
+	{
+		args++;
+	}
+		
+	return;
+}
+
 
 char * get_replacement(char * args, int * len)
 {
-// 	printf("in get_replacement, current args is:\n\t\t%s\n", args);
-// 	printf("a char is %c\n", args[0]);
 	FLEXSTR sub;
 	fs_init(&sub, 0);
+	char special_str[10];
 	
 	int skipped = 0;
 	
@@ -418,32 +392,63 @@ char * get_replacement(char * args, int * len)
 		fprintf(stderr, "bad var name, cannot begin with digit\n");
 		return NULL;
 	}
-	
-	while(args[0])
+	else if (args[0] == '$')
 	{
-// 		printf("while check: %c\n", args[0]);
-		if(isalnum(args[0]) || args[0] == '_')
+		sprintf(special_str, "%d", getpid());
+		fs_addstr(&sub, special_str);		
+	}
+	else if (args[0] == '?')
+	{
+		sprintf(special_str, "%d", get_exit());
+		fs_addstr(&sub, special_str);
+	}
+	else
+	{
+		// go through the substring passed in
+		while(args[0])
 		{
-			fs_addch(&sub, args[0]);
-			args++;
-		}
-		else
-		{
-			break;
-		}
-		skipped++;
+			if(isalnum(args[0]) || args[0] == '_')
+			{
+				fs_addch(&sub, args[0]);
+				args++;
+			}
+			else
+			{
+				break;
+			}
+			skipped++;
+		}	
 	}
 	
+
+	
 	fs_addch(&sub, '\0');
-	
 	char * str = VLlookup(fs_getstr(&sub));
-	
-// 	char * str = fs_getstr(&sub);
-	fs_free(&sub);
-	
-// 	printf("going to return: %s\n", str);
-// 	printf("substituted a var of length %d\n", skipped);
+	fs_free(&sub);	
 	*len = skipped;
 	
+// 	printf("returning str: %s\n", str);
 	return (str) ? str : "";
 }
+
+
+/* Bruce already wrote OKNAME
+int valid_var(char * var)
+{
+	int i;
+	int len = strlen(var);
+	
+	if (isdigit(var[0]))
+		return false;
+
+	for(i = 0; i < len; i++)
+	{
+		if( isalnum(var[i]) || var[i] == '_')
+			continue;
+		else
+			return false;
+	}
+	
+	return true;
+}
+*/

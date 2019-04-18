@@ -8,6 +8,7 @@ int do_control_command(char **);
 int ok_to_execute();
 
 int is_for_loop(char *s);
+int do_for_loop(char **args);
 int init_for_loop(char **args);
 
 char ** get_for_commands();

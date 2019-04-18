@@ -8,6 +8,7 @@
 #include	<stdbool.h>
 #include	<stdlib.h>
 #include	"smsh.h"
+#include	"controlflow.h"
 #include	"process.h"
 #include	"flexstr.h"
 #include	"varlib.h"
@@ -15,15 +16,12 @@
 enum states   { NEUTRAL, WANT_THEN, THEN_BLOCK, ELSE_BLOCK, WANT_DO, WANT_DONE };
 enum results  { SUCCESS, FAIL };
 
-
-
 struct for_loop {
 	FLEXSTR varname;
 // 	char *varname;
 	FLEXLIST varvalues;
 	FLEXLIST commands;
 };
-
 
 static struct for_loop fl;
 static int if_state  = NEUTRAL;
@@ -82,6 +80,43 @@ int is_for_loop(char *s)
             strcmp(s, "done") == 0);
 }
 
+int do_for_loop(char **args)
+{
+	char *cmd = args[0];
+	int rv = -1;
+	
+	if (strcmp(cmd, "for") == 0)
+	{
+		if (for_state != NEUTRAL)
+			rv = syn_err("for unexpected");
+		else {
+			rv = init_for_loop(args);
+			for_state = WANT_DO;
+		}
+	}
+	else if (strcmp(cmd, "do") == 0)
+	{
+		if (for_state != WANT_DO)
+			rv = syn_err("do unexpected");
+		else {
+			fprintf(stderr, "Shouldn't show up, in load_for_loop()");
+			rv = 0;
+		}
+	}
+	else if (strcmp(cmd, "done") == 0)
+	{
+		if (for_state != WANT_DONE)
+			rv = syn_err("done unexpected");
+		else {
+			fprintf(stderr, "Shouldn't show up.");
+			rv = 0;
+		}
+	}
+	else
+		fatal("internal error processing:", cmd, 2);
+		
+	return rv;
+}
 
 int do_control_command(char **args)
 /*

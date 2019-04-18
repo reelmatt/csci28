@@ -39,7 +39,8 @@ int process(char *args[])
 	else if ( is_control_command(args[0]) )
 		rv = do_control_command(args);
 	else if ( is_for_loop(args[0]) )
-		rv = init_for_loop(args);
+		rv = do_for_loop(args);
+// 		rv = init_for_loop(args);
 	else if ( ok_to_execute() )
 		rv = do_command(args);
 		
