@@ -11,6 +11,7 @@ int is_cd(char **args, int *resultp);
 int is_read(char **args, int *resultp);
 
 char * varsub(char *args);
+char * varsub2(char * args);
 // void varsub(char **args);
 int assign(char *);
 int okname(char *);

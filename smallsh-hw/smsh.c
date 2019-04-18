@@ -25,7 +25,7 @@
 
 
 static int last_exit = 12;
-static int parsing_for = false;
+static int execute_for();
 
 static void setup();
 static void io_setup();
@@ -33,7 +33,10 @@ static FILE * open_script(char *);
 static int run_command(char * cmd);
 
 
-
+/*
+ *	main()
+ *	Purpose: 
+ */
 int main(int ac, char ** av)
 {
 	FILE * source;
@@ -52,25 +55,7 @@ int main(int ac, char ** av)
 			// will be true when done loading, false while in process
 			if (load_for_loop(cmdline) == true)
 			{
-				char **vars = get_for_vars();
-				
-				while(*vars)
-				{
-					char * name = get_for_name();
-				// 	printf("name = %s, val = %s\n", name, *vars);
-					
-					VLstore(name, *vars);
-				
-					char ** cmds = get_for_commands();
-					while(*cmds)
-					{
-						result = run_command(*cmds);
-						cmds++;
-// 						free(cmdline);
-					}
-				
-					vars++;
-				}
+				execute_for();
 			}
 
 			//
@@ -83,9 +68,38 @@ int main(int ac, char ** av)
 	return result;
 }
 
+int execute_for()
+{
+	char **vars = get_for_vars();
+	int result;
+	
+	// one loop for each var	
+	while(*vars)
+	{
+		char * name = get_for_name();
+	// 	printf("name = %s, val = %s\n", name, *vars);
+		
+		VLstore(name, *vars);
+	
+		char ** cmds = get_for_commands();
+		
+		// go through each command (for each var)
+		while(*cmds)
+		{
+			result = run_command(*cmds);
+			cmds++;
+// 						free(cmdline);
+		}
+	
+		vars++;
+	}
+	
+	return 0;
+}
+
 int run_command(char * cmd)
 {
-	char *subline = varsub(cmd);
+	char *subline = varsub2(cmd);
 	char **arglist;
 	int result = 0;
 	
@@ -100,17 +114,6 @@ int run_command(char * cmd)
 	return result;	
 }
 
-int do_for(char * cmdline)
-{
-	
-	return false;
-}
-
-int loop_thru_for()
-{
-	
-	return 0;
-}
 
 void setup()
 /*
@@ -131,22 +134,26 @@ void fatal(char *s1, char *s2, int n)
 	exit(n);
 }
 
-void set_for(int state)
-{
-	parsing_for = state;
-	return;
-}
-
-int get_for()
-{
-	return parsing_for;
-}
-
+/*
+ *	get_exit() -- getter function to access $? value
+ */
 int get_exit()
 {
     return last_exit;
 }
 
+/*
+ *	io_setup
+ *	Purpose: Detect if smsh should be run in interactive, or script mode.
+ *			 Set 'FILE*' and 'prompt' accordingly.
+ *	  Input: fp, address of FILE * back in main
+ *			 pp, address of pointer to "prompt" back in main
+ *			 args, number of command-line args
+ *			 av, command-line args
+ *	 Return: none
+ *	 Errors: If a file is specified, but cannot be opened, open_script()
+ *			 will output a message and exit.
+ */
 void io_setup(FILE ** fp, char ** pp, int args, char ** av)
 {
 	if(args >= 2)

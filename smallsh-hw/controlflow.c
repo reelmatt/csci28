@@ -24,7 +24,6 @@ struct for_loop {
 	FLEXLIST commands;
 };
 
-// struct for_loop * new_loop();
 
 static struct for_loop fl;
 static int if_state  = NEUTRAL;
@@ -188,7 +187,7 @@ int init_for_loop(char **args)
 // 			}
 			
 
-			set_for(true);
+// 			set_for(true);
 			for_state = WANT_DO;
 		}
 		else
@@ -318,18 +317,4 @@ int syn_err(char *msg)
 	if_state = NEUTRAL;
 	fprintf(stderr,"syntax error: %s\n", msg);
 	return -1;
-}
-
-
-struct for_loop * new_loop()
-{
-	struct for_loop * lp = malloc(sizeof(struct for_loop));
-	
-	if(lp == NULL)
-	{
-		fprintf(stderr, "./smsh: Couldn't allocate memory for a for loop.\n");
-		exit(5);
-	}
-	
-	return lp;
 }

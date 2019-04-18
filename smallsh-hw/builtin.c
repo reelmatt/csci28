@@ -15,7 +15,8 @@
 #include    "splitline.h"
 #include	"builtin.h"
 
-
+char * get_replacement(char * args, int *);
+char var_or_comment(char * str, FLEXSTR s, char **prev);
 int valid_var(char * var);
 
 int is_builtin(char **args, int *resultp)
@@ -154,7 +155,7 @@ int is_read(char **args, int *resultp)
     
     if ( strcmp(args[0], "read") == 0)
     {
-    	if( valid_var(args[1]) == true )
+    	if( okname(args[1]) )
     	{
     		char c;
 			FLEXSTR s;
@@ -167,28 +168,14 @@ int is_read(char **args, int *resultp)
     			if (c == '\n')
     				break;
     			
-    			fs_addch(&s, c);
-    			
+    			fs_addch(&s, c);	
     		}
     		
     		// null-terminate
     		fs_addch(&s, '\0');
     		fs_getstr(&s);
     		
-    		
-	//         printf("*args is %s\n", *args);
-// 			printf("args is now %s\n", args[1]);
-// 			varlist = args;
-// 			printf("varlist: %s\n", fs_getstr(&s));
-
-
 			VLstore(args[1], fs_getstr(&s));
-// 			if(varlist != NULL)
-// 			{
-// 				VLstore(varlist[0], "temp");
-// 			
-// 			}
-        
         }
         return 1;
     }
@@ -279,19 +266,17 @@ char * varsub(char * args)
 // 	char * str;
     fs_init(&s, 0);
 
-    int sub_mode = LEAVE;
+
     
     //go char-by-char until end-of-line
     while (args[i] != '\0')
     {
-
         //if a $ or an escape char '\', handle
         if(args[i] == '\\')
         {
 //             printf("ESCAPE char...\n");
              fs_addch(&s, args[++i]);   //add char after escape
              i++;
-//                  sub_mode = LEAVE;
              continue;
         }
         //var signifier
@@ -354,10 +339,6 @@ char * varsub(char * args)
             i++;
             continue;
         }
-        
-
-        
-
                 //         if(no string was read in...)
 //                 fs_free(&to_sub);   //do with varlib function
 //                 fs_addstr(&s, replace_str);       
@@ -372,4 +353,97 @@ char * varsub(char * args)
 //     printf("return_str is %s\n", return_str);
     fs_free(&s);
     return return_str;
+}
+
+
+char * varsub2(char * args)
+{
+	char c, prev;
+	FLEXSTR s;
+	fs_init(&s, 0);
+	int check;
+	
+	while ( (c = args[0]) )
+	{
+// 		printf("checking %c\n", c);
+		if (c == '\\')
+		{
+// 			args++;
+			fs_addch(&s, args++[0]);	//add escaped-char
+		}
+		else if (c == '$')
+		{
+// 			printf("get_replacement\n");
+			args++;	//trim the $
+			char *newstr = get_replacement(args, &check);
+			args += (check - 1);
+// 			printf("newstr is %s\n", newstr);
+
+			fs_addstr(&s, newstr);
+			//add to full string &s
+			
+		}
+		else if (c == '#' && is_delim(prev) ) //current char is # and prev was whitespace
+		{
+			//ignore the rest
+		}
+		else
+		{
+			fs_addch(&s, c);	//no special, add as-is
+		}
+		
+		prev = c;
+		args++;
+	}
+	
+// 	printf("\nending varsub2\n");
+	fs_addch(&s, '\0');
+	char * return_str = fs_getstr(&s);
+	fs_free(&s);
+	return return_str;
+}
+
+
+char * get_replacement(char * args, int * len)
+{
+// 	printf("in get_replacement, current args is:\n\t\t%s\n", args);
+// 	printf("a char is %c\n", args[0]);
+	FLEXSTR sub;
+	fs_init(&sub, 0);
+	
+	int skipped = 0;
+	
+	if(isdigit((int) args[0]))
+	{
+		fprintf(stderr, "bad var name, cannot begin with digit\n");
+		return NULL;
+	}
+	
+	while(args[0])
+	{
+// 		printf("while check: %c\n", args[0]);
+		if(isalnum(args[0]) || args[0] == '_')
+		{
+			fs_addch(&sub, args[0]);
+			args++;
+		}
+		else
+		{
+			break;
+		}
+		skipped++;
+	}
+	
+	fs_addch(&sub, '\0');
+	
+	char * str = VLlookup(fs_getstr(&sub));
+	
+// 	char * str = fs_getstr(&sub);
+	fs_free(&sub);
+	
+// 	printf("going to return: %s\n", str);
+// 	printf("substituted a var of length %d\n", skipped);
+	*len = skipped;
+	
+	return (str) ? str : "";
 }
