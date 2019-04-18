@@ -149,7 +149,7 @@ int is_exit(char **args, int *resultp)
  */
 int is_read(char **args, int *resultp)
 {
-    char **varlist, **fieldlist;
+//     char **varlist, **fieldlist;
     
     if ( strcmp(args[0], "read") == 0)
     {
