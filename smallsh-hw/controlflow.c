@@ -224,23 +224,23 @@ int load_for_loop(char *args)
 // 			printf("in the done tract, freeing about to happen\n");
 			
 			
-			printf("varname: %s\nvarvalues: \n", fs_getstr(&fl.varname));
-
-			char **vals = fl_getlist(&fl.varvalues);
-			char **cmds = fl_getlist(&fl.commands);
-			
-			while(*vals)
-			{
-				printf("%s\n", *vals++);
-			}
-			
-			printf("\ncommands: \n");
-			
-			while(*cmds)
-			{
-				printf("%s\n", *cmds++);
-			}
-			
+// 			printf("varname: %s\nvarvalues: \n", fs_getstr(&fl.varname));
+// 
+// 			char **vals = fl_getlist(&fl.varvalues);
+// 			char **cmds = fl_getlist(&fl.commands);
+// 			
+// 			while(*vals)
+// 			{
+// 				printf("%s\n", *vals++);
+// 			}
+// 			
+// 			printf("\ncommands: \n");
+// 			
+// 			while(*cmds)
+// 			{
+// 				printf("%s\n", *cmds++);
+// 			}
+// 			
 // 			if (fl)					//if for_loop struct was malloc'ed
 // 				free(fl);			//free it for next time
 			

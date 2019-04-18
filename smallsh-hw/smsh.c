@@ -57,7 +57,7 @@ int main(int ac, char ** av)
 				while(*vars)
 				{
 					char * name = get_for_name();
-					printf("name = %s, val = %s\n", name, *vars);
+				// 	printf("name = %s, val = %s\n", name, *vars);
 					
 					VLstore(name, *vars);
 				
