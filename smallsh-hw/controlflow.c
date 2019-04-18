@@ -18,14 +18,15 @@ enum results  { SUCCESS, FAIL };
 
 
 struct for_loop {
-	char *varname;
+	FLEXSTR varname;
+// 	char *varname;
 	FLEXLIST varvalues;
 	FLEXLIST commands;
 };
 
-struct for_loop * new_loop();
+// struct for_loop * new_loop();
 
-static struct for_loop * fl;
+static struct for_loop fl;
 static int if_state  = NEUTRAL;
 static int if_result = SUCCESS;
 static int for_state = NEUTRAL;
@@ -137,7 +138,7 @@ int do_control_command(char **args)
 
 int init_for_loop(char **args)
 {
-	fl = new_loop();
+// 	fl = new_loop();
 	
 	args++;	//strip the 'for'
 	FLEXSTR name;
@@ -156,8 +157,9 @@ int init_for_loop(char **args)
 		}
 		
 		fs_addch(&name, '\0');
-		fl->varname = fs_getstr(&name);
-		fs_free(&name);
+		fl.varname = name;
+// 		fl.varname = fs_getstr(&name);
+// 		fs_free(&name);
 		
 // 		fl->varname = *args;
 		args++;
@@ -174,7 +176,7 @@ int init_for_loop(char **args)
 				args++;
 			}
 			
-			fl->varvalues = vars;
+			fl.varvalues = vars;
 			
 	// 		printf("parsed beginning of for\n");
 // 			printf("varname is %s\nvarvalues are...", fl->varname);
@@ -222,10 +224,10 @@ int load_for_loop(char *args)
 // 			printf("in the done tract, freeing about to happen\n");
 			
 			
-			printf("varname: %s\nvarvalues: \n", fl->varname);
+			printf("varname: %s\nvarvalues: \n", fs_getstr(&fl.varname));
 
-			char **vals = fl_getlist(&fl->varvalues);
-			char **cmds = fl_getlist(&fl->commands);
+			char **vals = fl_getlist(&fl.varvalues);
+			char **cmds = fl_getlist(&fl.commands);
 			
 			while(*vals)
 			{
@@ -256,7 +258,7 @@ int load_for_loop(char *args)
 // 		
 // 		}
 
-		fl_append(&fl->commands, args);
+		fl_append(&fl.commands, args);
 
 	}
 	else
@@ -269,14 +271,14 @@ int load_for_loop(char *args)
 
 char * get_next_cmd()
 {
-	char **vars = fl_getlist(&fl->varvalues);
+	char **vars = fl_getlist(&fl.varvalues);
 	
 	while(*vars)
 	{
 // 		printf("name = %s, val = %s\n", fl->varname, *vars);
-		VLstore(fl->varname, *vars);
+		VLstore(fs_getstr(&fl.varname), *vars);
 		
-		char **commands = fl_getlist(&fl->commands);
+		char **commands = fl_getlist(&fl.commands);
 		
 		while(*commands)
 		{
@@ -289,17 +291,17 @@ char * get_next_cmd()
 
 char ** get_for_commands()
 {
-	return fl_getlist(&fl->commands);
+	return fl_getlist(&fl.commands);
 }
 
 char ** get_for_vars()
 {
-	return fl_getlist(&fl->varvalues);
+	return fl_getlist(&fl.varvalues);
 }
 
 char * get_for_name()
 {
-	return fl->varname;
+	return fs_getstr(&fl.varname);
 }
 
 int is_parsing_for()

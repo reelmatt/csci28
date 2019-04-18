@@ -16,6 +16,7 @@
 #include	"builtin.h"
 
 
+int valid_var(char * var);
 
 int is_builtin(char **args, int *resultp)
 /*
@@ -128,8 +129,8 @@ int is_exit(char **args, int *resultp)
 	{
 		if( args[1] != NULL )
 		{
-			if ( isdigit(args[1]))
-			    exit(args[1]);
+			if ( isdigit((int) args[1]))
+			    exit( (int) args[1]);
 // 				*resultp = (int) args[1];
 			else
 			{
