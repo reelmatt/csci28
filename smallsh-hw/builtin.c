@@ -368,8 +368,8 @@ char * varsub2(char * args)
 // 		printf("checking %c\n", c);
 		if (c == '\\')
 		{
-// 			args++;
-			fs_addch(&s, args++[0]);	//add escaped-char
+			args++;
+			fs_addch(&s, args[0]);	//add escaped-char
 		}
 		else if (c == '$')
 		{
