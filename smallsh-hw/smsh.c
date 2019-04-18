@@ -51,6 +51,11 @@ int main(int ac, char ** av)
     
 	while ( (cmdline = next_cmd(prompt, to_run)) != NULL ){
 // 		printf("cmdline: %s\n\n\n", cmdline);
+// 		if( if_parse_for_loop() )
+// 		{
+// 			load_for_loop();
+// 			
+// 		}
 	    subline = varsub(cmdline);
 
 		if ( (arglist = splitline(subline)) != NULL  ){

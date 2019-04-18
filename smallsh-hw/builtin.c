@@ -14,6 +14,9 @@
 #include    "splitline.h"
 #include	"builtin.h"
 
+#define YES 1
+#define NO 0
+
 int is_builtin(char **args, int *resultp)
 /*
  * purpose: run a builtin command 
@@ -148,21 +151,65 @@ int is_read(char **args, int *resultp)
     
     if ( strcmp(args[0], "read") == 0)
     {
-//         printf("*args is %s\n", *args);
-        args++;
-        printf("args is now %s\n", *args);
-        varlist = args;
-        printf("varlist: %s\n", varlist[0]);
-        if(varlist != NULL)
-        {
-            VLstore(varlist[0], "temp");
-            
-        }
+    	if( valid_var(args[1]) == YES )
+    	{
+    		char c;
+			FLEXSTR s;
+			fs_init(&s, 0);
+    	
+    		// read in value
+    		while( (c = fgetc(stdin)) != EOF )
+    		{
+    			// end of command
+    			if (c == '\n')
+    				break;
+    			
+    			fs_addch(&s, c);
+    			
+    		}
+    		
+    		// null-terminate
+    		fs_addch(&s, '\0');
+    		fs_getstr(&s);
+    		
+    		
+	//         printf("*args is %s\n", *args);
+// 			printf("args is now %s\n", args[1]);
+// 			varlist = args;
+// 			printf("varlist: %s\n", fs_getstr(&s));
+
+
+			VLstore(args[1], fs_getstr(&s));
+// 			if(varlist != NULL)
+// 			{
+// 				VLstore(varlist[0], "temp");
+// 			
+// 			}
         
+        }
         return 1;
     }
     
     return 0;
+}
+
+int valid_var(char * var)
+{
+	int i;
+	int len = strlen(var);
+	
+	if (isdigit(var[0]))
+		return NO;
+
+	for(i = 0; i < len; i++)
+	{
+		if( isalnum(var[i]) || var[i] == '_')
+			continue;
+		else
+			return NO;
+	}
+	
+	return YES;
 }
 
 int assign(char *str)

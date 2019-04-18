@@ -64,7 +64,7 @@ int is_for_loop(char *s)
     return (strcmp(s, "for") == 0 ||
             strcmp(s, "do") == 0 ||
             strcmp(s, "done") == 0);
-    )
+    
 }
 
 
