@@ -56,10 +56,15 @@ int is_control_command(char *s)
     return (strcmp(s, "if") == 0 ||
             strcmp(s, "then") == 0 ||
             strcmp(s, "else") == 0 ||
-            strcmp(s, "fi") == 0 ||
-            strcmp(s, "for") == 0 ||
+            strcmp(s, "fi") == 0);
+}
+
+int is_for_loop(char *s)
+{
+    return (strcmp(s, "for") == 0 ||
             strcmp(s, "do") == 0 ||
             strcmp(s, "done") == 0);
+    )
 }
 
 
