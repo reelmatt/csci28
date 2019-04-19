@@ -333,6 +333,7 @@ char * varsub2(char * args)
 	
 	while ( (c = args[0]) )
 	{
+// 	    printf("varsub, adding %d, or %c\n", c, c);
 		// escape char
 		if (c == '\\')
 		{

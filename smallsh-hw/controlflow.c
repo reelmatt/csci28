@@ -43,7 +43,7 @@ int ok_to_execute()
  */
 {
 	int	rv = 1;		/* default is positive */
-
+//     printf("is_okay_to_execute\n");
 	if ( if_state == WANT_THEN ){
 		syn_err("then expected");
 		rv = 0;
@@ -79,6 +79,7 @@ int is_control_command(char *s)
  *          else blocks.
  */
 {
+//     printf("is_control\n");
     return (strcmp(s, "if") == 0 ||
             strcmp(s, "then") == 0 ||
             strcmp(s, "else") == 0 ||
@@ -87,6 +88,7 @@ int is_control_command(char *s)
 
 int is_for_loop(char *s)
 {
+//     printf("is_for\n");
     return (strcmp(s, "for") == 0 ||
             strcmp(s, "do") == 0 ||
             strcmp(s, "done") == 0);

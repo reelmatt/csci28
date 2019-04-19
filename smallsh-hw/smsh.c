@@ -59,7 +59,7 @@ int main(int ac, char ** av)
 //             printf("returning, run_shell is '%d'\n", run_shell);
 // 	        run_shell = process(cmdline);
 // 	        run_shell = 0;
-            free(cmdline);
+//             free(cmdline);
             
 	        continue;
 	    }
