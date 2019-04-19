@@ -6,7 +6,7 @@
 int is_control_command(char *);
 int do_control_command(char **);
 int ok_to_execute();
-
+int safe_to_exit();
 int is_for_loop(char *s);
 int do_for_loop(char **args);
 int init_for_loop(char **args);

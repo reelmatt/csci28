@@ -33,9 +33,12 @@ int process(char *args[])
  */
 {
 	int		rv = 0;
+    
+//     printf("in process()\n");
 
-	if ( args[0] == NULL )
-		rv = 0;
+	if ( args == NULL )
+        rv = safe_to_exit();
+// 		rv = 0;
 	else if ( is_control_command(args[0]) )
 		rv = do_control_command(args);
 	else if ( is_for_loop(args[0]) )
@@ -47,6 +50,8 @@ int process(char *args[])
 // 	printf("returning from process()\n");
 	return rv;
 }
+
+
 
 /*
  * do_command

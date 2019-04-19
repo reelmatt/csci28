@@ -31,7 +31,7 @@ static void setup();
 static void io_setup();
 static FILE * open_script(char *);
 static int run_command(char * cmd);
-
+static int run_shell = 1;
 
 /*
  *	main()
@@ -41,14 +41,29 @@ int main(int ac, char ** av)
 {
 	FILE * source;
 	char *cmdline, *prompt;
-	int result;
+	int result = 0;         //set default, if no cmds entered
 
 	setup();    
     io_setup(&source, &prompt, ac, av);
     
     // get next line from 'source' and process accordingly
-	while ( (cmdline = next_cmd(prompt, source)) != NULL )
+//	while ( (cmdline = next_cmd(prompt, source)) != NULL )
+	while ( run_shell )
 	{
+	    cmdline = next_cmd(prompt, source);
+// 	    printf("cmdline is...\n%s\n", cmdline);
+	    if(cmdline == NULL)
+	    {
+// 	        printf("cmdline is NULL\n");
+            run_shell = run_command(cmdline);
+//             printf("returning, run_shell is '%d'\n", run_shell);
+// 	        run_shell = process(cmdline);
+// 	        run_shell = 0;
+            free(cmdline);
+            
+	        continue;
+	    }
+		
 		// parsing for loop, direct input here
 		if( is_parsing_for() )
 		{
@@ -68,6 +83,11 @@ int main(int ac, char ** av)
 	return result;
 }
 
+/*
+ *  execute_for()
+ *  Purpose: 
+ *   Return: 
+ */
 int execute_for()
 {
 	char **vars = get_for_vars();
@@ -97,19 +117,36 @@ int execute_for()
 	return 0;
 }
 
+/*
+ *  run_command()
+ *  Purpose: 
+ *   Return: 
+ */
 int run_command(char * cmd)
 {
+// 	printf("about to varsub\n");
 	char *subline = varsub2(cmd);
 	char **arglist;
 	int result = 0;
-	
+
+// 	printf("about to splitline\n");
 	if ( (arglist = splitline(subline)) != NULL )
 	{
+// 	    printf("in the IF condition, splitline PASSED\n");
 		result = process(arglist);
 		last_exit = result;
 // 		freelist(arglist);
 	}
+	else
+	{
+// 	    printf("in ELSE condition...\n");
+// 	    arglist = NULL;
+	    result = process(arglist);
+	    clearerr(stdin);
+// 	    free(cmd);
+	}
 	
+// 	printf("returning from run_command\n");
 // 	free(cmd);
 	return result;	
 }
@@ -170,6 +207,11 @@ void io_setup(FILE ** fp, char ** pp, int args, char ** av)
 	return;
 }
 
+/*
+ *  open_script()
+ *  Purpose: Open a file, and handle any errors it encounters.
+ *   Return: Pointer to the file (shell script) it opened
+ */
 FILE * open_script(char * file)
 {
 	FILE * fp = fopen(file, "r");

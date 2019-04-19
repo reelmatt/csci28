@@ -328,6 +328,9 @@ char * varsub2(char * args)
 	fs_init(&s, 0);
 	int check;
 	
+	if (args == NULL)
+	    return NULL;
+	
 	while ( (c = args[0]) )
 	{
 		// escape char

@@ -20,49 +20,31 @@ char * next_cmd(char *prompt, FILE *fp)
  *   notes: allocates space in BUFSIZ chunks.  
  */
 {
-	int	c;				/* input char		*/
-	int prev_c = '\0';
-	FLEXSTR	s;				/* the command		*/
+	int	c;				            /* input char		*/
+	FLEXSTR	s;				        /* the command		*/
 	int	pos = 0;
 
-	fs_init(&s, 0);				/* initialize the str	*/
-	printf("%s", prompt);				/* prompt user	*/
-	
-// 	printf("Start of input: ");
+	fs_init(&s, 0);				    /* initialize the str	*/
+	printf("%s", prompt);			/* prompt user	*/
 	while( ( c = getc(fp)) != EOF ) 
 	{
 		/* end of command? */
 		if ( c == '\n' )
 			break;
 
-		// comment?
-// 		if (c == '#' && (prev_c == '\0' || prev_c == ' ' || prev_c == '\t') )
-// 		{
-// // 			printf("Start of comment...\n");
-// 			while( (c = getc(fp)) != EOF)
-// 			{
-// 				if (c == '\n')
-// 					break;
-// 			}
-// 			
-// 			break;
-// 			//eat up the rest of the line
-// // 			break;	//ignore all the rest
-// 		}
-		
-// 		printf("%c", c);
 		/* no, add to buffer */
 		fs_addch(&s, c);
 		pos++;
-		prev_c = c;
 	}
 	
-// 	printf("\nEnding cmdline\n");
+// 	printf("earlier return statment in next_cmd\n");
 	
 	if ( c == EOF && pos == 0 )		/* EOF and no input	*/
-		return NULL;			/* say so		*/
-		
-	fs_addch(&s, '\0');			/* terminate string	*/
+		return NULL;			    /* say so		*/
+	fs_addch(&s, '\0');			    /* terminate string	*/
+	
+	
+// 	printf("returning from next_cmd, cmd is: %s\n", fs_getstr(&s));
 	return fs_getstr(&s);
 }
 

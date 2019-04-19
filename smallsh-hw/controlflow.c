@@ -19,7 +19,6 @@ enum results  { SUCCESS, FAIL };
 
 struct for_loop {
 	FLEXSTR varname;
-// 	char *varname;
 	FLEXLIST varvalues;
 	FLEXLIST commands;
 };
@@ -58,6 +57,18 @@ int ok_to_execute()
 	else if ( if_state == ELSE_BLOCK && if_result == FAIL )
 		rv = 1;
 	return rv;
+}
+
+int safe_to_exit()
+{
+//     printf("in safe_to_exit()\n");
+    if (if_state != NEUTRAL || for_state != NEUTRAL)
+    {
+        syn_err("end of file unexpected (expecting...)");
+        return 1;
+    }
+    
+    return 0;
 }
 
 int is_control_command(char *s)
@@ -357,6 +368,7 @@ int syn_err(char *msg)
  */
 {
 	if_state = NEUTRAL;
+	for_state = NEUTRAL;
 	fprintf(stderr,"syntax error: %s\n", msg);
 	return -1;
 }
