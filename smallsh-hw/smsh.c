@@ -180,6 +180,12 @@ int get_exit()
     return last_exit;
 }
 
+void set_exit(int status)
+{
+    last_exit = status;
+    return;
+}
+
 /*
  *	io_setup
  *	Purpose: Detect if smsh should be run in interactive, or script mode.

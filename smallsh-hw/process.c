@@ -90,6 +90,7 @@ int execute(char *argv[])
 	extern char **environ;		/* note: declared in <unistd.h>	*/
 	int	pid ;
 	int	child_info = -1;
+	int rv = -1;
 
 	if ( argv[0] == NULL )		/* nothing succeeds		*/
 		return 0;
@@ -107,6 +108,14 @@ int execute(char *argv[])
 	else {
 		if ( wait(&child_info) == -1 )
 			perror("wait");
+		
+		if (WIFEXITED(child_info))
+		    rv = WEXITSTATUS(child_info);
+		else if (WIFSIGNALED(child_info))
+		    rv = WTERMSIG(child_info);
+		
+		set_exit(rv);
 	}
-	return child_info;
+    return rv;
+// 	return child_info;
 }
