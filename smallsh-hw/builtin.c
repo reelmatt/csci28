@@ -83,21 +83,18 @@ int is_export(char **args, int *resultp)
 }
 
 /*
- *
+ *  is_cd()
+ *  Purpose: change directories
+ *    Input: args, command line arguments
+ *           resultp, where to store success of cd operation
+ *   Return: 1 if built-in function, 0 otherwise. resultp is 0
+ *           if chdir() was successful, 1 on error.
  */
 int is_cd(char **args, int *resultp)
 {
     if ( strcmp(args[0], "cd") == 0 )
     {
-//         int ch_result;
-
-// to use instead of getenv("HOME") @@TO-DO        
-// https://www.stev.org/post/cgethomedirlocationinlinux
-// https://stackoverflow.com/questions/2910377/get-home-directory-in-linux
-
-//VLlookup("HOME");
-
-        if (args[1] == NULL && chdir(getenv("HOME")) == 0)
+        if (args[1] == NULL && chdir(VLlookup("HOME")) == 0)
             *resultp = 0;     //go to HOME directory
         else if (args[1] != NULL && chdir(args[1]) == 0)
             *resultp = 0; //go to dir specified
