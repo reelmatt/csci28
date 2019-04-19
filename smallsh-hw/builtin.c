@@ -17,7 +17,7 @@
 
 char * get_replacement(char * args, int *);
 char var_or_comment(char * str, FLEXSTR s, char **prev);
-
+void cntrl_err(char * msg);
 void remove_comment(char * args);
 int get_number(char * str);
 int is_builtin(char **args, int *resultp)
@@ -129,30 +129,38 @@ int is_exit(char **args, int *resultp)
 {
 	if( strcmp(args[0], "exit") == 0)
 	{
-		if( args[1] != NULL )
+		if( args[1] != NULL )               // exit arg specified?
 		{
-		    int val = get_number(args[1]);
+		    int val = get_number(args[1]);  // convert to a number
 		
-		    if (val != -1)
-                exit(val);
-            // 
-// 		    int val = atoi(args[1]);
-// 		    printf("args[1] is %d\n", val);
-// 			if ( isdigit(val) )
-// 			    exit( val );
-// 				*resultp = (int) args[1];
-			else
+		    if (val != -1)                  // successful?
+                exit(val);                  // use it
+			else                            // syntax error
 			{
-			    fprintf(stderr, "exit: %s: %s\n", "Illegal number", args[1]);
-			    exit(2);
+			    cntrl_err(args[1]);
+// 			    set_exit(2);
+// 			    fatal("exit: Illegal number", args[1], 2);  // syntax error
+// 			    fprintf(stderr, "exit: %s: %s\n", "Illegal number", args[1]);
+// 			    exit(2);
 // 				*resultp = 2;		//syntax error
 			}
 		}
-        exit(get_exit());
-// 		exit(0);				//exit with last command's status
+		else
+		{
+            exit(get_exit());           //exit with last command's status		
+		}
+		
 		return 1;           //was a built-in
 	}
+	
 	return 0;
+}
+
+void cntrl_err(char * msg)
+{
+    fprintf(stderr, "exit: Illegal number: %s\n", msg);
+    set_exit(2);
+    return;
 }
 
 int get_number(char * str)
@@ -243,109 +251,6 @@ int okname(char *str)
 
 #define	is_delim(x) ((x)==' '|| (x)=='\t' || (x)=='\0')
 
-
-/* OLD VERSION -- TO DELETE
-char * varsub(char * args)
-{
-	int	i = 0;
-	char special_str[10] = "\0";
-	
-	char	*newstr, *replace_str;
-	FLEXSTR s;
-	FLEXSTR to_sub;
-// 	char * str;
-    fs_init(&s, 0);
-
-
-    
-    //go char-by-char until end-of-line
-    while (args[i] != '\0')
-    {
-        //if a $ or an escape char '\', handle
-        if(args[i] == '\\')
-        {
-//             printf("ESCAPE char...\n");
-             fs_addch(&s, args[++i]);   //add char after escape
-             i++;
-             continue;
-        }
-        //var signifier
-        else if (args[i] == '$')
-        {
-            i++;
-            if(args[i] == '$')
-            {
-//                 printf("getpid()\n");
-                sprintf(special_str, "%d", getpid());
-            }
-            else if (args[i] == '?')
-            {
-//                 printf("get_exit()\n");
-                sprintf(special_str, "%d", get_exit());
-            }
-            else if (isdigit(args[i]))
-            {
-                fprintf(stderr, "bad var name, cannot begin with digit\n");
-                continue;
-            }
-            else
-            {
-                fs_init(&to_sub, 0);
-//                 printf("EXTRACTING...\n");
-//                 printf("first is %c\n", args[i]);
-                
-                //extract the var
-                while(isalnum(args[i]) || args[i] == '_')
-                {
-//                     printf("%c", args[i]);
-                    fs_addch(&to_sub, args[i]);
-                    i++;
-                }
-                fs_addch(&to_sub, '\0'); //null-terminate string
-//                 printf("\n");
-//                     sub_mode = EXTRACT;
-//                 i++;
-            }
-            
-            //something to replace
-            newstr = fs_getstr(&to_sub);
-//             printf("special_str == %s\n", special_str);
-//             printf("newstr == %s\n", newstr);
-        
-            replace_str = VLlookup(newstr);
-            if( replace_str == NULL )
-                replace_str = "";
-    //         printf("Mode is %d\n", sub_mode);
-        
-//             printf("replace_str == %s\n", replace_str);
-            fs_free(&to_sub);
-            fs_addstr(&s, replace_str);
-        
-        }
-        //just regular chars
-        else
-        {
-            fs_addch(&s, args[i]);
-            i++;
-            continue;
-        }
-                //         if(no string was read in...)
-//                 fs_free(&to_sub);   //do with varlib function
-//                 fs_addstr(&s, replace_str);       
-
-//         i++;
-//         printf("going for another while loop\n");
-    }
-    
-//     printf("POST-while loop\n");
-    fs_addch(&s, '\0');         //null-terminate full string
-    char * return_str = fs_getstr(&s);
-//     printf("return_str is %s\n", return_str);
-    fs_free(&s);
-    return return_str;
-}
-*/
-
 char * varsub2(char * args)
 {
 	char c, prev;
@@ -412,7 +317,8 @@ char * get_replacement(char * args, int * len)
 {
 	FLEXSTR sub;
 	fs_init(&sub, 0);
-	char special_str[10];
+	char special_str[10] = "";
+	char * return_str;
 	
 	int skipped = 0;
 	
@@ -424,12 +330,14 @@ char * get_replacement(char * args, int * len)
 	else if (args[0] == '$')
 	{
 		sprintf(special_str, "%d", getpid());
-		fs_addstr(&sub, special_str);		
+		fs_addstr(&sub, special_str);
+		skipped++;
 	}
 	else if (args[0] == '?')
 	{
 		sprintf(special_str, "%d", get_exit());
 		fs_addstr(&sub, special_str);
+		skipped++;
 	}
 	else
 	{
@@ -449,15 +357,23 @@ char * get_replacement(char * args, int * len)
 		}	
 	}
 	
-
-	
 	fs_addch(&sub, '\0');
-	char * str = VLlookup(fs_getstr(&sub));
+
+	if(special_str[0] != '\0')
+	{
+// 	    printf("special_str made. it is %s\n", special_str);
+        return_str = fs_getstr(&sub);	    
+	}
+	else
+	{
+        return_str = VLlookup(fs_getstr(&sub));
+	}
+	
 	fs_free(&sub);	
 	*len = skipped;
 	
 // 	printf("returning str: %s\n", str);
-	return (str) ? str : "";
+	return (return_str) ? return_str : "";
 }
 
 

@@ -384,5 +384,6 @@ int syn_err(char *msg)
 	if_state = NEUTRAL;
 	for_state = NEUTRAL;
 	fprintf(stderr,"syntax error: %s\n", msg);
+	set_exit(2);
 	return -1;
 }

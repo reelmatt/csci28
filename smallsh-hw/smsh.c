@@ -24,7 +24,7 @@
 #define	DFL_PROMPT	"> "
 
 
-static int last_exit = 12;
+static int last_exit = 0;
 static int execute_for();
 
 static void setup();
@@ -135,7 +135,7 @@ int run_command(char * cmd)
 	{
 // 	    printf("in the IF condition, splitline PASSED\n");
 		result = process(arglist);
-		last_exit = result;
+// 		last_exit = result;
 // 		freelist(arglist);
 	}
 	else
