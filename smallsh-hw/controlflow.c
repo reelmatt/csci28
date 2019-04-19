@@ -256,6 +256,18 @@ int load_for_loop(char *args)
 	
 	char **arglist = splitline(args);
 	
+// 	printf("in load_for_loop()\n");
+	if(arglist == NULL)
+	{
+	    return false;
+	}
+	else if (arglist[0] == NULL)
+	{
+	    return false;
+	}
+	
+// 	printf("arglist is NOT NULL\n");
+	
 	if(for_state == WANT_DO)
 	{
 		if(strcmp(arglist[0], "do") == 0)

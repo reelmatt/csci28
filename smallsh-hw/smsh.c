@@ -72,7 +72,8 @@ int main(int ac, char ** av)
 			{
 				execute_for();
 			}
-
+            
+//             printf("parsing for loop... continue\n");
 			//
 			continue;			
 		}
