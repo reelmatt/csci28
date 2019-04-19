@@ -19,7 +19,7 @@ char * get_replacement(char * args, int *);
 char var_or_comment(char * str, FLEXSTR s, char **prev);
 
 void remove_comment(char * args);
-
+int get_number(char * str);
 int is_builtin(char **args, int *resultp)
 /*
  * purpose: run a builtin command 
@@ -131,8 +131,15 @@ int is_exit(char **args, int *resultp)
 	{
 		if( args[1] != NULL )
 		{
-			if ( isdigit((int) args[1]))
-			    exit( (int) args[1]);
+		    int val = get_number(args[1]);
+		
+		    if (val != -1)
+                exit(val);
+            // 
+// 		    int val = atoi(args[1]);
+// 		    printf("args[1] is %d\n", val);
+// 			if ( isdigit(val) )
+// 			    exit( val );
 // 				*resultp = (int) args[1];
 			else
 			{
@@ -141,10 +148,28 @@ int is_exit(char **args, int *resultp)
 // 				*resultp = 2;		//syntax error
 			}
 		}
-		exit(0);				//exit with last command's status
+        exit(get_exit());
+// 		exit(0);				//exit with last command's status
 		return 1;           //was a built-in
 	}
 	return 0;
+}
+
+int get_number(char * str)
+{
+    int i;
+    for(i = 0; i < strlen(str); i++)
+    {
+        if (isdigit(str[i]))
+            continue;
+        else
+            break;
+    }
+    
+    if (i == strlen(str))
+        return atoi(str);
+    else
+        return -1;
 }
 
 /*
