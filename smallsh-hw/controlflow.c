@@ -210,52 +210,21 @@ void load_for_varvalues(char **args)
 int init_for_loop(char **args)
 {	
 	args++;	//strip the 'for'
-// 	FLEXSTR name;
-// 	FLEXLIST vars;
 	
-	if ( okname(*args) )
+	if ( okname(*args) )                // valid varname
 	{
-	    load_for_varname(*args);
-// 		fs_init(&name, 0);
-//         fs_addstr(&name, *args);
-//         fs_addch(&name, '\0');
-//         fl.varname = name;
-        
-        args++;
+	    load_for_varname(*args++);      // store in struct, strip from args
 		
-		if(strcmp(*args, "in") == 0)
+		if(strcmp(*args, "in") == 0)    // validate "in"
 		{
-// 			printf("correct placement of 'in'\n");
-			args++;
-			
-			load_for_varvalues(args);
-// 			fl_init(&vars, 0);
-// 			while(*args)
-// 			{
-// 				fl_append(&vars, *args);
-// 				args++;
-// 			}
-// 			
-// 			fl.varvalues = vars;
-			
-	// 		printf("parsed beginning of for\n");
-// 			printf("varname is %s\nvarvalues are...", fl->varname);
-// 			int i;
-// 			char **test_list = fl_getlist(&fl->varvalues);
-// 			for(i = 0; i < fl_getcount(&fl->varvalues); i++)
-// 			{
-// 				printf("%s\n", test_list[i]);
-// 			}
-			
-
+			load_for_varvalues(++args); // load any args after that
 // 			set_for(true);
-			for_state = WANT_DO;
+			for_state = WANT_DO;        // change state
 		}
 		else
 		{
 			return syn_err("word unexpected (expecting \"in\")");
 		}
-		
 	}
 	else
 	{
@@ -267,79 +236,32 @@ int init_for_loop(char **args)
 
 // returns TRUE when done loading for loop, FALSE otherwise
 int load_for_loop(char *args)
-{
-// 	printf("in load_for_loop, what is starting args?\n%s\n", args);
-	
+{	
 	char **arglist = splitline(args);
 	
-// 	printf("in load_for_loop()\n");
-	if(arglist == NULL)
-	{
-	    return false;
-	}
-	else if (arglist[0] == NULL)
-	{
-	    return false;
-	}
-	
-// 	printf("arglist is NOT NULL\n");
+	if(arglist == NULL || arglist[0] == NULL)   // check we have args
+	    return false;                           // we don't
+// 	else if (arglist[0] == NULL)
+// 	{
+// 	    return false;
+// 	}
 	
 	if(for_state == WANT_DO)
 	{
 		if(strcmp(arglist[0], "do") == 0)
-		{
-			
 			for_state = WANT_DONE;
-		}
 		else
-		{
 			return syn_err("word unexpected (expecting \"do\")");
-
-		}
 	}
 	else if (for_state == WANT_DONE)
 	{
-		if(strcmp(arglist[0], "done") == 0)
+		if(strcmp(arglist[0], "done") == 0) // reached the end?
 		{
-		/*
-// 			printf("in the done tract, freeing about to happen\n");
-			
-			
-// 			printf("varname: %s\nvarvalues: \n", fs_getstr(&fl.varname));
-// 
-// 			char **vals = fl_getlist(&fl.varvalues);
-// 			char **cmds = fl_getlist(&fl.commands);
-// 			
-// 			while(*vals)
-// 			{
-// 				printf("%s\n", *vals++);
-// 			}
-// 			
-// 			printf("\ncommands: \n");
-// 			
-// 			while(*cmds)
-// 			{
-// 				printf("%s\n", *cmds++);
-// 			}
-// 			
-// 			if (fl)					//if for_loop struct was malloc'ed
-// 				free(fl);			//free it for next time
-			*/
-			for_state = NEUTRAL;	//reset state
-			return true;
+			for_state = NEUTRAL;	        // reset state
+			return true;                    // done loading
 		}
-		/*
-// 		FLEXSTR cmd;
-// 		fs_init(&cmd, 0);
-// 		
-// 		while(*args && (for_loop.num_cmds < MAXCMDS) )
-// 		{
-// 			fl_append(&cmd, *args);
-// 			args++;
-// 		
-// 		}
-*/
-		fl_append(&fl.commands, args);
+
+		fl_append(&fl.commands, args);      // not a 'done', so load command
 
 	}
 	else
