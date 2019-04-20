@@ -41,6 +41,7 @@ int is_builtin(char **args, int *resultp)
 	    return 1;
 	return 0;
 }
+
 /* checks if a legal assignment cmd
  * if so, does it and retns 1
  * else return 0
@@ -54,6 +55,7 @@ int is_assign_var(char *cmd, int *resultp)
 	}
 	return 0;
 }
+
 /* checks if command is "set" : if so list vars */
 int is_list_vars(char *cmd, int *resultp)
 {
@@ -64,6 +66,7 @@ int is_list_vars(char *cmd, int *resultp)
 	}
 	return 0;
 }
+
 /*
  * if an export command, then export it and ret 1
  * else ret 0
@@ -101,8 +104,6 @@ int is_cd(char **args, int *resultp)
         else
         {
             fprintf(stderr, "cd: %s: %s\n", args[1], strerror(errno));
-//             perror("cd: ");
-//             fprintf(stderr, "cd: %s: No such file or directory", args[1]);
             *resultp = 1;
         }
         
@@ -231,6 +232,7 @@ int assign(char *str)
 	*cp = '=';
 	return rv;
 }
+
 int okname(char *str)
 /*
  * purpose: determines if a string is a legal variable name
@@ -260,33 +262,26 @@ char * varsub(char * args)
 	
 	while ( (c = args[0]) )
 	{
-// 	    printf("varsub, adding %d, or %c\n", c, c);
-		// escape char
-		if (c == '\\')
+		if (c == '\\')                          // escape char
 		{
 			args++;
 			fs_addch(&s, args[0]);
 		}
-		// variable sub
-		else if (c == '$')
+		else if (c == '$')                      // variable sub
 		{
-			args++;	//trim the $
+			args++;                             //trim the $
 			char *newstr = get_replacement(args, &check);
 			args += (check - 1);
 
 			fs_addstr(&s, newstr);
 		}
-		// comment
-		else if (c == '#' && is_delim(prev) ) //current char is # and prev was whitespace
+		else if (c == '#' && is_delim(prev) )   // start of comment
 		{
-			//ignore the rest
-			remove_comment(args);
-			break;
+			break;                              // ignore the rest
 		}
-		// regular char
-		else
+		else                                    // regular char
 		{
-			fs_addch(&s, c);
+			fs_addch(&s, c);                    // add as-is
 		}
 		
 		prev = c;
@@ -299,16 +294,10 @@ char * varsub(char * args)
 	return return_str;
 }
 
-void remove_comment(char * args)
+int special_replace(int val, FLEXSTR * str)
 {
-	while(args[0])
-	{
-		args++;
-	}
-		
-	return;
+    
 }
-
 
 char * get_replacement(char * args, int * len)
 {
@@ -319,7 +308,7 @@ char * get_replacement(char * args, int * len)
 	
 	int skipped = 0;
 	
-	if(isdigit((int) args[0]))
+	if( isdigit((int) args[0]) )
 	{
 		fprintf(stderr, "bad var name, cannot begin with digit\n");
 		return NULL;
@@ -329,6 +318,8 @@ char * get_replacement(char * args, int * len)
 		sprintf(special_str, "%d", getpid());
 		fs_addstr(&sub, special_str);
 		skipped++;
+		
+		skipped = special_replace(getpid(), sub);
 	}
 	else if (args[0] == '?')
 	{
@@ -357,40 +348,12 @@ char * get_replacement(char * args, int * len)
 	fs_addch(&sub, '\0');
 
 	if(special_str[0] != '\0')
-	{
-// 	    printf("special_str made. it is %s\n", special_str);
-        return_str = fs_getstr(&sub);	    
-	}
+        return_str = fs_getstr(&sub);
 	else
-	{
         return_str = VLlookup(fs_getstr(&sub));
-	}
 	
 	fs_free(&sub);	
 	*len = skipped;
 	
-// 	printf("returning str: %s\n", str);
 	return (return_str) ? return_str : "";
 }
-
-
-/* Bruce already wrote OKNAME
-int valid_var(char * var)
-{
-	int i;
-	int len = strlen(var);
-	
-	if (isdigit(var[0]))
-		return false;
-
-	for(i = 0; i < len; i++)
-	{
-		if( isalnum(var[i]) || var[i] == '_')
-			continue;
-		else
-			return false;
-	}
-	
-	return true;
-}
-*/

@@ -241,10 +241,6 @@ int load_for_loop(char *args)
 	
 	if(arglist == NULL || arglist[0] == NULL)   // check we have args
 	    return false;                           // we don't
-// 	else if (arglist[0] == NULL)
-// 	{
-// 	    return false;
-// 	}
 	
 	if(for_state == WANT_DO)
 	{
