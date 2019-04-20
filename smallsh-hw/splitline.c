@@ -37,14 +37,9 @@ char * next_cmd(char *prompt, FILE *fp)
 		pos++;
 	}
 	
-// 	printf("earlier return statment in next_cmd\n");
-	
 	if ( c == EOF && pos == 0 )		/* EOF and no input	*/
 		return NULL;			    /* say so		*/
 	fs_addch(&s, '\0');			    /* terminate string	*/
-	
-	
-// 	printf("returning from next_cmd, cmd is: %s\n", fs_getstr(&s));
 	return fs_getstr(&s);
 }
 

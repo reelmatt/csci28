@@ -11,6 +11,7 @@
 #include	"controlflow.h"
 #include	"splitline.h"
 #include	"process.h"
+#include    "builtin.h"
 #include	"flexstr.h"
 #include	"varlib.h"
 
@@ -184,47 +185,58 @@ int do_control_command(char **args)
 	return rv;
 }
 
-int init_for_loop(char **args)
+void load_for_varname(char * str)
 {
-// 	fl = new_loop();
-	
-	args++;	//strip the 'for'
-	FLEXSTR name;
-	FLEXLIST vars;
-	
-// 	printf("init for loop, first arg is: %s\n", *args);
-	//if( valid_var(*args) )
-	if ( true )
-	{
-		fs_init(&name, 0);
+    FLEXSTR name;
+    fs_init(&name, 0);
+    fs_addstr(&name, str);
+    fs_addch(&name, '\0');
+    fl.varname = name;
+}
 
-		while(*args[0] != '\0')
-		{
-// 			printf("string or char? %c\n", *args[0]);
-			fs_addch(&name, *args[0]++);
-		}
-		
-		fs_addch(&name, '\0');
-		fl.varname = name;
-// 		fl.varname = fs_getstr(&name);
-// 		fs_free(&name);
-		
-// 		fl->varname = *args;
-		args++;
+void load_for_varvalues(char **args)
+{
+    FLEXLIST vars;
+    fl_init(&vars, 0);
+    while(*args)
+    {
+        fl_append(&vars, *args);
+        args++;
+    }
+    
+    fl.varvalues = vars;
+}
+
+int init_for_loop(char **args)
+{	
+	args++;	//strip the 'for'
+// 	FLEXSTR name;
+// 	FLEXLIST vars;
+	
+	if ( okname(*args) )
+	{
+	    load_for_varname(*args);
+// 		fs_init(&name, 0);
+//         fs_addstr(&name, *args);
+//         fs_addch(&name, '\0');
+//         fl.varname = name;
+        
+        args++;
 		
 		if(strcmp(*args, "in") == 0)
 		{
 // 			printf("correct placement of 'in'\n");
 			args++;
 			
-			fl_init(&vars, 0);
-			while(*args)
-			{
-				fl_append(&vars, *args);
-				args++;
-			}
-			
-			fl.varvalues = vars;
+			load_for_varvalues(args);
+// 			fl_init(&vars, 0);
+// 			while(*args)
+// 			{
+// 				fl_append(&vars, *args);
+// 				args++;
+// 			}
+// 			
+// 			fl.varvalues = vars;
 			
 	// 		printf("parsed beginning of for\n");
 // 			printf("varname is %s\nvarvalues are...", fl->varname);
@@ -244,6 +256,10 @@ int init_for_loop(char **args)
 			return syn_err("word unexpected (expecting \"in\")");
 		}
 		
+	}
+	else
+	{
+	    syn_err("Bad for loop variable");
 	}
 	
 	return 0;
@@ -334,27 +350,6 @@ int load_for_loop(char *args)
 	return false;
 }
 
-/* CLEANED UP MAIN ENOUGH FOR NOW -- WASN'T WORKING ANYWAY
-char * get_next_cmd()
-{
-	char **vars = fl_getlist(&fl.varvalues);
-	
-	while(*vars)
-	{
-// 		printf("name = %s, val = %s\n", fl->varname, *vars);
-		VLstore(fs_getstr(&fl.varname), *vars);
-		
-		char **commands = fl_getlist(&fl.commands);
-		
-		while(*commands)
-		{
-			return *commands;
-		}
-	}
-	
-	return NULL;
-}*/
-
 char ** get_for_commands()
 {
 	return fl_getlist(&fl.commands);
@@ -370,6 +365,22 @@ char * get_for_name()
 	return fs_getstr(&fl.varname);
 }
 
+void free_for()
+{
+//     if(fl.varname)              // check if NULL
+        fs_free(&fl.varname);   // free it
+
+    fl_free(&fl.varvalues);     //flexstr checks if NULL
+    fl_free(&fl.commands);      //flexstr checks if NULL
+    
+    return;
+}
+
+/*
+ *  is_parsing_for()
+ *  Purpose: Check if shell is currently reading in a for_loop struct
+ *   Return: 1 if reading in a for_loop, 0 if not
+ */
 int is_parsing_for()
 {
 	return for_state != NEUTRAL;

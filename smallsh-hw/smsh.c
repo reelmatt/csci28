@@ -11,6 +11,7 @@
 #include	"varlib.h"
 #include	"process.h"
 #include    "builtin.h"
+#include    "flexstr.h"
 
 /**
  **	small-shell version 5
@@ -41,79 +42,68 @@ int main(int ac, char ** av)
 {
 	FILE * source;
 	char *cmdline, *prompt;
-	int result = 0;         //set default, if no cmds entered
+	int result = 0;                             // set default
 
 	setup();    
     io_setup(&source, &prompt, ac, av);
     
-    // get next line from 'source' and process accordingly
-//	while ( (cmdline = next_cmd(prompt, source)) != NULL )
 	while ( run_shell )
 	{
-	    cmdline = next_cmd(prompt, source);
-// 	    printf("cmdline is...\n%s\n", cmdline);
-	    if(cmdline == NULL)
+	    cmdline = next_cmd(prompt, source);     // get next line from source
+	    
+	    if(cmdline == NULL)                     // cmdline was EOF
 	    {
-// 	        printf("cmdline is NULL\n");
-            run_shell = run_command(cmdline);
-//             printf("returning, run_shell is '%d'\n", run_shell);
-// 	        run_shell = process(cmdline);
-// 	        run_shell = 0;
-//             free(cmdline);
-            
+            run_shell = run_command(cmdline);   // check is_safe_to_exit()
 	        continue;
 	    }
 		
-		// parsing for loop, direct input here
-		if( is_parsing_for() )
+		if( is_parsing_for() )                  // reading in a for_loop
 		{
-			// will be true when done loading, false while in process
-			if (load_for_loop(cmdline) == true)
-			{
-				execute_for();
-			}
-            
-//             printf("parsing for loop... continue\n");
-			//
-			continue;			
+			if (load_for_loop(cmdline) == true) // when true
+				result = execute_for();         // for_loop complete, execute
+
+			continue;			                // go to next cmdline
 		}
 		
-		//all other commands/syntax
-		result = run_command(cmdline);
+		result = run_command(cmdline);          // all other commands/syntax
 	}
 	return result;
 }
 
 /*
  *  execute_for()
- *  Purpose: 
+ *  Purpose: Iterate through a completed for_loop struct and execute cmds
  *   Return: 
  */
 int execute_for()
 {
-	char **vars = get_for_vars();
 	int result;
-	
-	// one loop for each var	
-	while(*vars)
+	char **vars = get_for_vars();           // load in varvalues
+    char * name = get_for_name();           // load in varname for sub
+	char ** vars_start = vars;              // keep track of memory
+
+	while(*vars)                            // for each varvalue
 	{
-		char * name = get_for_name();
-	// 	printf("name = %s, val = %s\n", name, *vars);
+		VLstore(name, *vars);               // set current var for varsub
+		char ** cmds = get_for_commands();  // get array of commands
+		char ** cmds_start = cmds;          // keep track of memory
 		
-		VLstore(name, *vars);
-	
-		char ** cmds = get_for_commands();
-		
-		// go through each command (for each var)
-		while(*cmds)
+		while(*cmds)                        // go through cmds for each var
 		{
-			result = run_command(*cmds);
+			result = run_command(*cmds);    // execute
 			cmds++;
-// 						free(cmdline);
 		}
-	
-		vars++;
+		
+		if(cmds_start)                      // if malloc'ed
+            fl_freelist(cmds_start);        // free it
+		vars++;                             // next variable
 	}
+	
+	if(vars_start)
+        fl_freelist(vars_start);                 
+    if(name)
+        free(name);
+    free_for();
 	
 	return 0;
 }
@@ -125,29 +115,26 @@ int execute_for()
  */
 int run_command(char * cmd)
 {
-// 	printf("about to varsub\n");
-	char *subline = varsub2(cmd);
+
+	char *subline = varsub(cmd);
 	char **arglist;
 	int result = 0;
 
-// 	printf("about to splitline\n");
 	if ( (arglist = splitline(subline)) != NULL )
 	{
-// 	    printf("in the IF condition, splitline PASSED\n");
+
 		result = process(arglist);
 // 		last_exit = result;
 // 		freelist(arglist);
 	}
 	else
 	{
-// 	    printf("in ELSE condition...\n");
 // 	    arglist = NULL;
 	    result = process(arglist);
 	    clearerr(stdin);
 // 	    free(cmd);
 	}
 	
-// 	printf("returning from run_command\n");
 // 	free(cmd);
 	return result;	
 }

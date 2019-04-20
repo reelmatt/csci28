@@ -248,7 +248,7 @@ int okname(char *str)
 
 #define	is_delim(x) ((x)==' '|| (x)=='\t' || (x)=='\0')
 
-char * varsub2(char * args)
+char * varsub(char * args)
 {
 	char c, prev;
 	FLEXSTR s;

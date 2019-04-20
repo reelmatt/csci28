@@ -11,6 +11,7 @@ int is_for_loop(char *s);
 int do_for_loop(char **args);
 int init_for_loop(char **args);
 
+void free_for();
 char ** get_for_commands();
 char ** get_for_vars();
 char * get_for_name();
