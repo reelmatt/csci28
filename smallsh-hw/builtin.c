@@ -20,6 +20,9 @@ char var_or_comment(char * str, FLEXSTR s, char **prev);
 void cntrl_err(char * msg);
 void remove_comment(char * args);
 int get_number(char * str);
+
+
+
 int is_builtin(char **args, int *resultp)
 /*
  * purpose: run a builtin command 
@@ -130,7 +133,7 @@ int is_exit(char **args, int *resultp)
 		if( args[1] != NULL )               // exit arg specified?
 		{
 		    int val = get_number(args[1]);  // convert to a number
-		
+
 		    if (val != -1)                  // successful?
                 exit(val);                  // use it
 			else                            // syntax error
@@ -140,7 +143,7 @@ int is_exit(char **args, int *resultp)
 // 			    fatal("exit: Illegal number", args[1], 2);  // syntax error
 // 			    fprintf(stderr, "exit: %s: %s\n", "Illegal number", args[1]);
 // 			    exit(2);
-// 				*resultp = 2;		//syntax error
+				*resultp = 2;		//syntax error
 			}
 		}
 		else
@@ -157,25 +160,29 @@ int is_exit(char **args, int *resultp)
 void cntrl_err(char * msg)
 {
     fprintf(stderr, "exit: Illegal number: %s\n", msg);
-    set_exit(2);
+//     set_exit(2);
     return;
 }
 
+/*
+ *	get_number()
+ *	Purpose: Helper function to check if str is a number
+ *	  Input: str, the string to check
+ *	 Return: -1 on error (str is not a number)
+ *			 value returned from atoi() on success
+ */
 int get_number(char * str)
 {
     int i;
-    for(i = 0; i < strlen(str); i++)
+    int len = strlen(str);
+    
+    for(i = 0; i < len; i++)
     {
-        if (isdigit(str[i]))
-            continue;
-        else
-            break;
+        if (!isdigit(str[i]))
+            return -1;
     }
     
-    if (i == strlen(str))
-        return atoi(str);
-    else
-        return -1;
+	return atoi(str);
 }
 
 /*
@@ -271,6 +278,7 @@ char * varsub(char * args)
 		{
 			args++;                             //trim the $
 			char *newstr = get_replacement(args, &check);
+			printf("after sub, newstr is %s\n", newstr);
 			args += (check - 1);
 
 			fs_addstr(&s, newstr);
@@ -294,66 +302,65 @@ char * varsub(char * args)
 	return return_str;
 }
 
-int special_replace(int val, FLEXSTR * str)
+char * special_replace(int val)
 {
-    
+	FLEXSTR var;
+	fs_init(&var, 0);
+	
+	char special_str[10] = "";
+	sprintf(special_str, "%d", val);	//do error checking
+	fs_addstr(&var, special_str);
+	fs_addch(&var, '\0');
+	return fs_getstr(&var);
+// 	return (strcmp(special_str, "") == 0) ? fs_getstr(&var) : "";
+	
+//     return 1;
+}
+
+char * get_var(char *args, int * len)
+{
+	FLEXSTR var;
+	fs_init(&var, 0);
+	int skipped = 0;
+	
+	while (args[0])
+	{
+		fs_addch(&var, args[0]);
+		skipped++;
+			
+		if( !(isalnum(args[0]) || args[0] == '_') )
+			break;
+
+		args++;
+
+	}
+	
+	fs_addch(&var, '\0');
+	
+	char * str = fs_getstr(&var);
+	fs_free(&var);
+	
+	*len = skipped;
+	return str;
 }
 
 char * get_replacement(char * args, int * len)
 {
 	FLEXSTR sub;
 	fs_init(&sub, 0);
-	char special_str[10] = "";
-	char * return_str;
+// 	char special_str[10] = "";
+// 	char * return_str;
 	
-	int skipped = 0;
+// 	int skipped = 0;
 	
-	if( isdigit((int) args[0]) )
-	{
-		fprintf(stderr, "bad var name, cannot begin with digit\n");
-		return NULL;
-	}
-	else if (args[0] == '$')
-	{
-		sprintf(special_str, "%d", getpid());
-		fs_addstr(&sub, special_str);
-		skipped++;
-		
-		skipped = special_replace(getpid(), sub);
-	}
-	else if (args[0] == '?')
-	{
-		sprintf(special_str, "%d", get_exit());
-		fs_addstr(&sub, special_str);
-		skipped++;
-	}
-	else
-	{
-		// go through the substring passed in
-		while(args[0])
-		{
-			if(isalnum(args[0]) || args[0] == '_')
-			{
-				fs_addch(&sub, args[0]);
-				args++;
-			}
-			else
-			{
-				break;
-			}
-			skipped++;
-		}	
-	}
-	
-	fs_addch(&sub, '\0');
+	char * to_replace = get_var(args, len);
 
-	if(special_str[0] != '\0')
-        return_str = fs_getstr(&sub);
+	printf("in get_replacement, str is %s\n", to_replace);
+
+	if (strcmp(to_replace, "$") == 0)
+		return special_replace(getpid());
+	else if (strcmp(to_replace, "?") == 0)
+		return special_replace(get_exit());
 	else
-        return_str = VLlookup(fs_getstr(&sub));
-	
-	fs_free(&sub);	
-	*len = skipped;
-	
-	return (return_str) ? return_str : "";
+		return VLlookup(to_replace);
 }

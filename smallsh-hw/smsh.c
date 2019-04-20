@@ -136,6 +136,7 @@ int run_command(char * cmd)
 	}
 	
 // 	free(cmd);
+	set_exit(result);
 	return result;	
 }
 
