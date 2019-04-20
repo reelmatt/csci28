@@ -278,7 +278,7 @@ char * varsub(char * args)
 		{
 			args++;                             //trim the $
 			char *newstr = get_replacement(args, &check);
-			printf("after sub, newstr is %s\n", newstr);
+// 			printf("after sub, newstr is %s\n", newstr);
 			args += (check - 1);
 
 			fs_addstr(&s, newstr);
@@ -323,13 +323,24 @@ char * get_var(char *args, int * len)
 	fs_init(&var, 0);
 	int skipped = 0;
 	
+	fs_addch(&var, args[0]);
+	skipped++;
+	args++;
+	
 	while (args[0])
 	{
-		fs_addch(&var, args[0]);
-		skipped++;
 			
-		if( !(isalnum(args[0]) || args[0] == '_') )
+		if( isalnum(args[0]) || args[0] == '_' )
+		{
+			fs_addch(&var, args[0]);
+		
+		}
+		else
+		{
 			break;
+		}
+		
+		skipped++;
 
 		args++;
 
@@ -355,7 +366,7 @@ char * get_replacement(char * args, int * len)
 	
 	char * to_replace = get_var(args, len);
 
-	printf("in get_replacement, str is %s\n", to_replace);
+// 	printf("in get_replacement, str is %s\n", to_replace);
 
 	if (strcmp(to_replace, "$") == 0)
 		return special_replace(getpid());
