@@ -189,39 +189,19 @@ int get_number(char * str)
  *
  */
 int is_read(char **args, int *resultp)
-{
-//     char **varlist, **fieldlist;
-    
+{    
     if ( strcmp(args[0], "read") == 0)
     {
     	if( okname(args[1]) )
-    	{
-    		char c;
-			FLEXSTR s;
-			fs_init(&s, 0);
-    	
-    		// read in value
-    		while( (c = fgetc(stdin)) != EOF )
-    		{
-    			// end of command
-    			if (c == '\n')
-    				break;
-    			
-    			fs_addch(&s, c);	
-    		}
-    		
-    		// null-terminate
-    		fs_addch(&s, '\0');
-    		fs_getstr(&s);
-    		
-			VLstore(args[1], fs_getstr(&s));
+    	{			
+    		char * str = next_cmd("", stdin);
+    		VLstore(args[1], str);
         }
         return 1;
     }
     
     return 0;
 }
-
 
 int assign(char *str)
 /*
@@ -267,39 +247,32 @@ char * varsub(char * args)
 	if (args == NULL)
 	    return NULL;
 	
-	while ( (c = args[0]) )
+	while ( (c = args[0]) )						// go through cmdline
 	{
 		if (c == '\\')                          // escape char
 		{
 			args++;
-			fs_addch(&s, args[0]);
+			fs_addch(&s, args[0]);				// add the literal next
 		}
 		else if (c == '$')                      // variable sub
 		{
 			args++;                             //trim the $
 			char *newstr = get_replacement(args, &check);
-// 			printf("after sub, newstr is %s\n", newstr);
 			args += (check - 1);
 
 			fs_addstr(&s, newstr);
 		}
 		else if (c == '#' && is_delim(prev) )   // start of comment
-		{
 			break;                              // ignore the rest
-		}
 		else                                    // regular char
-		{
 			fs_addch(&s, c);                    // add as-is
-		}
 		
 		prev = c;
 		args++;
 	}
 	
 	fs_addch(&s, '\0');
-	char * return_str = fs_getstr(&s);
-	fs_free(&s);
-	return return_str;
+	return fs_getstr(&s);
 }
 
 char * special_replace(int val)
@@ -314,7 +287,7 @@ char * special_replace(int val)
 	return fs_getstr(&var);
 // 	return (strcmp(special_str, "") == 0) ? fs_getstr(&var) : "";
 	
-//     return 1;
+//  return 1;
 }
 
 char * get_var(char *args, int * len)
@@ -329,44 +302,24 @@ char * get_var(char *args, int * len)
 	
 	while (args[0])
 	{
-			
-		if( isalnum(args[0]) || args[0] == '_' )
-		{
-			fs_addch(&var, args[0]);
-		
-		}
+		if( isalnum(args[0]) || args[0] == '_' )	// valid?
+			fs_addch(&var, args[0]);				// add it
 		else
-		{
-			break;
-		}
+			break;									// stop
 		
 		skipped++;
-
 		args++;
 
 	}
 	
-	fs_addch(&var, '\0');
-	
-	char * str = fs_getstr(&var);
-	fs_free(&var);
-	
-	*len = skipped;
-	return str;
+	fs_addch(&var, '\0');							// terminate
+	*len = skipped;									// pass back position
+	return fs_getstr(&var);
 }
 
 char * get_replacement(char * args, int * len)
 {
-	FLEXSTR sub;
-	fs_init(&sub, 0);
-// 	char special_str[10] = "";
-// 	char * return_str;
-	
-// 	int skipped = 0;
-	
 	char * to_replace = get_var(args, len);
-
-// 	printf("in get_replacement, str is %s\n", to_replace);
 
 	if (strcmp(to_replace, "$") == 0)
 		return special_replace(getpid());
