@@ -111,9 +111,8 @@ void run_command(char * cmdline)
 void execute_for()
 {
 	char **vars = get_for_vars();           // load in varvalues
-    char **cmds = get_for_commands();
+    char **cmds = get_for_commands();		// load in commands
     char * name = get_for_name();           // load in varname for sub
-// 	char ** vars_start = vars;              // keep track of memory
 	char ** cmds_start;
 
 	while(*vars)                            // for each varvalue
@@ -128,19 +127,15 @@ void execute_for()
 		cmds_start = cmds;          // keep track of memory
 		
 		while(*cmds_start)                   // go through cmds for each var
-		{
 			run_command(*cmds_start++);    	// execute
-// 			cmds_start++;
-		}
-		
-
+			
 		vars++;                             // next variable
-
 	}
 	
-    if(name)
-        free(name);
-
+    free(name);
+	fl_freelist(vars);
+	fl_freelist(cmds);
+	
 
 	return ;
 }
