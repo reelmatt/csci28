@@ -97,11 +97,12 @@ int execute_for()
 			cmds++;
 		}
 		
-		if(cmds_start)                      // if malloc'ed
-            fl_freelist(cmds_start);        // free it
+
 		vars++;                             // next variable
 	}
 	
+	if(cmds_start)                      // if malloc'ed
+		fl_freelist(cmds_start);        // free it
 	if(vars_start)
         fl_freelist(vars_start);                 
     if(name)
