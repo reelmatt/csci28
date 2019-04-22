@@ -119,7 +119,7 @@ int execute_for()
         free(name);
 
 // 	printf("Starting free_for()\n");
-    free_for();
+//    free_for();
 	
 // 	printf("AFTER free_for()\n");
 	return 0;

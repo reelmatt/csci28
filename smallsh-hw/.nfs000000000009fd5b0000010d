@@ -1,0 +1,9 @@
+
+X=day
+FRI=fri
+N=
+for z in mon$X tues$X thurs$X $FRI$X
+do
+	N=$N$z
+	echo z is $z
+done
