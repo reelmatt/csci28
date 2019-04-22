@@ -261,8 +261,8 @@ int load_for_loop(char *args)
 	else
 		fatal("internal error processing:", arglist[0], 2);
 	
-	freelist(arglist);
-	free(args);
+// 	freelist(arglist);
+// 	free(args);
 	
 	return false;
 }
