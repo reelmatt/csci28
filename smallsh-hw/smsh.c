@@ -90,13 +90,13 @@ int execute_for()
 	{
 // 		printf("name is %s and vars is %s\n", name, *vars);
 		char *name = get_for_name();
-		if (VLstore(name, *vars))
-		{
-// 			printf("VLstore failed\n");
-			vars++;
-			continue;
-		}
-// 		VLstore(name, *vars);               // set current var for varsub
+// 		if (VLstore(name, *vars))
+// 		{
+// // 			printf("VLstore failed\n");
+// 			vars++;
+// 			continue;
+// 		}
+		VLstore(name, *vars);               // set current var for varsub
 		char ** cmds = get_for_commands();  // get array of commands
 // 		cmds_start = cmds;          // keep track of memory
 		
@@ -144,13 +144,13 @@ int run_command(char * cmdline)
 		result = process(arglist);
 // 		freelist(arglist);
 	}
-// 	else
-// 	{
-// // 	    arglist = NULL;
-// 	    result = process(arglist);
-// 	    clearerr(stdin);
-// // 	    free(cmd);
-// 	}
+	else
+	{
+// 	    arglist = NULL;
+	    result = process(arglist);
+	    clearerr(stdin);
+// 	    free(cmd);
+	}
 	
 	//syntax error 
 	if(result == -1)
