@@ -142,6 +142,7 @@ int run_command(char * cmd)
 	
 	if(cmd)
 		free(cmd);
+	
 	freelist(arglist);
 	
 	if(subline)

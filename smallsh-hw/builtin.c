@@ -255,7 +255,7 @@ char * varsub(char * args)
 			args += (skipped - 1);
 
 			fs_addstr(&s, newstr);
-			free(newstr);
+// 			free(newstr);
 		}
 		else                                    // regular char
 			fs_addch(&s, c);                    // add as-is
