@@ -83,14 +83,22 @@ int execute_for()
 	int result;
 	char **vars = get_for_vars();           // load in varvalues
     char * name = get_for_name();           // load in varname for sub
-	char ** vars_start = vars;              // keep track of memory
-	char ** cmds_start;
+// 	char ** vars_start = vars;              // keep track of memory
+// 	char ** cmds_start;
 
 	while(*vars)                            // for each varvalue
 	{
-		VLstore(name, *vars);               // set current var for varsub
+// 		printf("name is %s and vars is %s\n", name, *vars);
+		
+		if (VLstore(name, *vars))
+		{
+// 			printf("VLstore failed\n");
+			vars++;
+			continue;
+		}
+// 		VLstore(name, *vars);               // set current var for varsub
 		char ** cmds = get_for_commands();  // get array of commands
-		cmds_start = cmds;          // keep track of memory
+// 		cmds_start = cmds;          // keep track of memory
 		
 		while(*cmds)                        // go through cmds for each var
 		{
@@ -100,14 +108,17 @@ int execute_for()
 		
 
 		vars++;                             // next variable
+// 		printf("GOING TO NEXT VAR...\n\n");
 	}
 	
 // 	if(cmds_start)                      // if malloc'ed
 // 		fl_freelist(cmds_start);        // free it
-	if(vars_start)
-        fl_freelist(vars_start);                 
-    if(name)
-        free(name);
+// 	if(vars_start)
+//         fl_freelist(vars_start);                 
+//     if(name)
+//         free(name);
+
+// 	printf("Starting free_for()\n");
     free_for();
 	
 // 	printf("AFTER free_for()\n");
@@ -124,6 +135,8 @@ int run_command(char * cmdline)
 	char *subline = varsub(cmdline);
 	char **arglist;
 	int result = 0;
+	
+// 	printf("\t\trun_command: %s\n", subline);
 
 	if ( (arglist = splitline(subline)) != NULL )
 	{
@@ -146,10 +159,10 @@ int run_command(char * cmdline)
 // 	if(cmdline)
 // 		free(cmdline);
 	
-	freelist(arglist);
+// 	freelist(arglist);
 	
-	if(subline)
-		free(subline);
+// 	if(subline)
+// 		free(subline);
 
 	set_exit(result);
 	return result;	
