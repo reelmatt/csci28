@@ -110,7 +110,7 @@ int execute_for()
         free(name);
     free_for();
 	
-	printf("AFTER free_for()\n");
+// 	printf("AFTER free_for()\n");
 	return 0;
 }
 
