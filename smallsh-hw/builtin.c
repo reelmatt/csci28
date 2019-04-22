@@ -361,7 +361,7 @@ char * get_var(char *args, int * len)
 	
 	while ( (c = args[0]) )
 	{
-		if( c == '$' || c == '?')			// special var?
+		if( skipped == 0 &&  (c == '$' || c == '?' ))			// special var?
 		{
 			fs_addch(&var, c);
 			skipped++;
