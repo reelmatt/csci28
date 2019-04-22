@@ -261,6 +261,8 @@ int load_for_loop(char *args)
 	else
 		fatal("internal error processing:", arglist[0], 2);
 	
+	
+	//BIG glibc problem
 // 	freelist(arglist);
 // 	free(args);
 	
