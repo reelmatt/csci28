@@ -18,14 +18,16 @@ char * next_cmd(char *prompt, FILE *fp)
  *  errors: NULL at EOF (not really an error)
  *          calls fatal from emalloc()
  *   notes: allocates space in BUFSIZ chunks.  
+ *    hist: 2019-04-20: removed memory leak (did not call fs_free on FS.v2)
  */
 {
-	int	c;				            /* input char		*/
-	FLEXSTR	s;				        /* the command		*/
+	int	c;				/* input char		*/
+	FLEXSTR	s;				/* the command		*/
 	int	pos = 0;
+	char	*retval;
 
-	fs_init(&s, 0);				    /* initialize the str	*/
-	printf("%s", prompt);			/* prompt user	*/
+	fs_init(&s, 0);				/* initialize the str	*/
+	printf("%s", prompt);				/* prompt user	*/
 	while( ( c = getc(fp)) != EOF ) 
 	{
 		/* end of command? */
@@ -36,11 +38,12 @@ char * next_cmd(char *prompt, FILE *fp)
 		fs_addch(&s, c);
 		pos++;
 	}
-	
 	if ( c == EOF && pos == 0 )		/* EOF and no input	*/
-		return NULL;			    /* say so		*/
-	fs_addch(&s, '\0');			    /* terminate string	*/
-	return fs_getstr(&s);
+		return NULL;			/* say so		*/
+	fs_addch(&s, '\0');			/* terminate string	*/
+	retval = fs_getstr(&s);			/* get copy of string	*/
+	fs_free(&s);				/* release fs memory	*/
+	return retval;
 }
 
 /**
@@ -83,7 +86,7 @@ char ** splitline(char *line)
 		len   = 1;
 		while ( line[i] != '\0' && !(is_delim(line[i])) )
 			i++, len++;
-		fl_append(&strings, newstr(&line[start], len));
+		fl_appendd(&strings, newstr(&line[start], len));
 	}
 	parts = fl_getlist(&strings);
 	fl_free(&strings);
@@ -128,4 +131,3 @@ void * erealloc(void *p, size_t n)
 		fatal("realloc() failed","",1);
 	return rv;
 }
-

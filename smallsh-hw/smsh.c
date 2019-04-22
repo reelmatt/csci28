@@ -37,7 +37,12 @@ static int run_shell = 1;
 
 /*
  *	main()
- *	Purpose: 
+ *	Purpose: Setup shell to be interactive, or run a script; then process
+ *			 command lines.
+ *	 Return: As commands are entered and processes run, the last exit status
+ *			 is populated in 'result'. When exit() is called, or shell reaches
+ *			 the EOF, that last exit status is returned (unless
+ *			 user-specified; see builtin.c).
  */
 int main(int ac, char ** av)
 {
@@ -56,7 +61,6 @@ int main(int ac, char ** av)
 	    {
 	    	run_shell = safe_to_exit();			// check if processing if/for
 	    	clearerr(stdin);					// clear the EOF
-//             run_shell = run_command(cmdline);   // check is_safe_to_exit()
 	        continue;
 	    }
 		
@@ -70,6 +74,7 @@ int main(int ac, char ** av)
 		
 		result = run_command(cmdline);          // all other commands/syntax
 	}
+	
 	return result;
 }
 
@@ -82,33 +87,31 @@ int execute_for()
 {
 	int result;
 	char **vars = get_for_vars();           // load in varvalues
+    char **cmds = get_for_commands();
     char * name = get_for_name();           // load in varname for sub
 // 	char ** vars_start = vars;              // keep track of memory
-// 	char ** cmds_start;
+	char ** cmds_start;
 
 	while(*vars)                            // for each varvalue
 	{
-// 		printf("name is %s and vars is %s\n", name, *vars);
-// 		char *name = get_for_name();
-// 		if (VLstore(name, *vars))
-// 		{
-// // 			printf("VLstore failed\n");
-// 			vars++;
-// 			continue;
-// 		}
-		VLstore(name, *vars);               // set current var for varsub
-		char ** cmds = get_for_commands();  // get array of commands
-// 		cmds_start = cmds;          // keep track of memory
-		
-		while(*cmds)                        // go through cmds for each var
+		// set current variable for substitution
+		if (VLstore(name, *vars) == 1)
 		{
-			result = run_command(*cmds);    // execute
-			cmds++;
+			fprintf(stderr, "Problem updating the for variable. \n");
+			return 1;
+		}
+// 		char ** cmds = get_for_commands();  // get array of commands
+		cmds_start = cmds;          // keep track of memory
+		
+		while(*cmds_start)                   // go through cmds for each var
+		{
+			result = run_command(*cmds_start);    // execute
+			cmds_start++;
 		}
 		
 
 		vars++;                             // next variable
-// 		printf("GOING TO NEXT VAR...\n\n");
+
 	}
 	
 // 	if(cmds_start)                      // if malloc'ed
@@ -118,10 +121,14 @@ int execute_for()
     if(name)
         free(name);
 
-// 	printf("Starting free_for()\n");
-//    free_for();
+// 	if(vars)
+// 		fl_freelist(vars);
+// 	
+// 	if(cmds)
+// 		fl_freelist(cmds);
 	
-// 	printf("AFTER free_for()\n");
+
+//    free_for();
 	return 0;
 }
 

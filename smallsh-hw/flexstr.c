@@ -13,7 +13,8 @@ void	*erealloc(void *, size_t);
  *	methods are:  
  *
  *	fl_init(FLEXLIST *p,int chunk)	- initialize an FLEXLIST
- *	fl_append(FLEXLIST *p, char *)	- add a string to an FLEXLIST
+ *	fl_append(FLEXLIST *p, char *)	- copy and add a str to a FLEXLIST
+ *	fl_appendd(FLEXLIST *p, char *)	- add a str (no copy) to a FLEXLIST
  *	fl_free(FLEXLIST *p)		- dispose of all malloced data therein
  *	fl_getcount(FLEXLIST *p)	- return the number of items
  *
@@ -32,7 +33,14 @@ void	*erealloc(void *, size_t);
  *	char *fs_getstrd(FLEXSTR *p)	- returns the internal string
  *
  *  VERSION 2: 10q to AL for mentioning V1's subtle complexity of memory mgmt
+ *  2019-04-20: added fl_appendd to work with splitline
  *  2019-04-08: fl_getlist: do not call strdup on NULL (bug fix)
+ *
+ *  2019-04-20:
+ *  TODO: return this to being a flexible list of pointers you pass it.
+ *	  REMOVE strdups of the strings.  Let the caller allocate space
+ *	  and let the fl_free function release them all unless the 
+ *	  caller wants to.  Adding the strdups makes things worse.
  */
 
 
@@ -108,18 +116,31 @@ void fl_freelist(char **list)
 /*
  * append string str to strlist, reallocing the array if needed
  * return 0 for ok dies on error
+ * appendd - adds the string as given to array.  This must be
+ *		dynamically allocated because it will be free()d later
  */
 
 int
-fl_append(FLEXLIST *p, char *str)
+fl_appendd(FLEXLIST *p, char *str)
 {
 	if ( p->fl_nused == p->fl_nslots ){
 		p->fl_nslots += p->fl_growby;
 		p->fl_list    = erealloc(p->fl_list, 
 					 p->fl_nslots * sizeof(char *));
 	}
-	p->fl_list[p->fl_nused++] = ( str != NULL ? strdup(str) : NULL );
+	p->fl_list[p->fl_nused++] = str;
 	return 0;
+}
+
+/*
+ * this version makes a copy of the string so you can reuse the buffer
+ * you pass it.  It makes a new string and then calls fl_appendd
+ * returns 0 or exits on error
+ */
+int
+fl_append(FLEXLIST *p, char *str)
+{
+	return fl_appendd(p, (str != NULL ? strdup(str) : NULL ));
 }
 
 /************************************************************************
@@ -151,6 +172,8 @@ fs_free(FLEXSTR *p)
 char *
 fs_getstrd(FLEXSTR *p)
 {
+/* returns a pointer to the internal storage. faster/riskier than fs_getstr. */
+
     /* nul-terminate the string before returning it*/
 
     /* First make sure there's room for the '\0' */
@@ -166,11 +189,13 @@ fs_getstrd(FLEXSTR *p)
     p->fs_str[p->fs_used] = '\0';
 
     /* Now return the (terminated) string. */
-	return strdup(p->fs_str);
+	return p->fs_str;
 }
 char *
 fs_getstr(FLEXSTR *p)
 {
+/* wraps fs_getstrd to return a copy of the internal string. */
+
 	return strdup( fs_getstrd(p) );
 }
 

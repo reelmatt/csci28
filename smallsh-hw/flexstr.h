@@ -8,10 +8,14 @@
  *	methods are:  
  *
  *	fl_init(FLEXLIST *p,int amt)	- initialize an FLEXLIST
- *	fl_append(FLEXLIST *p, char *)	- add a string to an FLEXLIST
+ *	fl_append(FLEXLIST *p, char *)	- copy and add a string to a FLEXLST
+ *	fl_appendd(FLEXLIST *p, char *)	- add a str (no copy) to a FLEXLIST
+ *					  string passed must be from malloc()
  *	char ** fl_getlist(FLEXLIST *p)	- return array of strings in the list
  *	fl_free(FLEXLIST *p)		- dispose of all malloced data therein
  *	fl_getcount(FLEXLIST *p)	- return the number of items
+ *
+ *
  */
 
 
@@ -31,6 +35,7 @@ void fl_init(FLEXLIST *p,int amt);
 int  fl_getcount(FLEXLIST *p);
 void fl_free(FLEXLIST *p);
 int fl_append(FLEXLIST *p, char *str);
+int fl_appendd(FLEXLIST *p, char *str);
 
 char ** fl_getlist(FLEXLIST *p);
 char ** fl_getlistd(FLEXLIST *p);
