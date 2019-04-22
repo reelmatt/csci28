@@ -147,8 +147,8 @@ int load_for_loop(char *args)
 	
 	
 	//BIG glibc problem
-	freelist(arglist);
-	free(args);
+// 	freelist(arglist);
+// 	free(args);
 	
 	return false;
 }
