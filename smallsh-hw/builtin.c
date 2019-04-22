@@ -342,27 +342,35 @@ char * get_special(int val)
 /*
  *	get_var()
  *	Purpose: Extract a valid variable name, to be replaced
- *	  Input: args,
- *			 len,
- *	 Return: 
+ *	  Input: args, the command line from the start of the variable to sub
+ *			 len, pointer the varsub uses to know where the end of the
+ *				  is located
+ *	 Return: String the contains name of variable to be replaced.
  */
 char * get_var(char *args, int * len)
 {
+	char c;
+	int skipped = 0;
 	FLEXSTR var;
 	fs_init(&var, 0);
-	int skipped = 0;
 	
 	//add at least one char (could be $ or ?)
-	fs_addch(&var, args[0]);
-	skipped++;
-	args++;
+// 	fs_addch(&var, args[0]);
+// 	skipped++;
+// 	args++;
 	
-	while (args[0])
+	while ( (c = args[0]) )
 	{
-		if( isalnum(args[0]) || args[0] == '_' )	// valid?
-			fs_addch(&var, args[0]);				// add it
+		if( c == '$' || c == '?')			// special var?
+		{
+			fs_addch(&var, c);
+			skipped++;
+			break;
+		}
+		else if( isalnum(c) || c == '_')	// valid?
+			fs_addch(&var, c);									// add it
 		else
-			break;									// stop
+			break;												// stop
 		
 		skipped++;
 		args++;
