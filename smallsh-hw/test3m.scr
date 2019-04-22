@@ -1,0 +1,5 @@
+A=hello
+    ANT=bug
+    ANTLER=elk
+    echo line1: $A\$A$A
+    echo line2: $ANT $ANTLER $A $ANT$LER$ANT
