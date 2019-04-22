@@ -4,7 +4,6 @@
 #include	<signal.h>
 #include	<sys/wait.h>
 #include	<stdbool.h>
-// #include    <fcntl.h>
 #include	"smsh.h"
 #include	"splitline.h"
 #include	"controlflow.h"

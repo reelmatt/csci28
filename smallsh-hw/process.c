@@ -21,7 +21,11 @@
  * 	b) do_command - does the command by 
  *		         1. Is command built-in? (exit, set, read, cd, ...)
  *                       2. If not builtin, run the program (fork, exec...)
- *                    - also does variable substitution (should be earlier)
+ *
+ * Most of this file has remained un-modified from the starter code. A few
+ * lines were added in process() to handle for loop processing. In execute()
+ * code has been added to convert the status returned from wait() to a proper
+ * exit status.
  */
 
 
@@ -33,22 +37,18 @@ int process(char *args[])
  */
 {
 	int		rv = 0;
-    
-//     printf("in process()\n");
 
-	if ( args == NULL )         //EOF
-        rv = safe_to_exit();
-// 		rv = 0;
-    else if (args[0] == NULL)   //just a new line
+// 	if ( args == NULL )         //EOF
+//         rv = safe_to_exit();
+    if (args[0] == NULL)   //just a new line
         rv = 0;
 	else if ( is_control_command(args[0]) )
 		rv = do_control_command(args);
-	else if ( is_for_loop(args[0]) )
-		rv = do_for_loop(args);
+	else if ( is_for_loop(args[0]) )			// added for assignment
+		rv = do_for_loop(args);					// added for assignment
 	else if ( ok_to_execute() )
 		rv = do_command(args);
 		
-// 	printf("returning from process(), rv is %d\n", rv);
 	return rv;
 }
 

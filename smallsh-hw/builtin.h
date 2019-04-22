@@ -17,7 +17,4 @@ int is_read(char **args, int *resultp);
 // Added variable substitution
 char * varsub(char * args);
 
-
-
-
 #endif

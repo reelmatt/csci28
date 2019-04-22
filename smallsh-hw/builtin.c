@@ -4,14 +4,15 @@
  * Copied from starter code. is_builtin() was modified to includes tests
  * for the new built-in functions written for the assignment. Other
  * functions were unmodified. New functions are as follows:
- *		is_exit() -- Terminate shell
- *		is_cd()   -- Change directories
- *		is_read() -- Assign input from stdin to a variable
- *		varsub()  -- Do variable substitution
- *		get_number() --
- *		get_replacement() -- 
- *		special_replace() --
- *		get_var() --
+ *		is_exit() 	 	  -- Terminate shell
+ *		is_cd()   		  -- Change directories
+ *		is_read() 		  -- Assign input from stdin to a variable
+ *		varsub()  		  -- Do variable substitution
+ * The following are internal helper functions:
+ *		get_replacement() -- Get string to replace a $VARIABLE
+ *		get_special() 	  -- Convert a number to a string
+ *		get_var() 		  -- Extract a valid variable name, to be replaced
+ *		get_number() 	  -- Helper function to check if str is a number
  */
 
 #include	<stdio.h>
@@ -27,12 +28,10 @@
 #include    "splitline.h"
 #include	"builtin.h"
 
-char * get_replacement(char * args, int * len);
-char * get_special(int val);
-char * get_var(char *args, int * len);
-
-int get_number(char * str);
-
+static char * get_replacement(char * args, int * len);
+static char * get_special(int val);
+static char * get_var(char *args, int * len);
+static int get_number(char * str);
 
 
 int is_builtin(char **args, int *resultp)
@@ -124,7 +123,7 @@ int is_cd(char **args, int *resultp)
             				args[1], strerror(errno));
             *resultp = 2;							// syntax error
         }
-        return 1;       //was a built-in
+        return 1;       							//was a built-in
     }
     return 0;
 }
@@ -250,11 +249,13 @@ char * varsub(char * args)
 {
 	int skipped;
 	char c, prev;
-	FLEXSTR s;
-	fs_init(&s, 0);
+	char *newstr, *retval;
 	
 	if (args == NULL)
 	    return NULL;
+
+	FLEXSTR s;
+	fs_init(&s, 0);
 	
 	while ( (c = args[0]) )						// go through cmdline
 	{
@@ -267,12 +268,9 @@ char * varsub(char * args)
 		}
 		else if (c == '$')                      // variable sub
 		{
-			
-			char *newstr = get_replacement(++args, &skipped);	//trim the $
-			args += (skipped - 1);
-
+			*newstr = get_replacement(++args, &skipped);
+			args += (skipped - 1);				// -1 because args++ below
 			fs_addstr(&s, newstr);
-// 			free(newstr);
 		}
 		else                                    // regular char
 			fs_addch(&s, c);                    // add as-is
@@ -281,9 +279,10 @@ char * varsub(char * args)
 		args++;
 	}
 	
-	fs_addch(&s, '\0');
-	char *retval = fs_getstr(&s);
-	fs_free(&s);
+	fs_addch(&s, '\0');							// terminate string
+	free(newstr);								// no memory leaks
+	*retval = fs_getstr(&s);					// get a copy of the string
+	fs_free(&s);								// release fs memory
 	return retval;
 }
 
@@ -302,7 +301,8 @@ char * varsub(char * args)
  */
 char * get_replacement(char * args, int * len)
 {
-	char * to_replace = get_var(args, len);		// get the variable to replace
+	// get the variable to replace
+	char * to_replace = get_var(++args, len);	//++args to trim '$' from head
 	char *retval;
 	
 	if (strcmp(to_replace, "$") == 0)			// special PID var
@@ -354,33 +354,28 @@ char * get_var(char *args, int * len)
 	FLEXSTR var;
 	fs_init(&var, 0);
 	
-	//add at least one char (could be $ or ?)
-// 	fs_addch(&var, args[0]);
-// 	skipped++;
-// 	args++;
-	
 	while ( (c = args[0]) )
 	{
-		if( skipped == 0 &&  (c == '$' || c == '?' ))			// special var?
+		if( skipped == 0 &&  (c == '$' || c == '?' ))	// special var?
 		{
 			fs_addch(&var, c);
 			skipped++;
 			break;
 		}
-		else if( isalnum(c) || c == '_')	// valid?
-			fs_addch(&var, c);									// add it
+		else if( isalnum(c) || c == '_')				// valid?
+			fs_addch(&var, c);							// add it
 		else
-			break;												// stop
+			break;										// stop
 		
 		skipped++;
 		args++;
 
 	}
 	
-	fs_addch(&var, '\0');							// terminate
-	*len = skipped;									// pass back position
-	char *retval = fs_getstr(&var);
-	fs_free(&var);
+	fs_addch(&var, '\0');					// terminate
+	*len = skipped;							// pass back position
+	char *retval = fs_getstr(&var);			// get a copy of the string
+	fs_free(&var);							// release fs memory
 	return retval;
 }
 
