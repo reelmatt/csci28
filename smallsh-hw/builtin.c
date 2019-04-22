@@ -303,8 +303,8 @@ char * varsub(char * args)
 char * get_replacement(char * args, int * len)
 {
 	// get the variable to replace
-	args++;
-	char * to_replace = get_var(args, len);	//++args to trim '$' from head
+// 	args++;
+	char * to_replace = get_var(++args, len);	//++args to trim '$' from head
 	char *retval;
 	
 	if (strcmp(to_replace, "$") == 0)			// special PID var
@@ -348,6 +348,12 @@ char * get_special(int val)
  *			 len, pointer the varsub uses to know where the end of the
  *				  is located
  *	 Return: String the contains name of variable to be replaced.
+ *	   Note: The code always adds one char to the var string. While this
+ *			 works for most cases, and ensures special variables can work,
+ *			 the solution is not ideal. It is extra code that could probably
+ *			 be incorporated into the while loop, and it does not catch error
+ *			 condition that variable names cannot begin with a digit (for
+ *			 this shell assignment).
  */
 char * get_var(char *args, int * len)
 {
@@ -355,19 +361,17 @@ char * get_var(char *args, int * len)
 	int skipped = 0;
 	FLEXSTR var;
 	fs_init(&var, 0);
+	fs_addch(&var, args[0]);		//add at least one char (could be $ or ?)
+	skipped++;
+	args++;
+	
 	
 	while ( (c = args[0]) )
 	{
-		if( skipped == 0 &&  (c == '$' || c == '?' ))	// special var?
-		{
-			fs_addch(&var, c);
-			skipped++;
-			break;
-		}
-		else if( isalnum(c) || c == '_')				// valid?
-			fs_addch(&var, c);							// add it
+		if( isalnum(c) || c == '_')				// valid?
+			fs_addch(&var, c);					// add it
 		else
-			break;										// stop
+			break;								// stop
 		
 		skipped++;
 		args++;
