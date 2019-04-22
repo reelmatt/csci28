@@ -1,5 +1,8 @@
-/* builtin.c
- * contains the switch and the functions for builtin commands
+/*
+ * ==========================
+ *   FILE: ./builtin.c
+ * ==========================
+ * Purpose: contains the switch and the functions for builtin commands
  *
  * Copied from starter code. is_builtin() was modified to includes tests
  * for the new built-in functions written for the assignment. Other
@@ -15,6 +18,7 @@
  *		get_number() 	  -- Helper function to check if str is a number
  */
 
+/* INCLUDES */
 #include	<stdio.h>
 #include	<string.h>
 #include    <errno.h>
@@ -28,6 +32,7 @@
 #include    "splitline.h"
 #include	"builtin.h"
 
+/* INTERNAL FUNCTIONS */
 static char * get_replacement(char * args, int * len);
 static char * get_special(int val);
 static char * get_var(char *args, int * len);

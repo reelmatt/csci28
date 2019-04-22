@@ -1,4 +1,8 @@
-/* controlflow.c
+/*
+ * ==========================
+ *   FILE: ./controlflow.c
+ * ==========================
+ * Purpose: Handle if-block and for-loop control syntax.
  *
  * "if" processing is done with two state variables
  *    if_state and if_result
@@ -9,6 +13,8 @@
  *	comments for the changes. For new functions, please reference header
  *	comments above the function.
  */
+ 
+/* INCLUDES */
 #include	<stdio.h>
 #include 	<string.h>
 #include	<stdbool.h>
@@ -21,9 +27,7 @@
 #include	"flexstr.h"
 #include	"varlib.h"
 
-enum states   { NEUTRAL, WANT_THEN, THEN_BLOCK, ELSE_BLOCK, WANT_DO, WANT_DONE };
-enum results  { SUCCESS, FAIL };
-
+/* FOR LOOP STRUCTURE */
 struct for_loop {
 	FLEXSTR varname;		// variable name
 	FLEXLIST varvalues;		// list of values after 'in'
@@ -32,11 +36,17 @@ struct for_loop {
 
 static struct for_loop fl;	// file-scope struct to store a for loop
 
+/* CONTROL STATE VARIABLES */
+enum states   { NEUTRAL, WANT_THEN, THEN_BLOCK, ELSE_BLOCK, WANT_DO, WANT_DONE };
+enum results  { SUCCESS, FAIL };
+
+/* FILE-SCOPE VARIABLES */
 static int for_state = NEUTRAL;
 static int if_state  = NEUTRAL;
 static int if_result = SUCCESS;
 static int last_stat = 0;
 
+/* INTERNAL FUNCTIONS */
 static int syn_err(char *);
 static int init_for_loop(char **);
 static void load_for_varname(char *);

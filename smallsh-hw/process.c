@@ -1,17 +1,8 @@
-#include	<stdio.h>
-#include	<stdlib.h>
-#include	<unistd.h>
-#include	<signal.h>
-#include	<sys/wait.h>
-#include	"smsh.h"
-#include	"builtin.h"
-#include	"varlib.h"
-#include	"controlflow.h"
-#include	"process.h"
-
-
-/* process.c
- * command processing layer: handles layers of processing
+/*
+ * ==========================
+ *   FILE: ./process.c
+ * ==========================
+ * Purpose: command processing layer: handles layers of processing
  * 
  * The process(char **arglist) function is called by the main loop
  * It sits in front of the do_command function which sits 
@@ -28,6 +19,17 @@
  * exit status.
  */
 
+/* INCLUDES */
+#include	<stdio.h>
+#include	<stdlib.h>
+#include	<unistd.h>
+#include	<signal.h>
+#include	<sys/wait.h>
+#include	"smsh.h"
+#include	"builtin.h"
+#include	"varlib.h"
+#include	"controlflow.h"
+#include	"process.h"
 
 int process(char *args[])
 /*

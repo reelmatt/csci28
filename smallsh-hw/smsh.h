@@ -1,3 +1,10 @@
+/*
+ * ==========================
+ *   FILE: ./smsh.h
+ * ==========================
+ * Purpose: Header file for smsh.c
+ */
+
 #ifndef	SMSH_H
 #define	SMSH_H
 

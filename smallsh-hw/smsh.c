@@ -1,3 +1,21 @@
+/*
+ * ==========================
+ *   FILE: ./smsh.c
+ * ==========================
+ * Purpose: Provide interactive, or script-based, shell functionality.
+ *
+ * Outline: The functionality of the shell is split amongst several files,
+ * each performing a specific task. This file contains the main loop which
+ * calls on the other files to operate. For more information, see the Plan
+ * document, or function comments in each of the files.
+ *        splitline.c -- string I/O and management
+ *          process.c -- execute programs
+ *           varlib.c -- manage variables and the environment
+ *      controlflow.c -- read if-blocks and for-loops
+ *          builtin.c -- several built-in functions (cd, exit, etc.)
+ */
+
+/* INCLUDES */
 #include	<stdio.h>
 #include	<stdlib.h>
 #include	<unistd.h>
@@ -12,23 +30,15 @@
 #include    "builtin.h"
 #include    "flexstr.h"
 
-/**
- **	small-shell version 5
- **		first really useful version after prompting shell
- **		this one parses the command line into strings
- **		uses fork, exec, wait, and ignores signals
- **
- **     hist: 2017-04-12: changed comment to say "version 5"
- **/
-
+/* CONSTANTS */
 #define	DFL_PROMPT	"> "
 
-// File-scope variables
+/* FILE-SCOPE VARIABLES */
 static int last_exit = 0;
 static int shell_mode = INTERACTIVE;
 static int run_shell = 1;
 
-// Internal functions
+/* INTERNAL FUNCTIONS */
 static void run_command(char *);
 static void execute_for();
 static void setup();

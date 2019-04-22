@@ -1,3 +1,10 @@
+/*
+ * ==========================
+ *   FILE: ./builtin.h
+ * ==========================
+ * Purpose: Header file for builtin.c
+ */
+
 #ifndef	BUILTIN_H
 #define	BUILTIN_H
 
