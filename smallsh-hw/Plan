@@ -140,4 +140,45 @@ Error Handling:
 	as the last_exit value.
     
 Command output substitution:
-	To implement command output substitution, 
+	To implement command output substitution, the two key features that need
+	to be designed are detecting the syntax and obtaining the result. First,
+	to detect the syntax, the change would best be done in the varsub()
+	function in builtin.c. As written, varsub() iterates over each char of
+	the command line to detect comments, escape-characters, and regular
+	variable substitution with $varname, with several if/else conditions.
+	To detect command output substitution, another else if condition would be
+	added, possibly under the condition testing for (c == '$). Ignoring
+	special quoting (back-ticks, single and double quotes) syntax within
+	the $(command) syntax, and assuming for this implementation anything
+	within the parentheses is read as a command to execute, pseudo-code
+	might look something like:
+	        if ( c == '$' and next_c == '(' )
+	            command_str = read_in_command(args);
+	
+	The other key feature needed for an implementation is obtaining the
+	output of that command. This can be accomplished using pipes, in
+	particular popen(). A call to popen() takes a command -- obtained with
+	a method like that described above -- and a mode (either 'r' for read
+	or 'w' for write). For use in this shell, a 'read' mode would be best
+	suited to the application. The general idea would be to call popen(),
+	which returns a FILE *, and then treat it as any other file you can
+	read from, like it was plain text. In pseudo-code it might look
+	something like:
+	        FILE * fp = popen(command, 'r') <-- command read in from varsub
+	        char data[]
+	        
+	        while(data to read from 'fp')
+	            data = read_data() (potentially fgets() or fgetc())
+	        
+	        //check for errors and proper data
+	        
+	        return data
+	        
+	The 'data' that is returned would then be replaced back in the string
+	being assembled in varsub() to then be interpreted as an argument for
+	further processing.
+	
+	
+	
+	
+	

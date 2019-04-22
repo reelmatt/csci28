@@ -1,4 +1,0 @@
-read NAME
-echo hello, $NAME
-read LSARGS
-ls $LSARGS
