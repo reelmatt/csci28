@@ -82,14 +82,14 @@ int execute_for()
 {
 	int result;
 	char **vars = get_for_vars();           // load in varvalues
-    char * name = get_for_name();           // load in varname for sub
+//     char * name = get_for_name();           // load in varname for sub
 // 	char ** vars_start = vars;              // keep track of memory
 // 	char ** cmds_start;
 
 	while(*vars)                            // for each varvalue
 	{
 // 		printf("name is %s and vars is %s\n", name, *vars);
-		
+		char *name = get_for_name();
 		if (VLstore(name, *vars))
 		{
 // 			printf("VLstore failed\n");
@@ -119,7 +119,7 @@ int execute_for()
 //         free(name);
 
 // 	printf("Starting free_for()\n");
-    free_for();
+//     free_for();
 	
 // 	printf("AFTER free_for()\n");
 	return 0;
