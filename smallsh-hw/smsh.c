@@ -84,12 +84,13 @@ int execute_for()
 	char **vars = get_for_vars();           // load in varvalues
     char * name = get_for_name();           // load in varname for sub
 	char ** vars_start = vars;              // keep track of memory
+	char ** cmds_start;
 
 	while(*vars)                            // for each varvalue
 	{
 		VLstore(name, *vars);               // set current var for varsub
 		char ** cmds = get_for_commands();  // get array of commands
-		char ** cmds_start = cmds;          // keep track of memory
+		cmds_start = cmds;          // keep track of memory
 		
 		while(*cmds)                        // go through cmds for each var
 		{
