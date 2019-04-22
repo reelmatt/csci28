@@ -28,7 +28,7 @@
 #include	"builtin.h"
 
 char * get_replacement(char * args, int * len);
-char * special_replace(int val);
+char * get_special(int val);
 char * get_var(char *args, int * len);
 
 int get_number(char * str);
@@ -293,6 +293,12 @@ char * varsub(char * args)
  *	  Input: args, the command line from the start of the variable to sub
  *			 len, pointer the varsub uses to know where the end of the
  *				  is located
+ *	 Return: String to substitute in place for the $VARIABLE
+ *	 Method: First, call get_var() to get the 'name' of the valid variable
+ *			 to replace. get_var() reads in chars until it finds a non-
+ *			 alpha-numeric or underscore char. It then evaluates the variable
+ *			 and performs a varlib lookup, or calls get_special() for the $$
+ *			 or $? variables.
  */
 char * get_replacement(char * args, int * len)
 {
@@ -300,9 +306,9 @@ char * get_replacement(char * args, int * len)
 	char *retval;
 	
 	if (strcmp(to_replace, "$") == 0)			// special PID var
-		retval = special_replace(getpid());
+		retval = get_special(getpid());
 	else if (strcmp(to_replace, "?") == 0)		// special exit-status var
-		retval = special_replace(get_exit());
+		retval = get_special(get_exit());
 	else										// environment var
 		retval = VLlookup(to_replace);
 		
@@ -310,21 +316,36 @@ char * get_replacement(char * args, int * len)
 	return retval;
 }
 
-char * special_replace(int val)
+/*
+ *	get_special()
+ *	Purpose: Convert a number to a string
+ *	  Input: val, the value of a special variable $$ or $?
+ *	 Return: A stringified version of the special value passed in
+ */
+char * get_special(int val)
 {
+	char special[sizeof(pid_t) * sizeof(int)] = "";
+
+	if (sprintf(special, "%d", val) < 0)		// sprintf error
+		return "";								// return empty string
+
 	FLEXSTR var;
 	fs_init(&var, 0);
+	fs_addstr(&var, special);					// number was converted
+	fs_addch(&var, '\0');						// terminate
 	
-	char special_str[10] = "";
-	sprintf(special_str, "%d", val);	//do error checking
-	fs_addstr(&var, special_str);
-	fs_addch(&var, '\0');
-	return fs_getstr(&var);
-// 	return (strcmp(special_str, "") == 0) ? fs_getstr(&var) : "";
-	
-//  return 1;
+	char *retval = fs_getstr(&var);				// get a copy of the string
+	fs_free(&var);								// release fs memory
+	return retval;	
 }
 
+/*
+ *	get_var()
+ *	Purpose: Extract a valid variable name, to be replaced
+ *	  Input: args,
+ *			 len,
+ *	 Return: 
+ */
 char * get_var(char *args, int * len)
 {
 	FLEXSTR var;
@@ -350,7 +371,9 @@ char * get_var(char *args, int * len)
 	
 	fs_addch(&var, '\0');							// terminate
 	*len = skipped;									// pass back position
-	return fs_getstr(&var);
+	char *retval = fs_getstr(&var);
+	fs_free(&var);
+	return retval;
 }
 
 
