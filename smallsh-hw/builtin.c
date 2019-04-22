@@ -268,8 +268,7 @@ char * varsub(char * args)
 		}
 		else if (c == '$')                      // variable sub
 		{
-// 			args++;
-			newstr = get_replacement(args, &skipped);
+			newstr = get_replacement(++args, &skipped);
 			args += (skipped - 1);				// -1 because args++ below
 			fs_addstr(&s, newstr);
 		}
@@ -282,7 +281,7 @@ char * varsub(char * args)
 	
 	fs_addch(&s, '\0');							// terminate string
 //	free(newstr);								// no memory leaks
-	retval = fs_getstr(&s);					// get a copy of the string
+	retval = fs_getstr(&s);						// get a copy of the string
 	fs_free(&s);								// release fs memory
 	return retval;
 }
@@ -303,8 +302,7 @@ char * varsub(char * args)
 char * get_replacement(char * args, int * len)
 {
 	// get the variable to replace
-// 	args++;
-	char * to_replace = get_var(++args, len);	//++args to trim '$' from head
+	char * to_replace = get_var(args, len);		//++args to trim '$' from head
 	char *retval;
 	
 	if (strcmp(to_replace, "$") == 0)			// special PID var
