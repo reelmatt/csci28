@@ -280,7 +280,6 @@ char * varsub(char * args)
 	}
 	
 	fs_addch(&s, '\0');							// terminate string
-//	free(newstr);								// no memory leaks
 	retval = fs_getstr(&s);						// get a copy of the string
 	fs_free(&s);								// release fs memory
 	return retval;

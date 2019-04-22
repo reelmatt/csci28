@@ -161,14 +161,6 @@ int run_command(char * cmdline)
 	//syntax error 
 	if(result == -1)
 		result = 2;
-	
-// 	if(cmdline)
-// 		free(cmdline);
-	
-// 	freelist(arglist);
-	
-// 	if(subline)
-// 		free(subline);
 
 	set_exit(result);
 	return result;	

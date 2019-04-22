@@ -2,6 +2,8 @@
  *
  * "if" processing is done with two state variables
  *    if_state and if_result
+ *
+ *	
  */
 #include	<stdio.h>
 #include 	<string.h>
@@ -19,18 +21,19 @@ enum states   { NEUTRAL, WANT_THEN, THEN_BLOCK, ELSE_BLOCK, WANT_DO, WANT_DONE }
 enum results  { SUCCESS, FAIL };
 
 struct for_loop {
-	FLEXSTR varname;
-	FLEXLIST varvalues;
-	FLEXLIST commands;
+	FLEXSTR varname;		// variable name
+	FLEXLIST varvalues;		// list of values after 'in'
+	FLEXLIST commands;		// list of commands between 'do' and 'done'
 };
 
-static struct for_loop fl;
+static struct for_loop fl;	// file-scope struct to store a for loop
+
+static int for_state = NEUTRAL;
 static int if_state  = NEUTRAL;
 static int if_result = SUCCESS;
-static int for_state = NEUTRAL;
 static int last_stat = 0;
 
-int	syn_err(char *);
+static int syn_err(char *);
 
 int ok_to_execute()
 /*
@@ -60,14 +63,21 @@ int ok_to_execute()
 	return rv;
 }
 
+/*
+ *	safe_to_exit()
+ *	Purpose: On EOF, check if it is safe for the shell to exit.
+ *	 Return: 0 when okay to exit, -1 (or fatal) from syn_err otherwise
+ *	   Note: If the shell is currently processing an if-block or a for loop,
+ *			 the shell will output an error message, and reset the state of
+ *			 the control-flow, a la 'dash'. set_exit() is called to ensure
+ *			 exit status of 2 for syntax errors.
+ */
 int safe_to_exit()
 {
-//     printf("in safe_to_exit()\n");
     if (if_state != NEUTRAL || for_state != NEUTRAL)
     {
-        syn_err("end of file unexpected (expecting...)");
-        //set_exit(2);
-        return 1;
+        set_exit(2);
+        return syn_err("end of file unexpected");
     }
     
     return 0;
@@ -101,6 +111,54 @@ int is_for_loop(char *s)
             strcmp(s, "done") == 0);
 }
 
+/*
+ *	load_for_loop()
+ *	Purpose: Once a for loop has been started, load_for_loop() is called until
+ *			 'done' to populate for loop struct.
+ *	 Return: true, when done loading for loop
+ *			 false, otherwise
+ */
+int load_for_loop(char *args)
+{	
+	char **arglist = splitline(args);
+	
+	if(arglist == NULL || arglist[0] == NULL)   // check if we have args
+	    return false;                           // we don't
+	
+	if(for_state == WANT_DO)
+	{
+		if(strcmp(arglist[0], "do") == 0)
+			for_state = WANT_DONE;
+		else
+			return syn_err("word unexpected (expecting \"do\")");
+	}
+	else if (for_state == WANT_DONE)
+	{
+		if(strcmp(arglist[0], "done") == 0) // reached the end?
+		{
+			for_state = NEUTRAL;	        // reset state
+			return true;                    // done loading
+		}
+
+		fl_append(&fl.commands, args);      // not a 'done', load raw command
+	}
+	else
+		fatal("internal error processing:", arglist[0], 2);
+	
+	
+	//BIG glibc problem
+	freelist(arglist);
+	free(args);
+	
+	return false;
+}
+
+/*
+ *	do_for_loop()
+ *	Purpose: Process "for", "do", "done" - start loading for loop at start,
+ *			 display errors for out-of-order commands
+ *	 Return: 0 if ok, -1 (or fatal) for syntax error
+ */
 int do_for_loop(char **args)
 {
 	char *cmd = args[0];
@@ -110,8 +168,9 @@ int do_for_loop(char **args)
 	{
 		if (for_state != NEUTRAL)
 			rv = syn_err("for unexpected");
-		else {
-			rv = init_for_loop(args);
+		else 
+		{
+			rv = init_for_loop(args);		// start loading for loop
 			for_state = WANT_DO;
 		}
 	}
@@ -161,6 +220,7 @@ int do_control_command(char **args)
 			rv = 0;
 		}
 	}
+	// added for the assignment
 	else if ( strcmp(cmd, "else") == 0) {
 	    if( if_state != THEN_BLOCK )
 	        rv = syn_err("else unexpected");
@@ -169,6 +229,7 @@ int do_control_command(char **args)
 	        rv = 0;
 	    }
 	}
+	// modified for the assignment
 	else if ( strcmp(cmd,"fi")==0 ){
 		if ( if_state == THEN_BLOCK || if_state == ELSE_BLOCK) {
 			if_state = NEUTRAL;
@@ -183,6 +244,11 @@ int do_control_command(char **args)
 	return rv;
 }
 
+/*
+ *	load_for_varname()
+ *	Purpose: Helper function to initialize varname field in for loop struct
+ *	  Input: str, the value of varname
+ */
 void load_for_varname(char * str)
 {
     FLEXSTR name;
@@ -192,6 +258,11 @@ void load_for_varname(char * str)
     fl.varname = name;
 }
 
+/*
+ *	load_for_varvalues()
+ *	Purpose: Helper function to initialize varvalues field in for loop struct
+ *	  Input: args, array of variable values
+ */
 void load_for_varvalues(char **args)
 {
     FLEXLIST vars;
@@ -205,9 +276,14 @@ void load_for_varvalues(char **args)
     fl.varvalues = vars;
 }
 
+/*
+ *	init_for_loop()
+ *	Purpose: Check the first line of for loop syntax, and initialize struct
+ *	 Return: 0 on success, -1 (or fatal) on syntax error
+ */
 int init_for_loop(char **args)
 {	
-	args++;	//strip the 'for'
+	args++;								//strip the 'for'
 	
 	if ( okname(*args) )                // valid varname
 	{
@@ -231,59 +307,39 @@ int init_for_loop(char **args)
 	return 0;
 }
 
-// returns TRUE when done loading for loop, FALSE otherwise
-int load_for_loop(char *args)
-{	
-	char **arglist = splitline(args);
-	
-	if(arglist == NULL || arglist[0] == NULL)   // check we have args
-	    return false;                           // we don't
 
-// 	char *cmd = arglists[0];
-	
-	if(for_state == WANT_DO)
-	{
-		if(strcmp(arglist[0], "do") == 0)
-			for_state = WANT_DONE;
-		else
-			return syn_err("word unexpected (expecting \"do\")");
-	}
-	else if (for_state == WANT_DONE)
-	{
-		if(strcmp(arglist[0], "done") == 0) // reached the end?
-		{
-			for_state = NEUTRAL;	        // reset state
-			return true;                    // done loading
-		}
 
-		fl_append(&fl.commands, args);      // not a 'done', load raw command
-	}
-	else
-		fatal("internal error processing:", arglist[0], 2);
-	
-	
-	//BIG glibc problem
-// 	freelist(arglist);
-// 	free(args);
-	
-	return false;
-}
 
+/*
+ *	get_for_commands()
+ *	Purpose: getter to access for struct info in main()
+ */
 char ** get_for_commands()
 {
 	return fl_getlist(&fl.commands);
 }
 
+/*
+ *	get_for_vars()
+ *	Purpose: getter to access for struct info in main()
+ */
 char ** get_for_vars()
 {
 	return fl_getlist(&fl.varvalues);
 }
 
+/*
+ *	get_for_name()
+ *	Purpose: getter to access for struct info in main()
+ */
 char * get_for_name()
 {
 	return fs_getstr(&fl.varname);
 }
 
+/*
+ *
+ */
 void free_for()
 {
 // 	printf("got to free_for()\n");
@@ -314,15 +370,10 @@ int syn_err(char *msg)
 {
 	if(get_mode() == SCRIPTED)
 		fatal("syntax error: ", msg, 2);
-	
-	
+		
 	if_state = NEUTRAL;
 	for_state = NEUTRAL;
 	fprintf(stderr,"syntax error: %s\n", msg);
-	set_exit(2);
-	
-// 	else
-		
-	
+
 	return -1;
 }

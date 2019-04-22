@@ -26,20 +26,6 @@ This submission contains the files:
     splitline.h   -- Unmodified from starter code (command read and parse)
     varlib.c      -- Unmodified from starter code (store name=value pairs)
     varlib.h      -- Unmodified from starter code (store name=value pairs)
-    
-    
-    pong.c       -- All logic to retrieve, update, and show tty settings
-    pong.h       -- Header file for pong.c
-    alarmlib.c   -- Timer functions for higher resolution clock
-    alarmlib.h   -- Header file for alarmlib.h
-    ball.c       -- Create and operate a ball object for a game of pong
-    ball.h       -- Header file for ball.c
-    clock.c      -- Create and operate a clock object for a game of pong
-    clock.h      -- Header file for clock.c
-    court.c      -- Create and draw a court for a game of pong
-    court.h      -- Header file for court.c
-    paddle.c     -- Create and operate a paddle object for a game of pong
-    paddle.h     -- Header file for paddle.h
 
 Notes:
     A few files were taken from the sample code for this assignment, and

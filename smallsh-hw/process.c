@@ -38,8 +38,6 @@ int process(char *args[])
 {
 	int		rv = 0;
 
-// 	if ( args == NULL )         //EOF
-//         rv = safe_to_exit();
     if (args[0] == NULL)   //just a new line
         rv = 0;
 	else if ( is_control_command(args[0]) )
