@@ -23,16 +23,17 @@
 
 #define	DFL_PROMPT	"> "
 
-
+// File-scope variables
 static int last_exit = 0;
-static int execute_for();
 static int shell_mode = INTERACTIVE;
+static int run_shell = 1;
 
+// Internal functions
+static void run_command(char *);
+static void execute_for();
 static void setup();
 static void io_setup();
 static FILE * open_script(char *);
-static int run_command(char * cmd);
-static int run_shell = 1;
 
 /*
  *	main()
@@ -47,7 +48,6 @@ int main(int ac, char ** av)
 {
 	FILE * source;
 	char *cmdline, *prompt;
-	int result = 0;                             // set default
 
 	setup();    
     io_setup(&source, &prompt, ac, av);
@@ -66,28 +66,50 @@ int main(int ac, char ** av)
 		if( is_parsing_for() )                  // reading in a for_loop
 		{
 			if (load_for_loop(cmdline) == true) // when true
-			{
-				result = execute_for();         // for_loop complete, execute
-				free_for();
-			}
+				execute_for();         			// for_loop complete, execute
 
 			continue;			                // go to next cmdline
 		}
 		
-		result = run_command(cmdline);          // all other commands/syntax
+		run_command(cmdline);          			// all other commands/syntax
 	}
 	
-	return result;
+	return get_exit();
+}
+
+/*
+ *  run_command()
+ *  Purpose: Perform variable substitution and process() the command line
+ *   Return: None; exit status result is updated in file-scope variable in
+ *			 this function.
+ */
+void run_command(char * cmdline)
+{
+	char *subline = varsub(cmdline);
+	char **arglist;
+	int result = 0;
+
+	if ( (arglist = splitline(subline)) != NULL )
+	{
+		result = process(arglist);
+// 		freelist(arglist);
+	}
+	
+	if(result == -1)	// if command was a syntax error
+		result = 2;		// change 2 to for correct exit status
+
+	set_exit(result);	// update $? value
+	return;	
 }
 
 /*
  *  execute_for()
  *  Purpose: Iterate through a completed for_loop struct and execute cmds
- *   Return: 
+ *   Return: None; this function loads the for loop struct, executes all
+ *			 commands, and updates $? value.
  */
-int execute_for()
+void execute_for()
 {
-	int result;
 	char **vars = get_for_vars();           // load in varvalues
     char **cmds = get_for_commands();
     char * name = get_for_name();           // load in varname for sub
@@ -100,15 +122,15 @@ int execute_for()
 		if (VLstore(name, *vars) == 1)
 		{
 			fprintf(stderr, "Problem updating the for variable. \n");
-			return 1;
+			return;
 		}
 // 		char ** cmds = get_for_commands();  // get array of commands
 		cmds_start = cmds;          // keep track of memory
 		
 		while(*cmds_start)                   // go through cmds for each var
 		{
-			result = run_command(*cmds_start);    // execute
-			cmds_start++;
+			run_command(*cmds_start++);    	// execute
+// 			cmds_start++;
 		}
 		
 
@@ -116,59 +138,12 @@ int execute_for()
 
 	}
 	
-// 	if(cmds_start)                      // if malloc'ed
-// 		fl_freelist(cmds_start);        // free it
-// 	if(vars_start)
-//         fl_freelist(vars_start);                 
     if(name)
         free(name);
 
-// 	if(vars)
-// 		fl_freelist(vars);
-// 	
-// 	if(cmds)
-// 		fl_freelist(cmds);
-	
 
-//    free_for();
-	return 0;
+	return ;
 }
-
-/*
- *  run_command()
- *  Purpose: 
- *   Return: 
- */
-int run_command(char * cmdline)
-{
-	char *subline = varsub(cmdline);
-	char **arglist;
-	int result = 0;
-	
-// 	printf("\t\trun_command: %s\n", subline);
-
-	if ( (arglist = splitline(subline)) != NULL )
-	{
-
-		result = process(arglist);
-// 		freelist(arglist);
-	}
-	else
-	{
-// 	    arglist = NULL;
-	    result = process(arglist);
-	    clearerr(stdin);
-// 	    free(cmd);
-	}
-	
-	//syntax error 
-	if(result == -1)
-		result = 2;
-
-	set_exit(result);
-	return result;	
-}
-
 
 void setup()
 /*
@@ -181,26 +156,6 @@ void setup()
 	VLenviron2table(environ);
 	signal(SIGINT,  SIG_IGN);
 	signal(SIGQUIT, SIG_IGN);
-}
-
-void fatal(char *s1, char *s2, int n)
-{
-	fprintf(stderr,"Error: %s,%s\n", s1, s2);
-	exit(n);
-}
-
-/*
- *	get_exit() -- getter function to access $? value
- */
-int get_exit()
-{
-    return last_exit;
-}
-
-void set_exit(int status)
-{
-    last_exit = status;
-    return;
 }
 
 /*
@@ -250,7 +205,38 @@ FILE * open_script(char * file)
 	return fp;
 }
 
+/*
+ *	get_exit() -- getter function to access $? value
+ */
+int get_exit()
+{
+    return last_exit;
+}
+
+/*
+ *	set_exit() -- setter function to update $? value
+ */
+void set_exit(int status)
+{
+    last_exit = status;
+    return;
+}
+
+/*
+ *	get_mode()
+ *	Purpose: getter function to check if shell is in INTERACTIVE or
+ *			 SCRIPTED mode
+ */
 int get_mode()
 {
 	return shell_mode;
+}
+
+/*
+ *	fatal() -- Helper function to display err and terminate shell
+ */
+void fatal(char *s1, char *s2, int n)
+{
+	fprintf(stderr,"Error: %s,%s\n", s1, s2);
+	exit(n);
 }

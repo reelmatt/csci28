@@ -2,19 +2,21 @@
  * controlflow.h
  */
  
- 
+// From starter code
 int is_control_command(char *);
 int do_control_command(char **);
 int ok_to_execute();
-int safe_to_exit();
+
+// To call in process.c
 int is_for_loop(char *s);
 int do_for_loop(char **args);
-int init_for_loop(char **args);
 
-void free_for();
+// To call in smsh.c
+int load_for_loop(char *args);
+int is_parsing_for();
+int safe_to_exit();
+
+// getter functions
 char ** get_for_commands();
 char ** get_for_vars();
 char * get_for_name();
-int is_parsing_for();
-int load_for_loop(char *args);
-char * get_next_cmd();

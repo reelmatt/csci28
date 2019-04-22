@@ -3,7 +3,11 @@
  * "if" processing is done with two state variables
  *    if_state and if_result
  *
- *	
+ *	Else block handling for if/then/fi control was added for the assignment.
+ *	A for loop data structure and several additional helper functions were
+ *	also added. For existing functions that were modified, see in-line
+ *	comments for the changes. For new functions, please reference header
+ *	comments above the function.
  */
 #include	<stdio.h>
 #include 	<string.h>
@@ -34,6 +38,9 @@ static int if_result = SUCCESS;
 static int last_stat = 0;
 
 static int syn_err(char *);
+static int init_for_loop(char **);
+static void load_for_varname(char *);
+static void load_for_varvalues(char **);
 
 int ok_to_execute()
 /*
@@ -56,32 +63,14 @@ int ok_to_execute()
 		rv = 1;
 	else if ( if_state == THEN_BLOCK && if_result == FAIL )
 		rv = 0;
-	else if ( if_state == ELSE_BLOCK && if_result == SUCCESS )
+	else if ( if_state == ELSE_BLOCK && if_result == SUCCESS )	// added code
 		rv = 0;
-	else if ( if_state == ELSE_BLOCK && if_result == FAIL )
+	else if ( if_state == ELSE_BLOCK && if_result == FAIL )		// added code
 		rv = 1;
 	return rv;
 }
 
-/*
- *	safe_to_exit()
- *	Purpose: On EOF, check if it is safe for the shell to exit.
- *	 Return: 0 when okay to exit, -1 (or fatal) from syn_err otherwise
- *	   Note: If the shell is currently processing an if-block or a for loop,
- *			 the shell will output an error message, and reset the state of
- *			 the control-flow, a la 'dash'. set_exit() is called to ensure
- *			 exit status of 2 for syntax errors.
- */
-int safe_to_exit()
-{
-    if (if_state != NEUTRAL || for_state != NEUTRAL)
-    {
-        set_exit(2);
-        return syn_err("end of file unexpected");
-    }
-    
-    return 0;
-}
+
 
 int is_control_command(char *s)
 /*
@@ -145,11 +134,6 @@ int load_for_loop(char *args)
 	else
 		fatal("internal error processing:", arglist[0], 2);
 	
-	
-	//BIG glibc problem
-// 	freelist(arglist);
-// 	free(args);
-	
 	return false;
 }
 
@@ -174,6 +158,7 @@ int do_for_loop(char **args)
 			for_state = WANT_DO;
 		}
 	}
+	// check for out-of-sequence control words
 	else if (strcmp(cmd, "do") == 0)
 	{
 		if (for_state != WANT_DO)
@@ -244,6 +229,86 @@ int do_control_command(char **args)
 	return rv;
 }
 
+
+
+/*
+ *	init_for_loop()
+ *	Purpose: Check the first line of for loop syntax, and initialize struct
+ *	 Return: 0 on success, -1 (or fatal) on syntax error
+ */
+int init_for_loop(char **args)
+{	
+	args++;								//strip the 'for'
+	
+	if ( okname(*args) )                // valid varname
+	{
+	    load_for_varname(*args++);      // store in struct, strip from args
+		
+		if(strcmp(*args, "in") == 0)    // validate "in"
+		{
+			load_for_varvalues(++args); // load any args after that
+			for_state = WANT_DO;        // change state
+		}
+		else
+		{
+			return syn_err("word unexpected (expecting \"in\")");
+		}
+	}
+	else
+	{
+	    syn_err("Bad for loop variable");
+	}
+	
+	return 0;
+}
+
+/*
+ *  is_parsing_for()
+ *  Purpose: Check if shell is currently reading in a for_loop struct
+ *   Return: 1 if reading in a for_loop, 0 if not
+ */
+int is_parsing_for()
+{
+	return for_state != NEUTRAL;
+}
+
+/*
+ *	safe_to_exit()
+ *	Purpose: On EOF, check if it is safe for the shell to exit.
+ *	 Return: 0 when okay to exit, -1 (or fatal) from syn_err otherwise
+ *	   Note: If the shell is currently processing an if-block or a for loop,
+ *			 the shell will output an error message, and reset the state of
+ *			 the control-flow, a la 'dash'. set_exit() is called to ensure
+ *			 exit status of 2 for syntax errors.
+ */
+int safe_to_exit()
+{
+    if (if_state != NEUTRAL || for_state != NEUTRAL)
+    {
+        set_exit(2);
+        return syn_err("end of file unexpected");
+    }
+    
+    return 0;
+}
+
+int syn_err(char *msg)
+/* purpose: handles syntax errors in control structures
+ * details: resets state to NEUTRAL
+ * returns: -1 in interactive mode. Should call fatal in scripts
+ */
+{
+	if(get_mode() == SCRIPTED)
+		fatal("syntax error: ", msg, 2);
+		
+	if_state = NEUTRAL;
+	for_state = NEUTRAL;
+	fprintf(stderr,"syntax error: %s\n", msg);
+
+	return -1;
+}
+
+
 /*
  *	load_for_varname()
  *	Purpose: Helper function to initialize varname field in for loop struct
@@ -277,40 +342,6 @@ void load_for_varvalues(char **args)
 }
 
 /*
- *	init_for_loop()
- *	Purpose: Check the first line of for loop syntax, and initialize struct
- *	 Return: 0 on success, -1 (or fatal) on syntax error
- */
-int init_for_loop(char **args)
-{	
-	args++;								//strip the 'for'
-	
-	if ( okname(*args) )                // valid varname
-	{
-	    load_for_varname(*args++);      // store in struct, strip from args
-		
-		if(strcmp(*args, "in") == 0)    // validate "in"
-		{
-			load_for_varvalues(++args); // load any args after that
-			for_state = WANT_DO;        // change state
-		}
-		else
-		{
-			return syn_err("word unexpected (expecting \"in\")");
-		}
-	}
-	else
-	{
-	    syn_err("Bad for loop variable");
-	}
-	
-	return 0;
-}
-
-
-
-
-/*
  *	get_for_commands()
  *	Purpose: getter to access for struct info in main()
  */
@@ -335,45 +366,4 @@ char ** get_for_vars()
 char * get_for_name()
 {
 	return fs_getstr(&fl.varname);
-}
-
-/*
- *
- */
-void free_for()
-{
-// 	printf("got to free_for()\n");
-//     if(fl.varname)              // check if NULL
-        fs_free(&fl.varname);   // free it
-
-    fl_free(&fl.varvalues);     //flexstr checks if NULL
-    fl_free(&fl.commands);      //flexstr checks if NULL
-    
-    return;
-}
-
-/*
- *  is_parsing_for()
- *  Purpose: Check if shell is currently reading in a for_loop struct
- *   Return: 1 if reading in a for_loop, 0 if not
- */
-int is_parsing_for()
-{
-	return for_state != NEUTRAL;
-}
-
-int syn_err(char *msg)
-/* purpose: handles syntax errors in control structures
- * details: resets state to NEUTRAL
- * returns: -1 in interactive mode. Should call fatal in scripts
- */
-{
-	if(get_mode() == SCRIPTED)
-		fatal("syntax error: ", msg, 2);
-		
-	if_state = NEUTRAL;
-	for_state = NEUTRAL;
-	fprintf(stderr,"syntax error: %s\n", msg);
-
-	return -1;
 }
