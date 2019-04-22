@@ -90,10 +90,7 @@ void run_command(char * cmdline)
 	int result = 0;
 
 	if ( (arglist = splitline(subline)) != NULL )
-	{
 		result = process(arglist);
-// 		freelist(arglist);
-	}
 	
 	if(result == -1)	// if command was a syntax error
 		result = 2;		// change 2 to for correct exit status
@@ -117,27 +114,23 @@ void execute_for()
 
 	while(*vars)                            // for each varvalue
 	{
-		// set current variable for substitution
-		if (VLstore(name, *vars) == 1)
+		if (VLstore(name, *vars) == 1)		// set current var for sub
 		{
 			fprintf(stderr, "Problem updating the for variable. \n");
+			set_exit(2);
 			return;
 		}
-// 		char ** cmds = get_for_commands();  // get array of commands
-		cmds_start = cmds;          // keep track of memory
 		
-		while(*cmds_start)                   // go through cmds for each var
+		cmds_start = cmds;					// reset to first command
+		
+		while(*cmds_start)					// go through cmds for each var
 			run_command(*cmds_start++);    	// execute
 			
 		vars++;                             // next variable
 	}
 	
-    free(name);
-	fl_freelist(vars);
-	fl_freelist(cmds);
-	
-
-	return ;
+    free(name);	
+	return;
 }
 
 void setup()

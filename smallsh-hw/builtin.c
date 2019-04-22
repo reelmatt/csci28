@@ -362,7 +362,6 @@ char * get_var(char *args, int * len)
 	skipped++;
 	args++;
 	
-	
 	while ( (c = args[0]) )
 	{
 		if( isalnum(c) || c == '_')				// valid?
@@ -372,7 +371,6 @@ char * get_var(char *args, int * len)
 		
 		skipped++;
 		args++;
-
 	}
 	
 	fs_addch(&var, '\0');					// terminate
