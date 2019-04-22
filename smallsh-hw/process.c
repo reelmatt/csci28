@@ -45,7 +45,6 @@ int process(char *args[])
 		rv = do_control_command(args);
 	else if ( is_for_loop(args[0]) )
 		rv = do_for_loop(args);
-// 		rv = init_for_loop(args);
 	else if ( ok_to_execute() )
 		rv = do_command(args);
 		
@@ -60,17 +59,13 @@ int process(char *args[])
  *   purpose: do a command - either builtin or external
  *   returns: result of the command
  *    errors: returned by the builtin command or from exec,fork,wait
- *      note: this version does variable substitution: not where sh does it
- *
+ *      note: this function was modified from starter code. Variable
+ *			  substitution was moved to builtin.c
  */
 int do_command(char **args)
 {
-// 	void varsub(char **);
-    char * varsub(char *);
-	int  is_builtin(char **, int *);
 	int  rv;
 
-// 	varsub(args);
 	if ( is_builtin(args, &rv) )
 		return rv;
 	rv = execute(args);
@@ -82,9 +77,9 @@ int execute(char *argv[])
  * purpose: run a program passing it arguments
  * returns: status returned via wait, or -1 on error
  *  errors: -1 on fork() or wait() errors
- *    NOTE: this does not return the exit(n) status from child
- *	    Instead it returns the status word wait() receives
- *	    To get the exit(n) status, you must add some code
+ *    note: this function was modified from the starter code to interpret
+ *			the exit status received from wait to get the exit(n) status.
+ *			This is set in the special variable $? back in smsh.c
  */
 {
 	extern char **environ;		/* note: declared in <unistd.h>	*/
@@ -109,13 +104,11 @@ int execute(char *argv[])
 		if ( wait(&child_info) == -1 )
 			perror("wait");
 		
+		// check/convert the exit status to the proper value
 		if (WIFEXITED(child_info))
 		    rv = WEXITSTATUS(child_info);
 		else if (WIFSIGNALED(child_info))
 		    rv = WTERMSIG(child_info);
-		
-		set_exit(rv);
 	}
     return rv;
-// 	return child_info;
 }

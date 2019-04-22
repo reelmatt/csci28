@@ -27,6 +27,7 @@
 
 static int last_exit = 0;
 static int execute_for();
+static int shell_mode = INTERACTIVE;
 
 static void setup();
 static void io_setup();
@@ -53,7 +54,9 @@ int main(int ac, char ** av)
 	    
 	    if(cmdline == NULL)                     // cmdline was EOF
 	    {
-            run_shell = run_command(cmdline);   // check is_safe_to_exit()
+	    	run_shell = safe_to_exit();			// check if processing if/for
+	    	clearerr(stdin);					// clear the EOF
+//             run_shell = run_command(cmdline);   // check is_safe_to_exit()
 	        continue;
 	    }
 		
@@ -115,7 +118,6 @@ int execute_for()
  */
 int run_command(char * cmd)
 {
-
 	char *subline = varsub(cmd);
 	char **arglist;
 	int result = 0;
@@ -124,7 +126,6 @@ int run_command(char * cmd)
 	{
 
 		result = process(arglist);
-// 		last_exit = result;
 // 		freelist(arglist);
 	}
 	else
@@ -135,7 +136,17 @@ int run_command(char * cmd)
 // 	    free(cmd);
 	}
 	
-// 	free(cmd);
+	//syntax error 
+	if(result == -1)
+		result = 2;
+	
+	if(cmd)
+		free(cmd);
+	freelist(arglist);
+	
+	if(subline)
+		free(subline);
+
 	set_exit(result);
 	return result;	
 }
@@ -192,6 +203,7 @@ void io_setup(FILE ** fp, char ** pp, int args, char ** av)
 	{
 		*fp = open_script(av[1]);
 		*pp = "";
+		shell_mode = SCRIPTED;
 	}
 	else
 	{
@@ -218,4 +230,9 @@ FILE * open_script(char * file)
 	}
 	
 	return fp;
+}
+
+int get_mode()
+{
+	return shell_mode;
 }

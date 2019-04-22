@@ -1,0 +1,104 @@
+  Author: Matthew Thomas
+    Date: 4/22/2019
+Contains: Design details for CSCI E-215 homework 5
+==================================================
+Project: smsh
+
+Purpose: Implement a sub-set of features for a shell; a mix of built-in
+	functions, execution of other programs, control-flow, and more.
+
+Outline:
+    Given the disparate nature of the features added to the small-shell
+    written for the assignment, this Plan will tackle each kind of feature
+    separately. The high-level overview is that smsh is meant to behave like
+    dash on the nice servers. smsh adds features in the following categories:
+    	1) New built-in functions
+    	2) Shell scripts
+    	3) Variables and substitution
+    	4) Control structures
+
+Program flow:
+	A shell can be thought of as a combination of several different tools
+	and features. To implement and handle these tasks, there needs to exist
+	a main control loop that looks for input and acts on that input. This loop
+	acts in the following way:
+	   1a - Setup the shell by loading in any environment variables and
+			ignoring interupt and quit signals. The shell is how you execute
+			commands and programs. To stop it from running, you must execute
+			the 'exit' built-in function.
+	   1b - Setup also assigns the prompt the user will see at the command 
+	   		line and where input will come from. Input can be interactive
+	   		(stdin), or from a shells script specified at the command line.
+		2 - At this point, the shell runs until 'exit' is called, or 'EOF' is
+			reached. If in interactive mode, a user could also type the 'EOF'
+			control-character specified by 'stty' to quit the shell.
+
+
+Data Structures:
+    pong is written in a pseudo object-oriented way. The game has a few key
+    components, each with separate .c and .h files to provide interfaces to
+    the objects they represent. In this case, the main game logic resides in
+    pong.c, and the object code resides in ball.c, clock.c, court.c, and
+    paddle.c. The game also makes use of alarmlib.c which provides "timer
+    functions for [a] higher resolution clock".
+    
+    Each file/object has a mix of internal functions to get, set, and modify
+    variables of the structs they create, as well as external interfaces to
+    control the movement and display. A list of these functions can be found
+    at the top of each respective file. For more info on the purpose of each
+    object, and how they relate to the big picture, see the sections below.
+
+pong.c
+    This file contains the main logic/loop for the game. As described in
+    further detail in the "Program Flow" section, the terminal/curses is
+    set up and all objects (ball, paddle, court, clock) are created via
+    calls to their respective .c files.
+
+
+
+
+
+Program Flow:
+    1 - Start by initializing curses, signal handlers, and objects for each
+        of the main components of the game -- ball, paddle, clock, and court.
+    2 - Once the set up is complete, start a timer that sends out SIGALRMs at
+        regular intervals and serve the first ball.
+    3 - The program blocks on player keyboard input to move the paddle up and
+        down. Meanwhile, the ball continues to animate due to a steady stream
+        of SIGALRMs.
+    4 - For each ball or paddle movement, the program calls a function
+        bounce_or_lose() which responds with NO_CONTACT, BOUNCE, or LOSE.
+            When NO_CONTACT, nothing special happens.
+            When BOUNCE, the ball has contacted one of the three court walls.
+                Change the ball's direction and keep it moving.
+            When LOSE, the ball has hit the right-edge of the screen WITHOUT
+                coming in contact with the paddle.
+    5 - If a ball is lost, and there are more balls left to play, decrement
+        count by one and serve the ball again.
+    6 - When there are no more balls left to play, display a bolded message
+        in the center of the screen with the user's final time (score) and
+        then return the user to the terminal.
+
+Error Handling:
+    There are only a handful of error conditions in the pong game. An error
+    can occur when trying to malloc() space for ball or paddle objects. In
+    these cases, the constructor will close curses, display an error message,
+    and exit out of the game.
+    
+    The other error condition is the terminal window being too small to draw
+    the game. Minimum dimensions are set in pong.c -- MIN_COLS is 40 and
+    MIN_LINES is 11. The MIN_COLS dimension ensures that the two game
+    counters -- balls left and total time -- can be displayed without overlap.
+    The MIN_LINES dimension ensures that, when taking the border into account,
+    the playable court is at least three lines tall (which would create a
+    paddle of size one). If these minimum dimensions are not met, pong will
+    close curses so it can output a message to stderr, and exit.
+    
+    On a SIGWINCH signal, a resize_handler() fires which closes the game and
+    prints a message to stderr that window-resizing is not supported. A future
+    improvement could be made to more gracefully handle this error to either
+    restart the game, or adapt to the new terminal dimensions (see Piazza
+    post @239).
+    
+Command substitution:
+	

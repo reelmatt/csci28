@@ -1,5 +1,14 @@
 /* builtin.c
  * contains the switch and the functions for builtin commands
+ *
+ * Copied from starter code. is_builtin() was modified to includes tests
+ * for the new built-in functions written for the assignment. Other
+ * functions were unmodified. New functions are as follows:
+ *		is_exit() -- 
+ *		is_cd()   -- 
+ *		is_read() -- 
+ *		varsub()  -- 
+ *
  */
 
 #include	<stdio.h>
@@ -15,10 +24,10 @@
 #include    "splitline.h"
 #include	"builtin.h"
 
-char * get_replacement(char * args, int *);
-char var_or_comment(char * str, FLEXSTR s, char **prev);
-void cntrl_err(char * msg);
-void remove_comment(char * args);
+char * get_replacement(char * args, int * len);
+char * special_replace(int val);
+char * get_var(char *args, int * len);
+
 int get_number(char * str);
 
 
@@ -30,17 +39,17 @@ int is_builtin(char **args, int *resultp)
  * details: test args[0] against all known builtins.  Call functions
  */
 {
+	if ( is_exit(args, resultp) )			// added for assignment
+	    return 1;
 	if ( is_assign_var(args[0], resultp) )
 		return 1;
 	if ( is_list_vars(args[0], resultp) )
 		return 1;
 	if ( is_export(args, resultp) )
 		return 1;
-	if ( is_cd(args, resultp) )
+	if ( is_cd(args, resultp) )				// added for assignment
 	    return 1;
-	if ( is_exit(args, resultp) )
-	    return 1;
-    if ( is_read(args, resultp) )
+    if ( is_read(args, resultp) )			// added for assignment
 	    return 1;
 	return 0;
 }
@@ -92,39 +101,40 @@ int is_export(char **args, int *resultp)
  *  is_cd()
  *  Purpose: change directories
  *    Input: args, command line arguments
- *           resultp, where to store success of cd operation
+ *           resultp, where to store result of cd operation
  *   Return: 1 if built-in function, 0 otherwise. resultp is 0
- *           if chdir() was successful, 1 on error.
+ *           if chdir() was successful, 2 on (syntax) error.
  */
 int is_cd(char **args, int *resultp)
 {
     if ( strcmp(args[0], "cd") == 0 )
     {
-        if (args[1] == NULL && chdir(VLlookup("HOME")) == 0)
-            *resultp = 0;     //go to HOME directory
-        else if (args[1] != NULL && chdir(args[1]) == 0)
-            *resultp = 0; //go to dir specified
+        if (args[1] != NULL)
+			*resultp = chdir(args[1]);				// go to dir specified
         else
+        	*resultp = chdir(VLlookup("HOME"));		// go to HOME directory
+        
+        
+        if( *resultp == -1)
         {
             fprintf(stderr, "cd: %s: %s\n", args[1], strerror(errno));
-            *resultp = 1;
+            *resultp = 2;
         }
-        
         return 1;       //was a built-in
     }
-    
     return 0;
 }
 
 
 /*
- *	The Bourne shell: Cause the shell to exit with a status of n. If n is
- *	omitted, the exit status is that of the last command executed. A trap on
- *	EXIT is executed before the shell terminates.
- *
- *	dash shell states: Terminate the shell process. If exitstatus is given it
- *	is used as the exit status of the shell; otherwise the exit status of the
- *	preceding command is used.
+ *	is_exit()
+ *	Purpose: Terminate the shell process.
+ *    Input: args, command line arguments
+ *           resultp, where to store result of exit operation
+ *	 Return: If there is a syntax error, resultp is assigned a value of 2
+ *			 and is_exit() returns with 1 to indicate 'exit' was called.
+ *			 Otherwise, exit() is called with the status specified on the
+ *			 command line, or with the exit status of the preceding command.
  */
 int is_exit(char **args, int *resultp)
 {
@@ -138,64 +148,40 @@ int is_exit(char **args, int *resultp)
                 exit(val);                  // use it
 			else                            // syntax error
 			{
-			    cntrl_err(args[1]);
-// 			    set_exit(2);
-// 			    fatal("exit: Illegal number", args[1], 2);  // syntax error
-// 			    fprintf(stderr, "exit: %s: %s\n", "Illegal number", args[1]);
-// 			    exit(2);
-				*resultp = 2;		//syntax error
+			    fprintf(stderr, "exit: Illegal number: %s\n", args[1]);
+				*resultp = 2;
 			}
 		}
 		else
 		{
-            exit(get_exit());           //exit with last command's status		
+            exit( get_exit() );           	//exit with last command's status	
 		}
 		
-		return 1;           //was a built-in
+		return 1;           				//was a built-in
 	}
-	
 	return 0;
 }
 
-void cntrl_err(char * msg)
-{
-    fprintf(stderr, "exit: Illegal number: %s\n", msg);
-//     set_exit(2);
-    return;
-}
-
 /*
- *	get_number()
- *	Purpose: Helper function to check if str is a number
- *	  Input: str, the string to check
- *	 Return: -1 on error (str is not a number)
- *			 value returned from atoi() on success
- */
-int get_number(char * str)
-{
-    int i;
-    int len = strlen(str);
-    
-    for(i = 0; i < len; i++)
-    {
-        if (!isdigit(str[i]))
-            return -1;
-    }
-    
-	return atoi(str);
-}
-
-/*
- *
+ *	is_read()
+ *	Purpose: Assign input from stdin to the name of a specified variable
+ *	  Input: args, command line arguments
+ *           resultp, where to store result of read operation
+ *	 Return: result
  */
 int is_read(char **args, int *resultp)
 {    
     if ( strcmp(args[0], "read") == 0)
     {
-    	if( okname(args[1]) )
+    	if( okname(args[1]) )					// check if a valid var name
     	{			
-    		char * str = next_cmd("", stdin);
-    		VLstore(args[1], str);
+    		char * str = next_cmd("", stdin);	// next_cmd reads until '\n'
+    		*resultp = VLstore(args[1], str);
+        }
+        else									// syntax error
+        {
+        	fprintf(stderr, "read: %s: bad variable name\n", args[1]);
+        	*resultp = 2;
         }
         return 1;
     }
@@ -237,33 +223,40 @@ int okname(char *str)
 
 #define	is_delim(x) ((x)==' '|| (x)=='\t' || (x)=='\0')
 
+/*
+ *	varsub()
+ *	Purpose: Check line for escape-chars, comments, and any variable subs
+ *	  Input: args, un-modified cmdline input
+ *	 Return: a copy of the modified cmdline
+ */
 char * varsub(char * args)
 {
+	int skipped;
 	char c, prev;
 	FLEXSTR s;
 	fs_init(&s, 0);
-	int check;
 	
 	if (args == NULL)
 	    return NULL;
 	
 	while ( (c = args[0]) )						// go through cmdline
 	{
-		if (c == '\\')                          // escape char
+		if (c == '#' && is_delim(prev) )   		// start of comment
+			break;                              // ignore the rest
+		else if (c == '\\')                     // escape char
 		{
 			args++;
 			fs_addch(&s, args[0]);				// add the literal next
 		}
 		else if (c == '$')                      // variable sub
 		{
-			args++;                             //trim the $
-			char *newstr = get_replacement(args, &check);
-			args += (check - 1);
+// 			args++;                             //trim the $
+			char *newstr = get_replacement(++args, &skipped);	//trim the $
+			args += (skipped - 1);
 
 			fs_addstr(&s, newstr);
+			free(newstr);
 		}
-		else if (c == '#' && is_delim(prev) )   // start of comment
-			break;                              // ignore the rest
 		else                                    // regular char
 			fs_addch(&s, c);                    // add as-is
 		
@@ -273,6 +266,18 @@ char * varsub(char * args)
 	
 	fs_addch(&s, '\0');
 	return fs_getstr(&s);
+}
+
+char * get_replacement(char * args, int * len)
+{
+	char * to_replace = get_var(args, len);
+
+	if (strcmp(to_replace, "$") == 0)
+		return special_replace(getpid());
+	else if (strcmp(to_replace, "?") == 0)
+		return special_replace(get_exit());
+	else
+		return VLlookup(to_replace);
 }
 
 char * special_replace(int val)
@@ -296,6 +301,7 @@ char * get_var(char *args, int * len)
 	fs_init(&var, 0);
 	int skipped = 0;
 	
+	//add at least one char (could be $ or ?)
 	fs_addch(&var, args[0]);
 	skipped++;
 	args++;
@@ -317,14 +323,25 @@ char * get_var(char *args, int * len)
 	return fs_getstr(&var);
 }
 
-char * get_replacement(char * args, int * len)
-{
-	char * to_replace = get_var(args, len);
 
-	if (strcmp(to_replace, "$") == 0)
-		return special_replace(getpid());
-	else if (strcmp(to_replace, "?") == 0)
-		return special_replace(get_exit());
-	else
-		return VLlookup(to_replace);
+
+/*
+ *	get_number()
+ *	Purpose: Helper function to check if str is a number
+ *	  Input: str, the string to check
+ *	 Return: -1 on error (str is not a number)
+ *			 value returned from atoi() on success
+ */
+int get_number(char * str)
+{
+    int i;
+    int len = strlen(str);
+    
+    for(i = 0; i < len; i++)
+    {
+        if (!isdigit(str[i]))
+            return -1;
+    }
+    
+	return atoi(str);
 }

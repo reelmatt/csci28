@@ -1,0 +1,34 @@
+README for pong
+
+  Student: Matthew Thomas
+  Date: 4/6/2019
+
+Summary:
+
+This submission contains the files:
+    Makefile     -- The Makefile
+    README       -- This file
+    Plan         -- Design document for this assignment
+    my_script.sh -- My sample test script, to compile pong
+    typescript   -- Run of my_script to show program compiles with no errors
+    pong.c       -- All logic to retrieve, update, and show tty settings
+    pong.h       -- Header file for pong.c
+    alarmlib.c   -- Timer functions for higher resolution clock
+    alarmlib.h   -- Header file for alarmlib.h
+    ball.c       -- Create and operate a ball object for a game of pong
+    ball.h       -- Header file for ball.c
+    clock.c      -- Create and operate a clock object for a game of pong
+    clock.h      -- Header file for clock.c
+    court.c      -- Create and draw a court for a game of pong
+    court.h      -- Header file for court.c
+    paddle.c     -- Create and operate a paddle object for a game of pong
+    paddle.h     -- Header file for paddle.h
+
+Notes:
+    Several functions, or parts of functions, were copied from samples
+    provided in the lecture files. When this code has been used, a note on the
+    source appears in the function comments. Any modifications were made by me.
+    
+    I wrote my code using a combination of BBEdit on the Mac, and server-side
+    editing using Emacs. Indentation is 4-space wide tabs. Before submission,
+    I ran the Emacs command 'M-x untabify' to convert tabs to spaces.

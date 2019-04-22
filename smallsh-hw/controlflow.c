@@ -44,7 +44,7 @@ int ok_to_execute()
  */
 {
 	int	rv = 1;		/* default is positive */
-//     printf("is_okay_to_execute\n");
+
 	if ( if_state == WANT_THEN ){
 		syn_err("then expected");
 		rv = 0;
@@ -66,6 +66,7 @@ int safe_to_exit()
     if (if_state != NEUTRAL || for_state != NEUTRAL)
     {
         syn_err("end of file unexpected (expecting...)");
+        //set_exit(2);
         return 1;
     }
     
@@ -80,16 +81,21 @@ int is_control_command(char *s)
  *          else blocks.
  */
 {
-//     printf("is_control\n");
     return (strcmp(s, "if") == 0 ||
             strcmp(s, "then") == 0 ||
             strcmp(s, "else") == 0 ||
             strcmp(s, "fi") == 0);
 }
 
+/*
+ *	is_for_loop()
+ *	Purpose: boolean to report if the command is a for loop command
+ *	 Return: 0 or 1
+ *	   Note: This function mimics the is_control_command() included in the
+ *			 starter code; just with the for loop keywords.
+ */
 int is_for_loop(char *s)
 {
-//     printf("is_for\n");
     return (strcmp(s, "for") == 0 ||
             strcmp(s, "do") == 0 ||
             strcmp(s, "done") == 0);
@@ -113,19 +119,11 @@ int do_for_loop(char **args)
 	{
 		if (for_state != WANT_DO)
 			rv = syn_err("do unexpected");
-		else {
-			fprintf(stderr, "Shouldn't show up, in load_for_loop()");
-			rv = 0;
-		}
 	}
 	else if (strcmp(cmd, "done") == 0)
 	{
 		if (for_state != WANT_DONE)
 			rv = syn_err("done unexpected");
-		else {
-			fprintf(stderr, "Shouldn't show up.");
-			rv = 0;
-		}
 	}
 	else
 		fatal("internal error processing:", cmd, 2);
@@ -135,7 +133,7 @@ int do_for_loop(char **args)
 
 int do_control_command(char **args)
 /*
- * purpose: Process "if", "then", "fi" - change state or detect error
+ * purpose: Process "if", "then", "else", "fi" - change state or detect error
  * returns: 0 if ok, -1 for syntax error
  *   notes: I would have put returns all over the place, Barry says "no"
  *   notes: Copied from starter-code for assignment 5. Code added to handle
@@ -218,7 +216,6 @@ int init_for_loop(char **args)
 		if(strcmp(*args, "in") == 0)    // validate "in"
 		{
 			load_for_varvalues(++args); // load any args after that
-// 			set_for(true);
 			for_state = WANT_DO;        // change state
 		}
 		else
@@ -241,6 +238,8 @@ int load_for_loop(char *args)
 	
 	if(arglist == NULL || arglist[0] == NULL)   // check we have args
 	    return false;                           // we don't
+
+// 	char *cmd = arglists[0];
 	
 	if(for_state == WANT_DO)
 	{
@@ -257,13 +256,13 @@ int load_for_loop(char *args)
 			return true;                    // done loading
 		}
 
-		fl_append(&fl.commands, args);      // not a 'done', so load command
-
+		fl_append(&fl.commands, args);      // not a 'done', load raw command
 	}
 	else
-	{
-		printf("load_for_loop syntax error. arg is %s\n", args);
-	}
+		fatal("internal error processing:", arglist[0], 2);
+	
+	freelist(arglist);
+	free(args);
 	
 	return false;
 }
@@ -310,9 +309,17 @@ int syn_err(char *msg)
  * returns: -1 in interactive mode. Should call fatal in scripts
  */
 {
+	if(get_mode() == SCRIPTED)
+		fatal("syntax error: ", msg, 2);
+	
+	
 	if_state = NEUTRAL;
 	for_state = NEUTRAL;
 	fprintf(stderr,"syntax error: %s\n", msg);
 	set_exit(2);
+	
+// 	else
+		
+	
 	return -1;
 }
