@@ -4,11 +4,14 @@
  * Copied from starter code. is_builtin() was modified to includes tests
  * for the new built-in functions written for the assignment. Other
  * functions were unmodified. New functions are as follows:
- *		is_exit() -- 
- *		is_cd()   -- 
- *		is_read() -- 
- *		varsub()  -- 
- *
+ *		is_exit() -- Terminate shell
+ *		is_cd()   -- Change directories
+ *		is_read() -- Assign input from stdin to a variable
+ *		varsub()  -- Do variable substitution
+ *		get_number() --
+ *		get_replacement() -- 
+ *		special_replace() --
+ *		get_var() --
  */
 
 #include	<stdio.h>
@@ -115,10 +118,11 @@ int is_cd(char **args, int *resultp)
         	*resultp = chdir(VLlookup("HOME"));		// go to HOME directory
         
         
-        if( *resultp == -1)
+        if( *resultp == -1)							// chdir failed
         {
-            fprintf(stderr, "cd: %s: %s\n", args[1], strerror(errno));
-            *resultp = 2;
+            fprintf(stderr, "cd: %s: %s\n",
+            				args[1], strerror(errno));
+            *resultp = 2;							// syntax error
         }
         return 1;       //was a built-in
     }
@@ -173,12 +177,12 @@ int is_read(char **args, int *resultp)
 {    
     if ( strcmp(args[0], "read") == 0)
     {
-    	if( okname(args[1]) )					// check if a valid var name
+    	if( args[1] != NULL && okname(args[1]) ) // check if a valid var name
     	{			
-    		char * str = next_cmd("", stdin);	// next_cmd reads until '\n'
+    		char * str = next_cmd("", stdin);	 // next_cmd reads until '\n'
     		*resultp = VLstore(args[1], str);
         }
-        else									// syntax error
+        else									 // syntax error
         {
         	fprintf(stderr, "read: %s: bad variable name\n", args[1]);
         	*resultp = 2;
@@ -228,6 +232,19 @@ int okname(char *str)
  *	Purpose: Check line for escape-chars, comments, and any variable subs
  *	  Input: args, un-modified cmdline input
  *	 Return: a copy of the modified cmdline
+ *	 Method: If not NULL, varsub() iterates over every char in the cmdline
+ *			 that is passed in. If it does not match a special case - either
+ *			 a comment (#), a literal-next (\), or a variable ($) - the char
+ *			 is untouched. For the special cases, a comment is valid if the
+ *			 previous character is whitespace. Here, the rest of the line is
+ *			 ignored. For a literal next, if a next char exists, it is output
+ *			 as-is; if the '\' is the last char, the backslash is output
+ *			 (note: most shells would traditional treat a backslash at the
+ *			 end of a line to look for continuation of input on the next line.
+ *			 As noted in Piazza post @282, this is not required for the
+ *			 assignment). For variable substitution, it calls on
+ *			 get_replacement() to get a string to append. For more info on
+ *			 how that works, see header comments below.
  */
 char * varsub(char * args)
 {
@@ -243,14 +260,14 @@ char * varsub(char * args)
 	{
 		if (c == '#' && is_delim(prev) )   		// start of comment
 			break;                              // ignore the rest
-		else if (c == '\\')                     // escape char
+		else if (c == '\\' && args[1])          // escape char
 		{
+			fs_addch(&s, args[1]);				// add the literal next
 			args++;
-			fs_addch(&s, args[0]);				// add the literal next
 		}
 		else if (c == '$')                      // variable sub
 		{
-// 			args++;                             //trim the $
+			
 			char *newstr = get_replacement(++args, &skipped);	//trim the $
 			args += (skipped - 1);
 
@@ -265,19 +282,32 @@ char * varsub(char * args)
 	}
 	
 	fs_addch(&s, '\0');
-	return fs_getstr(&s);
+	char *retval = fs_getstr(&s);
+	fs_free(&s);
+	return retval;
 }
 
+/*
+ *	get_replacement()
+ *	Purpose: Return a string that will replace a $VARIABLE in a command line
+ *	  Input: args, the command line from the start of the variable to sub
+ *			 len, pointer the varsub uses to know where the end of the
+ *				  is located
+ */
 char * get_replacement(char * args, int * len)
 {
-	char * to_replace = get_var(args, len);
-
-	if (strcmp(to_replace, "$") == 0)
-		return special_replace(getpid());
-	else if (strcmp(to_replace, "?") == 0)
-		return special_replace(get_exit());
-	else
-		return VLlookup(to_replace);
+	char * to_replace = get_var(args, len);		// get the variable to replace
+	char *retval;
+	
+	if (strcmp(to_replace, "$") == 0)			// special PID var
+		retval = special_replace(getpid());
+	else if (strcmp(to_replace, "?") == 0)		// special exit-status var
+		retval = special_replace(get_exit());
+	else										// environment var
+		retval = VLlookup(to_replace);
+		
+	free(to_replace);
+	return retval;
 }
 
 char * special_replace(int val)
