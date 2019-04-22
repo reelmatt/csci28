@@ -268,7 +268,8 @@ char * varsub(char * args)
 		}
 		else if (c == '$')                      // variable sub
 		{
-			*newstr = get_replacement(++args, &skipped);
+// 			args++;
+			newstr = get_replacement(++args, &skipped);
 			args += (skipped - 1);				// -1 because args++ below
 			fs_addstr(&s, newstr);
 		}
@@ -281,7 +282,7 @@ char * varsub(char * args)
 	
 	fs_addch(&s, '\0');							// terminate string
 	free(newstr);								// no memory leaks
-	*retval = fs_getstr(&s);					// get a copy of the string
+	retval = fs_getstr(&s);					// get a copy of the string
 	fs_free(&s);								// release fs memory
 	return retval;
 }
