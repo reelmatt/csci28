@@ -155,7 +155,7 @@ int load_for_loop(char *args)
 
 /*
  *	do_for_loop()
- *	Purpose: Process "for", "do", "done" - start loading for loop at start,
+ *	Purpose: Process "for", "do", "done" - start loading for loop at start;
  *			 display errors for out-of-order commands
  *	 Return: 0 if ok, -1 (or fatal) for syntax error
  */

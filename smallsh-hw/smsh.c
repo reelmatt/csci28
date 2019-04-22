@@ -66,7 +66,10 @@ int main(int ac, char ** av)
 		if( is_parsing_for() )                  // reading in a for_loop
 		{
 			if (load_for_loop(cmdline) == true) // when true
+			{
 				result = execute_for();         // for_loop complete, execute
+				free_for();
+			}
 
 			continue;			                // go to next cmdline
 		}
