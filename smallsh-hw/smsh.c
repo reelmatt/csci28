@@ -102,14 +102,15 @@ int execute_for()
 		vars++;                             // next variable
 	}
 	
-	if(cmds_start)                      // if malloc'ed
-		fl_freelist(cmds_start);        // free it
+// 	if(cmds_start)                      // if malloc'ed
+// 		fl_freelist(cmds_start);        // free it
 	if(vars_start)
         fl_freelist(vars_start);                 
     if(name)
         free(name);
     free_for();
 	
+	printf("AFTER free_for()\n");
 	return 0;
 }
 
@@ -118,9 +119,9 @@ int execute_for()
  *  Purpose: 
  *   Return: 
  */
-int run_command(char * cmd)
+int run_command(char * cmdline)
 {
-	char *subline = varsub(cmd);
+	char *subline = varsub(cmdline);
 	char **arglist;
 	int result = 0;
 
@@ -130,20 +131,20 @@ int run_command(char * cmd)
 		result = process(arglist);
 // 		freelist(arglist);
 	}
-	else
-	{
-// 	    arglist = NULL;
-	    result = process(arglist);
-	    clearerr(stdin);
-// 	    free(cmd);
-	}
+// 	else
+// 	{
+// // 	    arglist = NULL;
+// 	    result = process(arglist);
+// 	    clearerr(stdin);
+// // 	    free(cmd);
+// 	}
 	
 	//syntax error 
 	if(result == -1)
 		result = 2;
 	
-	if(cmd)
-		free(cmd);
+// 	if(cmdline)
+// 		free(cmdline);
 	
 	freelist(arglist);
 	

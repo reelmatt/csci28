@@ -284,6 +284,7 @@ char * get_for_name()
 
 void free_for()
 {
+// 	printf("got to free_for()\n");
 //     if(fl.varname)              // check if NULL
         fs_free(&fl.varname);   // free it
 
