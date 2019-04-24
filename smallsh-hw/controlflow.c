@@ -7,37 +7,38 @@
  * "if" processing is done with two state variables
  *    if_state and if_result
  *
- *	Else block handling for if/then/fi control was added for the assignment.
- *	A for loop data structure and several additional helper functions were
- *	also added. For existing functions that were modified, see in-line
- *	comments for the changes. For new functions, please reference header
- *	comments above the function.
+ *  Else block handling for if/then/fi control was added for the assignment.
+ *  A for loop data structure and several additional helper functions were
+ *  also added. For existing functions that were modified, see in-line
+ *  comments for the changes. For new functions, please reference header
+ *  comments above the function.
  */
  
 /* INCLUDES */
-#include	<stdio.h>
-#include 	<string.h>
-#include	<stdbool.h>
-#include	<stdlib.h>
-#include	"smsh.h"
-#include	"controlflow.h"
-#include	"splitline.h"
-#include	"process.h"
+#include    <stdio.h>
+#include    <string.h>
+#include    <stdbool.h>
+#include    <stdlib.h>
+#include    "smsh.h"
+#include    "controlflow.h"
+#include    "splitline.h"
+#include    "process.h"
 #include    "builtin.h"
-#include	"flexstr.h"
-#include	"varlib.h"
+#include    "flexstr.h"
+#include    "varlib.h"
 
 /* FOR LOOP STRUCTURE */
 struct for_loop {
-	FLEXSTR varname;		// variable name
-	FLEXLIST varvalues;		// list of values after 'in'
-	FLEXLIST commands;		// list of commands between 'do' and 'done'
+    FLEXSTR varname;        // variable name
+    FLEXLIST varvalues;     // list of values after 'in'
+    FLEXLIST commands;      // list of commands between 'do' and 'done'
 };
 
-static struct for_loop fl;	// file-scope struct to store a for loop
+static struct for_loop fl;  // file-scope struct to store a for loop
 
 /* CONTROL STATE VARIABLES */
-enum states   { NEUTRAL, WANT_THEN, THEN_BLOCK, ELSE_BLOCK, WANT_DO, WANT_DONE };
+enum states   { NEUTRAL, WANT_THEN, THEN_BLOCK, ELSE_BLOCK,
+                WANT_DO, WANT_DONE };
 enum results  { SUCCESS, FAIL };
 
 /* FILE-SCOPE VARIABLES */
@@ -63,21 +64,21 @@ int ok_to_execute()
  *          else blocks.
  */
 {
-	int	rv = 1;		/* default is positive */
+    int rv = 1;     /* default is positive */
 
-	if ( if_state == WANT_THEN ){
-		syn_err("then expected");
-		rv = 0;
-	}
-	else if ( if_state == THEN_BLOCK && if_result == SUCCESS )
-		rv = 1;
-	else if ( if_state == THEN_BLOCK && if_result == FAIL )
-		rv = 0;
-	else if ( if_state == ELSE_BLOCK && if_result == SUCCESS )	// added code
-		rv = 0;
-	else if ( if_state == ELSE_BLOCK && if_result == FAIL )		// added code
-		rv = 1;
-	return rv;
+    if ( if_state == WANT_THEN ){
+        syn_err("then expected");
+        rv = 0;
+    }
+    else if ( if_state == THEN_BLOCK && if_result == SUCCESS )
+        rv = 1;
+    else if ( if_state == THEN_BLOCK && if_result == FAIL )
+        rv = 0;
+    else if ( if_state == ELSE_BLOCK && if_result == SUCCESS )  // added code
+        rv = 0;
+    else if ( if_state == ELSE_BLOCK && if_result == FAIL )     // added code
+        rv = 1;
+    return rv;
 }
 
 
@@ -97,11 +98,11 @@ int is_control_command(char *s)
 }
 
 /*
- *	is_for_loop()
- *	Purpose: boolean to report if the command is a for loop command
- *	 Return: 0 or 1
- *	   Note: This function mimics the is_control_command() included in the
- *			 starter code; just with the for loop keywords.
+ *  is_for_loop()
+ *  Purpose: boolean to report if the command is a for loop command
+ *   Return: 0 or 1
+ *     Note: This function mimics the is_control_command() included in the
+ *           starter code; just with the for loop keywords.
  */
 int is_for_loop(char *s)
 {
@@ -111,78 +112,78 @@ int is_for_loop(char *s)
 }
 
 /*
- *	load_for_loop()
- *	Purpose: Once a for loop has been started, load_for_loop() is called until
- *			 'done' to populate for loop struct.
- *	 Return: true, when done loading for loop
- *			 false, otherwise
+ *  load_for_loop()
+ *  Purpose: Once a for loop has been started, load_for_loop() is called until
+ *           'done' to populate for loop struct.
+ *   Return: true, when done loading for loop
+ *           false, otherwise
  */
 int load_for_loop(char *args)
-{	
-	char **arglist = splitline(args);
-	
-	if(arglist == NULL || arglist[0] == NULL)   // check if we have args
-	    return false;                           // we don't
-	
-	if(for_state == WANT_DO)
-	{
-		if(strcmp(arglist[0], "do") == 0)
-			for_state = WANT_DONE;
-		else
-			return syn_err("word unexpected (expecting \"do\")");
-	}
-	else if (for_state == WANT_DONE)
-	{
-		if(strcmp(arglist[0], "done") == 0) // reached the end?
-		{
-			for_state = NEUTRAL;	        // reset state
-			return true;                    // done loading
-		}
+{   
+    char **arglist = splitline(args);
+    
+    if(arglist == NULL || arglist[0] == NULL)   // check if we have args
+        return false;                           // we don't
+    
+    if(for_state == WANT_DO)
+    {
+        if(strcmp(arglist[0], "do") == 0)
+            for_state = WANT_DONE;
+        else
+            return syn_err("word unexpected (expecting \"do\")");
+    }
+    else if (for_state == WANT_DONE)
+    {
+        if(strcmp(arglist[0], "done") == 0) // reached the end?
+        {
+            for_state = NEUTRAL;            // reset state
+            return true;                    // done loading
+        }
 
-		fl_append(&fl.commands, args);      // not a 'done', load raw command
-	}
-	else
-		fatal("internal error processing:", arglist[0], 2);
-	
-	return false;
+        fl_append(&fl.commands, args);      // not a 'done', load raw command
+    }
+    else
+        fatal("internal error processing:", arglist[0], 2);
+    
+    return false;
 }
 
 /*
- *	do_for_loop()
- *	Purpose: Process "for", "do", "done" - start loading for loop at start;
- *			 display errors for out-of-order commands
- *	 Return: 0 if ok, -1 (or fatal) for syntax error
+ *  do_for_loop()
+ *  Purpose: Process "for", "do", "done" - start loading for loop at start;
+ *           display errors for out-of-order commands
+ *   Return: 0 if ok, -1 (or fatal) for syntax error
  */
 int do_for_loop(char **args)
 {
-	char *cmd = args[0];
-	int rv = -1;
-	
-	if (strcmp(cmd, "for") == 0)
-	{
-		if (for_state != NEUTRAL)
-			rv = syn_err("for unexpected");
-		else 
-		{
-			rv = init_for_loop(args);		// start loading for loop
-			for_state = WANT_DO;
-		}
-	}
-	// check for out-of-sequence control words
-	else if (strcmp(cmd, "do") == 0)
-	{
-		if (for_state != WANT_DO)
-			rv = syn_err("do unexpected");
-	}
-	else if (strcmp(cmd, "done") == 0)
-	{
-		if (for_state != WANT_DONE)
-			rv = syn_err("done unexpected");
-	}
-	else
-		fatal("internal error processing:", cmd, 2);
-		
-	return rv;
+    char *cmd = args[0];
+    int rv = -1;
+    
+    if (strcmp(cmd, "for") == 0)
+    {
+        if (for_state != NEUTRAL)
+            rv = syn_err("for unexpected");
+        else 
+        {
+            rv = init_for_loop(args);       // start loading for loop
+            for_state = WANT_DO;
+        }
+    }
+    // check for out-of-sequence control words
+    else if (strcmp(cmd, "do") == 0)
+    {
+        if (for_state != WANT_DO)
+            rv = syn_err("do unexpected");
+    }
+    else if (strcmp(cmd, "done") == 0)
+    {
+        if (for_state != WANT_DONE)
+            rv = syn_err("done unexpected");
+    }
+    else
+        fatal("internal error processing:", cmd, 2);
+        
+    return rv;
 }
 
 int do_control_command(char **args)
@@ -194,82 +195,82 @@ int do_control_command(char **args)
  *          else blocks.
  */
 {
-	char	*cmd = args[0];
-	int	rv = -1;
+    char    *cmd = args[0];
+    int rv = -1;
 
-	if( strcmp(cmd,"if")==0 ){
-		if ( if_state != NEUTRAL )
-			rv = syn_err("if unexpected");
-		else {
-			last_stat = process(args+1);
-			if_result = (last_stat == 0 ? SUCCESS : FAIL );
-			if_state = WANT_THEN;
-			rv = 0;
-		}
-	}
-	else if ( strcmp(cmd,"then")==0 ){
-		if ( if_state != WANT_THEN )
-			rv = syn_err("then unexpected");
-		else {
-			if_state = THEN_BLOCK;
-			rv = 0;
-		}
-	}
-	// added for the assignment
-	else if ( strcmp(cmd, "else") == 0) {
-	    if( if_state != THEN_BLOCK )
-	        rv = syn_err("else unexpected");
-	    else {
-	        if_state = ELSE_BLOCK;
-	        rv = 0;
-	    }
-	}
-	// modified for the assignment
-	else if ( strcmp(cmd,"fi")==0 ){
-		if ( if_state == THEN_BLOCK || if_state == ELSE_BLOCK) {
-			if_state = NEUTRAL;
-			rv = 0;
-		}
-		else {
-			rv = syn_err("fi unexpected");
-		}
-	}
-	else 
-		fatal("internal error processing:", cmd, 2);
-	return rv;
+    if( strcmp(cmd,"if")==0 ){
+        if ( if_state != NEUTRAL )
+            rv = syn_err("if unexpected");
+        else {
+            last_stat = process(args+1);
+            if_result = (last_stat == 0 ? SUCCESS : FAIL );
+            if_state = WANT_THEN;
+            rv = 0;
+        }
+    }
+    else if ( strcmp(cmd,"then")==0 ){
+        if ( if_state != WANT_THEN )
+            rv = syn_err("then unexpected");
+        else {
+            if_state = THEN_BLOCK;
+            rv = 0;
+        }
+    }
+    // added for the assignment
+    else if ( strcmp(cmd, "else") == 0) {
+        if( if_state != THEN_BLOCK )
+            rv = syn_err("else unexpected");
+        else {
+            if_state = ELSE_BLOCK;
+            rv = 0;
+        }
+    }
+    // modified for the assignment
+    else if ( strcmp(cmd,"fi")==0 ){
+        if ( if_state == THEN_BLOCK || if_state == ELSE_BLOCK) {
+            if_state = NEUTRAL;
+            rv = 0;
+        }
+        else {
+            rv = syn_err("fi unexpected");
+        }
+    }
+    else 
+        fatal("internal error processing:", cmd, 2);
+    return rv;
 }
 
 
 
 /*
- *	init_for_loop()
- *	Purpose: Check the first line of for loop syntax, and initialize struct
- *	 Return: 0 on success, -1 (or fatal) on syntax error
+ *  init_for_loop()
+ *  Purpose: Check the first line of for loop syntax, and initialize struct
+ *   Return: 0 on success, -1 (or fatal) on syntax error
  */
 int init_for_loop(char **args)
-{	
-	args++;								//strip the 'for'
-	
-	if ( okname(*args) )                // valid varname
-	{
-	    load_for_varname(*args++);      // store in struct, strip from args
-		
-		if(strcmp(*args, "in") == 0)    // validate "in"
-		{
-			load_for_varvalues(++args); // load any args after that
-			for_state = WANT_DO;        // change state
-		}
-		else
-		{
-			return syn_err("word unexpected (expecting \"in\")");
-		}
-	}
-	else
-	{
-	    syn_err("Bad for loop variable");
-	}
-	
-	return 0;
+{   
+    args++;                             //strip the 'for'
+    
+    if ( okname(*args) )                // valid varname
+    {
+        load_for_varname(*args++);      // store in struct, strip from args
+        
+        if(strcmp(*args, "in") == 0)    // validate "in"
+        {
+            load_for_varvalues(++args); // load any args after that
+            for_state = WANT_DO;        // change state
+        }
+        else
+        {
+            return syn_err("word unexpected (expecting \"in\")");
+        }
+    }
+    else
+    {
+        syn_err("Bad for loop variable");
+    }
+    
+    return 0;
 }
 
 /*
@@ -279,17 +280,17 @@ int init_for_loop(char **args)
  */
 int is_parsing_for()
 {
-	return for_state != NEUTRAL;
+    return for_state != NEUTRAL;
 }
 
 /*
- *	safe_to_exit()
- *	Purpose: On EOF, check if it is safe for the shell to exit.
- *	 Return: 0 when okay to exit, -1 (or fatal) from syn_err otherwise
- *	   Note: If the shell is currently processing an if-block or a for loop,
- *			 the shell will output an error message, and reset the state of
- *			 the control-flow, a la 'dash'. set_exit() is called to ensure
- *			 exit status of 2 for syntax errors.
+ *  safe_to_exit()
+ *  Purpose: On EOF, check if it is safe for the shell to exit.
+ *   Return: 0 when okay to exit, -1 (or fatal) from syn_err otherwise
+ *     Note: If the shell is currently processing an if-block or a for loop,
+ *           the shell will output an error message, and reset the state of
+ *           the control-flow, a la 'dash'. set_exit() is called to ensure
+ *           exit status of 2 for syntax errors.
  */
 int safe_to_exit()
 {
@@ -308,21 +309,21 @@ int syn_err(char *msg)
  * returns: -1 in interactive mode. Should call fatal in scripts
  */
 {
-	if(get_mode() == SCRIPTED)
-		fatal("syntax error: ", msg, 2);
-		
-	if_state = NEUTRAL;
-	for_state = NEUTRAL;
-	fprintf(stderr,"syntax error: %s\n", msg);
+    if(get_mode() == SCRIPTED)
+        fatal("syntax error: ", msg, 2);
+        
+    if_state = NEUTRAL;
+    for_state = NEUTRAL;
+    fprintf(stderr,"syntax error: %s\n", msg);
 
-	return -1;
+    return -1;
 }
 
 
 /*
- *	load_for_varname()
- *	Purpose: Helper function to initialize varname field in for loop struct
- *	  Input: str, the value of varname
+ *  load_for_varname()
+ *  Purpose: Helper function to initialize varname field in for loop struct
+ *    Input: str, the value of varname
  */
 void load_for_varname(char * str)
 {
@@ -334,9 +335,9 @@ void load_for_varname(char * str)
 }
 
 /*
- *	load_for_varvalues()
- *	Purpose: Helper function to initialize varvalues field in for loop struct
- *	  Input: args, array of variable values
+ *  load_for_varvalues()
+ *  Purpose: Helper function to initialize varvalues field in for loop struct
+ *    Input: args, array of variable values
  */
 void load_for_varvalues(char **args)
 {
@@ -352,28 +353,28 @@ void load_for_varvalues(char **args)
 }
 
 /*
- *	get_for_commands()
- *	Purpose: getter to access for struct info in main()
+ *  get_for_commands()
+ *  Purpose: getter to access for struct info in main()
  */
 char ** get_for_commands()
 {
-	return fl_getlist(&fl.commands);
+    return fl_getlist(&fl.commands);
 }
 
 /*
- *	get_for_vars()
- *	Purpose: getter to access for struct info in main()
+ *  get_for_vars()
+ *  Purpose: getter to access for struct info in main()
  */
 char ** get_for_vars()
 {
-	return fl_getlist(&fl.varvalues);
+    return fl_getlist(&fl.varvalues);
 }
 
 /*
- *	get_for_name()
- *	Purpose: getter to access for struct info in main()
+ *  get_for_name()
+ *  Purpose: getter to access for struct info in main()
  */
 char * get_for_name()
 {
-	return fs_getstr(&fl.varname);
+    return fs_getstr(&fl.varname);
 }

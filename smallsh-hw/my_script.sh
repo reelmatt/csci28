@@ -19,6 +19,8 @@ make
 dash test_comments.sh > test_comments.out.dash
 diff test_comments.out.smsh test_comments.out.dash
 
+rm test_comments.out.smsh test_comments.out.dash
+
 if [ $? -eq 0 ]
 then
     echo Correctly handled comments.

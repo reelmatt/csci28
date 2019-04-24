@@ -3,7 +3,7 @@
 #  as of 2017-03-31
 #
 
-CC = cc -Wall  -g
+CC = cc -Wall -g
 
 
 OBJS = smsh.o splitline.o process.o varlib.o controlflow.o builtin.o \

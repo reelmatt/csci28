@@ -1,0 +1,660 @@
+
+
+
+
+
+
+
+
+
+
+
+
+		      csci-e215 Final Exam
+
+
+			May 21, 2001, USA
+
+
+
+
+
+	      Your Name Here: ____________________
+
+
+
+
+
+	  Instructions:	  You  have  two hours for this
+	  exam.	 This exam  is	`open  notes  and  open
+	  book'.   Please  write  your	answers	 on the
+	  pages in this exam booklet.  No  scrap  paper
+	  or additional sheets will be accepted.  Watch
+	  your time  and  be  concise.	 Write	clearly
+	  (illegible	answers	  will	 be   `silently
+	  ignored'), and always check the return  value
+	  of a system call.  Good luck.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.
+
+
+
+
+
+
+		 +-----+--------+-----+---------+
+		 |prob | points | got | section |
+		 +-----+--------+-----+---------+
+		 |  1  |    4	|     |		|
+		 +-----+--------+-----+---------+
+		 |  2  |    4	|     |		|
+		 +-----+--------+-----+---------+
+		 |  3  |    4	|     |		|
+		 +-----+--------+-----+---------+
+		 |  4  |    4	|     |		|
+		 +-----+--------+-----+---------+
+		 |  5  |    4	|     |		|
+		 +-----+--------+-----+---------+
+		 |  6  |    4	|     |		|
+		 +-----+--------+-----+---------+
+		 |  7  |    4	|     |		|
+		 +-----+--------+-----+---------+
+		 |  8  |    4	|     |		|
+		 +-----+--------+-----+---------+
+		 |     |	|     |		|
+		 +-----+--------+-----+---------+
+		 |  9  |    6	|     |		|
+		 +-----+--------+-----+---------+
+		 | 10  |    6	|     |		|
+		 +-----+--------+-----+---------+
+		 | 11  |    6	|     |		|
+		 +-----+--------+-----+---------+
+		 | 12  |    6	|     |		|
+		 +-----+--------+-----+---------+
+		 | 13  |    6	|     |		|
+		 +-----+--------+-----+---------+
+		 |     |	|     |		|
+		 +-----+--------+-----+---------+
+		 | 14  |    5	|     |		|
+		 +-----+--------+-----+---------+
+		 | 15  |    5	|     |		|
+		 +-----+--------+-----+---------+
+		 |     |	|     |		|
+		 +-----+--------+-----+---------+
+		 | 16  |   12	|     |		|
+		 +-----+--------+-----+---------+
+		 |     |	|     |		|
+		 +-----+--------+-----+---------+
+		 | 17  |	|     |		|
+		 +-----+--------+-----+---------+
+		 | a   |    4	|     |		|
+		 +-----+--------+-----+---------+
+		 | b   |    4	|     |		|
+		 +-----+--------+-----+---------+
+		 | c   |    3	|     |		|
+		 +-----+--------+-----+---------+
+		 | d   |    3	|     |		|
+		 +-----+--------+-----+---------+
+		 | e   |    2	|     |		|
+		 +-----+--------+-----+---------+
+		 |     |	|     |		|
+		 +-----+--------+-----+---------+
+		 |     |	|     |		|
+		 +-----+--------+-----+---------+
+.
+
+
+
+
+Part One       Eight Problems, each worth 4 points	   page 1
+_________________________________________________________________
+Problems 1-8:  Short  answer  questions.   Answer  each	 question
+clearly,  precisely,  and  refer  to  specific	system calls when
+appropriate.  Write your answer in the space provided.
+
+1. What is kernel buffering?  Name an advantage of kernel buffer-
+ing, and name a disadvantage of kernel buffering.
+
+
+
+
+
+
+
+2.  What is a bit mask.	 Give two examples in Unix programming of
+uses of bit masks.
+
+
+
+
+
+
+
+3. Almost all the information about a file is stored in an inode.
+Name  one piece of information about a file that is not stored in
+the inode.  What are the advantages of not storing this	 property
+in the inode?
+
+
+
+
+
+
+
+4.  Name  two  ways  a Unix program can protect itself from being
+killed by a user pressing the Control-C key.
+
+
+
+
+
+
+
+5. What is the role of the execvp() system call and what does its
+return value represent?
+
+
+
+
+
+
+
+6. What does the term  built-in command	 mean in the shell?
+
+
+
+
+
+
+
+.
+
+
+Part One		    continued			   page 2
+_________________________________________________________________
+7. Under what circumstances does the wait() system call return an
+error status?
+
+
+
+
+
+
+
+8. Why is the bind() system call useful for server programs?
+
+
+
+
+
+
+
+Part Two		       Five problems, each worth 6 points
+_________________________________________________________________
+Problems 9-13: Compare and contrast.  Each of these problems men-
+tions  two  related  concepts,	system calls, or operations.  For
+each pair, explain briefly and clearly (a) what they have in com-
+mon,  (b)  when	 you  would  use the first item, and (c) when you
+would use the second item.
+
+9. close() vs unlink()
+
+
+
+
+
+
+10. sendto() vs write()
+
+
+
+
+
+
+11. creat() vs fork()
+
+
+
+
+
+
+12. raw mode vs cooked mode
+
+
+
+
+
+
+13. socket() vs pipe()
+
+
+
+
+
+
+
+.
+
+
+Part Three	Two questions, each worth 5 points	   page 3
+_________________________________________________________________
+`Enhancing  Programs'	 Many of the projects for the course have
+involved adding to some sample programs from class.  Here are two
+examples of code from class and a change or two to make.
+
+14. timed2.c   This code is used in the time server.  It is hard-
+coded to run the "date" command, and it only  redirects	 standard
+error to the given file descriptor.
+
+Modify this function so it (a) accepts as an argument the name of
+a command to execute, and (b) redirects standard error as well as
+standard  output  to  the  connection.	Make your changes on this
+code.
+
+  process_request(fd)
+  /*
+   * send the date out to the client via fd
+   */
+  {
+	  int	  pid = fork();
+
+	  if ( pid == -1 ) return ;
+
+	  if ( pid != 0 ){
+		  wait(NULL);
+		  return;
+	  }
+
+	  dup2( fd, 1 );
+	  close(fd);
+	  execlp("date","date",NULL);
+	  oops("execlp");
+  }
+
+
+
+
+15. mv1.c   This code is a version of the Unix mv  command  shown
+in  class.   This  version of mv renames a file by first making a
+new link to the file and then removing the original link.
+
+This logic fails if the new link for the file is on  a	different
+file  system.	The link() system call sets errno to EXDEV if you
+attempt to create a `cross  file-system'  link.	  The  `real'  mv
+responds  to this problem by copying the file if it cannot simply
+move the link.
+
+Modify this code so it handles correctly the case of  renaming	a
+file  across  file  systems.   Assume  there is a function called
+copy_file(char *src, char *dest) that works just  like	the  file
+copy program we wrote in lecture 2.
+
+  main(int ac, char *av[])
+  {
+	  extern int errno ;
+	  int	     result = 1;
+
+	  if ( link( av[1], av[2]) != -1 )
+		  result = unlink( av[1] );
+
+	  /* if target name exists, remove it */
+	  /* and retry			      */
+	  else if ( errno == EEXIST )
+	  {
+		  if (unlink( av[2] ) != -1 )
+			  main(ac,av);
+		  perror(av[2]);
+	  }
+	  return result;
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.
+
+
+Part Four	      One problem, 12 points		   page 4
+_________________________________________________________________
+16. An enhancement to your small shell - special variables
+
+The shell you wrote  for  homework  does  variable  substitution.
+That is, it scans each command line for strings of the form $var-
+name and substitutes for the dollar sign and  variable	name  the
+value  of  the	variable.   The variables you worked with are the
+`named variables' - that is, variables	with  string  names  like
+TERM  or  HOME.	 These come from the environment and from assign-
+ment statements.  There are  other  sorts  of  variables  in  the
+shell,	these variables represent properties internal to the pro-
+gram.
+
+Special Variables: Three popular ones
+  The three variables $$, $?, and  $0,	are  used  frequently  in
+  shell scripts. They mean:
+    variable		     meaning
+      $$ process id of shell
+      $? exit status of last command executed
+      $0 name  of  script being executed, or name of shell itself
+  if not running from a script.
+
+Explain how you would change your shell so it recognizes and sub-
+stitutes  the  correct	values for these three special variables.
+Which parts of the  program  would  you	 need  to  change?   What
+changes would you need to make?
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.
+
+
+Part Five	      One problem, 16 points		   page 5
+_________________________________________________________________
+
+17. Directory Assistance for Servers
+Some servers use well-known ports to make their	 services  avail-
+able.	For example, web servers typically listen at port 80, and
+pop servers listen at port 110.	 Some servers just set	up  busi-
+ness at any port they can get. For example, several netpong games
+may be listening on one host, each  at	its  own  port.	  Napster
+users  with  files  to	share set up servers at any host and port
+they can get.
+
+How can you find which servers are running  on	which  hosts  and
+which  ports?  In the world of telephone numbers, businesses list
+their services and telephone numbers in the yellow pages.  Poten-
+tial clients for services search the yellow pages to locate busi-
+nesses that provide services they want.
+
+On the Internet, servers come and go, change hosts and	ports  so
+quickly that a printed directory would be out of date at once.
+
+One solution is to have a server that acts as dynamically updated
+yellow pages.  When a service starts up, it registers itself with
+that central server with its type of service: netpong, netbridge,
+napster, netchat, etc and its hostname and port number.
+
+When a person wants to play a game of netpong or bridge	 or  hear
+music  or  chat, his or her client program connects to the yellow
+pages and asks for listings under `pong' or `bridge' etc.
+
+Ok so far?  For this problem, you will discuss the general design
+of this server listing service (SLS).
+
+  a)  What sort of data should be stored for each server listed
+  in the SLS?  How would you store that data?  Why?
+
+  b) The SLS has to handle two sorts of transactions. It has to
+  speak	 with  servers	who  want to be listed, and it needs to
+  speak with clients that want to  look	 up  servers  providing
+  services.   List  and briefly describe the major transactions
+  the SLS provides.
+
+  c) Say you want to make your pong game or pop server able  to
+  list	itself	with a SLS server.  What changes do you need to
+  make to it?
+
+  d) sumac knows to connect to port 110, and netpong has to  be
+  told	which port to connect to.  A smart client could contact
+  an SLS server, ask for a server that can play pong, pop3,  or
+  your	favorite song, and then automatically connect to there.
+  What changes would you need to make to your netpong or  sumac
+  client to make it do that?
+
+  Add any other ideas or questions you have about this project.
+
+
+
+
+
+
+
+
+
+.
+
+
+Part Three		    continued			   page 6
+_________________________________________________________________
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.
+
+
+Part Three		    continued			   page 7
+_________________________________________________________________
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
