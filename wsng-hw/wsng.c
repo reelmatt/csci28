@@ -55,10 +55,12 @@ void	process_rq( char *, FILE *);
 void	bad_request(FILE *);
 void	cannot_do(FILE *fp);
 void	do_404(char *item, FILE *fp);
+void	do_403(char *item, FILE *fp);
 void    do_head(FILE * fp);
 void	do_cat(char *f, FILE *fpsock);
 void	do_exec( char *prog, FILE *fp);
 void	do_ls(char *dir, FILE *fp);
+void process_dir(char *dir, FILE *fp);
 void    output_listing(FILE * pp, FILE * fp);
 int	ends_in_cgi(char *f);
 char 	*file_type(char *f);
@@ -66,6 +68,7 @@ void	header( FILE *fp, int code, char *msg, char *content_type );
 int	isadir(char *f);
 char	*modify_argument(char *arg, int len);
 int	not_exist(char *f);
+int no_access(char *f);
 void	fatal(char *, char *);
 void	handle_call(int);
 int	read_request(FILE *, char *, int);
@@ -315,14 +318,17 @@ void process_rq(char *rq, FILE *fp)
 	}
 
 	item = modify_argument(arg, MAX_RQ_LEN);
-	if ( strcmp(cmd, "HEAD") == 0 )
-	    do_head(fp);
+// 	if ( strcmp(cmd, "HEAD") == 0 )
+// 	    do_head(fp);
 	if ( strcmp(cmd,"GET") != 0 )
 		cannot_do(fp);
 	else if ( not_exist( item ) )
 		do_404(item, fp );
+	else if ( no_access( item) )
+	    do_403(item, fp);
 	else if ( isadir( item ) )
-		do_ls( item, fp );
+        process_dir( item, fp );
+// 		do_ls( item, fp );
 	else if ( ends_in_cgi( item ) )
 		do_exec( item, fp );
 	else
@@ -426,6 +432,16 @@ do_404(char *item, FILE *fp)
 }
 
 void
+do_403(char *item, FILE *fp)
+{
+	header(fp, 403, "Forbidden", "text/plain");
+	fprintf(fp, "\r\n");
+
+	fprintf(fp, "You do not have permission to access %s on this \
+	            server\r\n", item);
+}
+
+void
 do_head(FILE * fp)
 {
     header(fp, 200, "OK", "text/plain");
@@ -450,6 +466,46 @@ not_exist(char *f)
 	struct stat info;
 
 	return( stat(f,&info) == -1 && errno == ENOENT );
+}
+
+int
+no_access(char *f)
+{
+	struct stat info;
+
+	return( stat(f,&info) == -1 && errno == EACCES );
+}
+
+void
+process_dir(char *dir, FILE *fp)
+{
+    struct stat info;
+    char html[LINELEN];
+    char cgi[LINELEN];
+    
+    strcpy(html, dir);
+    strcat(html, "index.html");
+    
+    strcpy(cgi, dir);
+    strcat(cgi, "index.cgi");
+    
+    printf("in process_dir, strings created are...\n");
+    printf("%s\t%s\n", html, cgi);
+    
+    if(stat(html, &info) == 0 )
+    {
+        do_cat(html, fp);
+    }
+    else if (stat(cgi, &info) == 0)
+    {
+        do_exec(cgi, fp);
+    }
+    else
+    {
+        do_ls(dir, fp);
+    }
+    
+    return;
 }
 
 /*
@@ -497,54 +553,33 @@ output_listing(FILE * pp, FILE * fp)
     int num_files = -1;
     char line[LINELEN];
     char copy[LINELEN];
-//    char *copy = malloc(LINELEN);
 
-/*    if (copy == NULL)
-        oops("memory error", 1);
-
-    *copy = '\0';
-*/
     while(fgets(line, LINELEN, pp) != NULL)
     {
-//	char copy[LINELEN];
-	num_files++;
-	if (num_files == 0)
-		continue;
+        num_files++;
+        if (num_files == 0)
+            continue;
 
         printf("line: %s\n", line);
 
-	char *file = strrchr(line, ' ');
-	file[strlen(file) - 1] = '\0';
-	printf("got a file..., it is %s\n", file);
+        char *file = strrchr(line, ' ');
+        file[strlen(file) - 1] = '\0';
+        printf("got a file..., it is %s\n", file);
 
-	if(file != NULL)
-	{
-		file++;
-		strncpy( copy, line, (strlen(line) - strlen(file)) );
-		printf("before linking... %s\n", copy);
-		char link[LINELEN];
-		snprintf(link, LINELEN, "<a href='%s'>%s</a><br/>\n", file, file);
-		printf("linke is %s\n", link);
-		strncat(copy, link, LINELEN);
-//		snprintf(copy, (strlen(file) - 1), " <a href='%s'>%s</a>", file, file);
-	}
-/*
-	char *token = strtok(line, " ");
+        if(file != NULL)
+        {
+            file++;
+            strncpy( copy, line, (strlen(line) - strlen(file)) );
+            printf("before linking... %s\n", copy);
+            char link[LINELEN];
+            snprintf(link, LINELEN, "<a href='%s'>%s</a><br/>\n", file, file);
+            printf("linke is %s\n", link);
+            strncat(copy, link, LINELEN);
+        }
 
-	while(token != NULL)
-	{
-		strcat(copy, token);
-		token = strtok(NULL, " ");
-
-	}
-*/
-	printf("made new string. it is %s\n", copy);
-	fprintf(fp, "%s", copy);
-	memset(copy, 0, LINELEN);
-//	copy[0] = '\0';
-//	*copy = '\0';
-//	copy = NULL;
-//	file = NULL;
+        printf("made new string. it is %s\n", copy);
+        fprintf(fp, "%s", copy);
+        memset(copy, 0, LINELEN);
     }
     
     if(pclose(pp) == -1)
