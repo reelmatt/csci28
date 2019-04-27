@@ -8,6 +8,7 @@
 #include	<sys/types.h>
 #include	<sys/stat.h>
 #include	<sys/param.h>
+#include    <sys/wait.h>
 #include	<signal.h>
 #include	"socklib.h"
 
@@ -79,7 +80,7 @@ void	do_cat(char *f, FILE *fpsock);
 void	do_exec( char *prog, FILE *fp);
 void	do_ls(char *dir, FILE *fp);
 void process_dir(char *dir, FILE *fp);
-void    output_listing(FILE * pp, FILE * fp);
+void    output_listing(FILE * pp, FILE * fp, char *dir);
 char *get_content_type(char *ext);
 int	ends_in_cgi(char *f);
 char 	*file_type(char *f);
@@ -92,6 +93,8 @@ void	fatal(char *, char *);
 void	handle_call(int);
 int	read_request(FILE *, char *, int);
 char	*readline(char *, int, FILE *);
+void sigchld_handler(int s);
+
 
 int	mysocket = -1;		/* for SIGINT handler */
 
@@ -112,12 +115,27 @@ main(int ac, char *av[])
 	{
 		fd    = accept( sock, NULL, NULL );	/* take a call	*/
 		if ( fd == -1 )
-			perror("accept");
+		{
+            if( errno == EINTR)
+                continue;
+                
+            perror("accept");
+		}
 		else
 			handle_call(fd);		/* handle call	*/
 	}
 	return 0;
 	/* never end */
+}
+
+void
+sigchld_handler(int s)
+{
+    int old_errno = errno;
+    
+    while (waitpid(-1, NULL, WNOHANG) > 0)
+        ;
+    errno = old_errno;
 }
 
 /*
@@ -246,6 +264,9 @@ int startup(int ac, char *av[], char host[], int *portnump)
 		oops("making socket",2);
 	strcpy(myhost, full_hostname());
 	*portnump = portnum;
+	
+	signal(SIGCHLD, sigchld_handler);
+	
 	return sock;
 }
 
@@ -596,7 +617,7 @@ do_ls(char *dir, FILE *fp)
 	header(fp, 200, "OK", "text/html");
 	fprintf(fp,"\r\n");
     
-    output_listing(pp, fp);
+    output_listing(pp, fp, dir);
 /*
 	header(fp, 200, "OK", "text/plain");
 	fprintf(fp,"\r\n");
@@ -611,7 +632,7 @@ do_ls(char *dir, FILE *fp)
 }
 
 void
-output_listing(FILE * pp, FILE * fp)
+output_listing(FILE * pp, FILE * fp, char *dir)
 {
     int num_files = -1;
     char line[LINELEN];
@@ -635,7 +656,7 @@ output_listing(FILE * pp, FILE * fp)
             strncpy( copy, line, (strlen(line) - strlen(file)) );
             printf("before linking... %s\n", copy);
             char link[LINELEN];
-            snprintf(link, LINELEN, "<a href='%s'>%s</a><br/>\n", file, file);
+            snprintf(link, LINELEN, "<a href='%s/%s'>%s</a><br/>\n", dir, file, file);
             printf("linke is %s\n", link);
             strncat(copy, link, LINELEN);
         }
@@ -679,6 +700,18 @@ void
 do_exec( char *prog, FILE *fp)
 {
 	int	fd = fileno(fp);
+
+    char *query = strrchr(prog, '?');
+    char file[LINELEN];
+
+    if(query != NULL)
+    {
+        strncpy(file, prog, (strlen(prog) - strlen(query)));    //file without query
+        query++;    //trim the leading ?
+        setenv("QUERY_STRING", query, 1);
+    }
+
+    setenv("REQUEST_METHOD", "GET", 1);
 
 	header(fp, 200, "OK", NULL);
 	fflush(fp);
