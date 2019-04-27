@@ -11,7 +11,7 @@
 #include	<signal.h>
 #include	"socklib.h"
 
-#include	<dirent.h>
+#include	<time.h>
 
 /*
  * wsng.c - a web server
@@ -412,10 +412,13 @@ modify_argument(char *arg, int len)
 void
 header( FILE *fp, int code, char *msg, char *content_type )
 {
+    char * rfc822_time(time_t thetime);
 	fprintf(fp, "HTTP/1.0 %d %s\r\n", code, msg);
+
 	
 	//added for assignment part 1
-	fprintf(fp, "Date: %s\r\n", "Sun, 06 Nov 1994 08:49:37 GMT");
+// 	fprintf(fp, "Date: %s\r\n", "Sun, 06 Nov 1994 08:49:37 GMT");
+    fprintf(fp, "Date: %s\r\n", rfc822_time(time(0L)));
 	fprintf(fp, "Server: %s/%s\r\n", myhost, VERSION);
 	
 	if ( content_type )
