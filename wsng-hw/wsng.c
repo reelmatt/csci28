@@ -406,7 +406,7 @@ parse_query(char *line)
         query++;    //trim the leading ?
         
         printf("in parse_query, query is... %s\n", query);
-	printf("query len is %d, line len is %d\n", strlen(query), strlen(line));
+	printf("query len is %lu, line len is %lu\n", strlen(query), strlen(line));
         setenv("QUERY_STRING", query, 1);
     }
 
