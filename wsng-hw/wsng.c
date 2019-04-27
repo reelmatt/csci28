@@ -40,8 +40,24 @@
 #define	LINELEN		1024
 #define	PARAM_LEN	128
 #define	VALUE_LEN	512
+#define CONTENT_LEN 64
+
+/* Content-Types */
+struct content_type { char *extension; char *value; };
+struct content_type table[] = {
+    {"html", "text/html"},
+    {"jpg", "image/jpeg"},
+    {"jpeg", "image/jpeg"},
+    {"css", "text/css"},
+    {"gif", "image/gif"},
+    {"png", "image/png"},
+    {"txt", "text/plain"},
+    {"js", "text/javascript"},
+    {NULL, NULL},
+};
 
 char	myhost[MAXHOSTNAMELEN];
+char    content_default[CONTENT_LEN];
 int	myport;
 char	*full_hostname();
 
@@ -64,6 +80,7 @@ void	do_exec( char *prog, FILE *fp);
 void	do_ls(char *dir, FILE *fp);
 void process_dir(char *dir, FILE *fp);
 void    output_listing(FILE * pp, FILE * fp);
+char *get_content_type(char *ext);
 int	ends_in_cgi(char *f);
 char 	*file_type(char *f);
 void	header( FILE *fp, int code, char *msg, char *content_type );
@@ -261,8 +278,13 @@ void process_config_file(char *conf_file, int *portnump)
 			strcpy(rootdir, value);
 		if ( strcasecmp(param,"port") == 0 )
 			port = atoi(value);
+// 		if ( strcasecmp(param,"type") == 0)
+// 		    type[type] = value;
 	}
 	fclose(fp);
+
+    strcpy(content_default, "text/plain");
+//     content_default = "text/plain";
 
 	/* act on the settings */
 	if (chdir(rootdir) == -1)
@@ -553,7 +575,7 @@ process_dir(char *dir, FILE *fp)
 void
 do_ls(char *dir, FILE *fp)
 {
-	int	fd;	/* file descriptor of stream */
+//	int	fd;	/* file descriptor of stream */
     int cmd_len = strlen(dir) + 7;
     char command[cmd_len];
     
@@ -672,18 +694,22 @@ void
 do_cat(char *f, FILE *fpsock)
 {
 	char	*extension = file_type(f);
-	char	*content = "text/plain";
+	
+	char *content = get_content_type(extension);
+// 	char	*content = "text/plain";
+	
+	
 	FILE	*fpfile;
 	int	c;
 
-	if ( strcmp(extension,"html") == 0 )
-		content = "text/html";
-	else if ( strcmp(extension, "gif") == 0 )
-		content = "image/gif";
-	else if ( strcmp(extension, "jpg") == 0 )
-		content = "image/jpeg";
-	else if ( strcmp(extension, "jpeg") == 0 )
-		content = "image/jpeg";
+// 	if ( strcmp(extension,"html") == 0 )
+// 		content = "text/html";
+// 	else if ( strcmp(extension, "gif") == 0 )
+// 		content = "image/gif";
+// 	else if ( strcmp(extension, "jpg") == 0 )
+// 		content = "image/jpeg";
+// 	else if ( strcmp(extension, "jpeg") == 0 )
+// 		content = "image/jpeg";
 
 	fpfile = fopen( f , "r");
 	if ( fpfile != NULL )
@@ -694,6 +720,20 @@ do_cat(char *f, FILE *fpsock)
 			putc(c, fpsock);
 		fclose(fpfile);
 	}
+}
+
+char *
+get_content_type(char *ext)
+{
+    int i;
+    
+    for(i = 0; table[i].extension != NULL; i++)
+    {
+        if(strcmp(ext, table[i].extension) == 0)
+            return table[i].value;
+    }
+    
+    return content_default;
 }
 
 char *
