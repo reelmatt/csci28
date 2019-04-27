@@ -59,7 +59,7 @@ void    do_head(FILE * fp);
 void	do_cat(char *f, FILE *fpsock);
 void	do_exec( char *prog, FILE *fp);
 void	do_ls(char *dir, FILE *fp);
-void    output_listing(FILE * pp);
+void    output_listing(FILE * pp, FILE * fp);
 int	ends_in_cgi(char *f);
 char 	*file_type(char *f);
 void	header( FILE *fp, int code, char *msg, char *content_type );
@@ -460,10 +460,11 @@ void
 do_ls(char *dir, FILE *fp)
 {
 	int	fd;	/* file descriptor of stream */
-    int cmd_len = strlen(dir) + 6;
+    int cmd_len = strlen(dir) + 7;
     char command[cmd_len];
     
     snprintf(command, cmd_len, "%s %s", "ls -l", dir);
+    printf("dir is %s\n", dir);
     printf("in do_ls, command is: %s\n", command);
 
     FILE *pp = popen(command, "r");
@@ -473,10 +474,11 @@ do_ls(char *dir, FILE *fp)
         perror(dir);
         return;
     }
+	header(fp, 200, "OK", "text/html");
+	fprintf(fp,"\r\n");
     
-    output_listing(pp);
-
-
+    output_listing(pp, fp);
+/*
 	header(fp, 200, "OK", "text/plain");
 	fprintf(fp,"\r\n");
 	fflush(fp);
@@ -486,16 +488,63 @@ do_ls(char *dir, FILE *fp)
 	dup2(fd,2);
 	execlp("/bin/ls","ls","-l",dir,NULL);
 	perror(dir);
+*/
 }
 
 void
-output_listing(FILE * pp)
+output_listing(FILE * pp, FILE * fp)
 {
+    int num_files = -1;
     char line[LINELEN];
-    
+    char copy[LINELEN];
+//    char *copy = malloc(LINELEN);
+
+/*    if (copy == NULL)
+        oops("memory error", 1);
+
+    *copy = '\0';
+*/
     while(fgets(line, LINELEN, pp) != NULL)
     {
+//	char copy[LINELEN];
+	num_files++;
+	if (num_files == 0)
+		continue;
+
         printf("line: %s\n", line);
+
+	char *file = strrchr(line, ' ');
+	file[strlen(file) - 1] = '\0';
+	printf("got a file..., it is %s\n", file);
+
+	if(file != NULL)
+	{
+		file++;
+		strncpy( copy, line, (strlen(line) - strlen(file)) );
+		printf("before linking... %s\n", copy);
+		char link[LINELEN];
+		snprintf(link, LINELEN, "<a href='%s'>%s</a><br/>\n", file, file);
+		printf("linke is %s\n", link);
+		strncat(copy, link, LINELEN);
+//		snprintf(copy, (strlen(file) - 1), " <a href='%s'>%s</a>", file, file);
+	}
+/*
+	char *token = strtok(line, " ");
+
+	while(token != NULL)
+	{
+		strcat(copy, token);
+		token = strtok(NULL, " ");
+
+	}
+*/
+	printf("made new string. it is %s\n", copy);
+	fprintf(fp, "%s", copy);
+	memset(copy, 0, LINELEN);
+//	copy[0] = '\0';
+//	*copy = '\0';
+//	copy = NULL;
+//	file = NULL;
     }
     
     if(pclose(pp) == -1)
