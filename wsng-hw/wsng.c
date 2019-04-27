@@ -402,15 +402,16 @@ parse_query(char *line)
 
     if(query != NULL)
     {
-        strncpy(arg, line, (strlen(line) - strlen(query)));    //file without query
+        strncpy(arg, line, (strlen(line) - strlen(query) - 2));    //file without query
         query++;    //trim the leading ?
         
         printf("in parse_query, query is... %s\n", query);
+	printf("query len is %d, line len is %d\n", strlen(query), strlen(line));
         setenv("QUERY_STRING", query, 1);
     }
 
     setenv("REQUEST_METHOD", "GET", 1);
-    
+    arg[16] = '\0';
     printf("arg minuse query is... %s\n", arg);
     return arg;
 }
