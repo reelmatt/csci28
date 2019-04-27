@@ -94,7 +94,7 @@ void	handle_call(int);
 int	read_request(FILE *, char *, int);
 char	*readline(char *, int, FILE *);
 void sigchld_handler(int s);
-
+char *parse_query(char *line);
 
 int	mysocket = -1;		/* for SIGINT handler */
 
@@ -355,6 +355,9 @@ int read_param(FILE *fp, char *name, int nlen, char* value, int vlen)
 void process_rq(char *rq, FILE *fp)
 {
 	char	cmd[MAX_RQ_LEN], arg[MAX_RQ_LEN];
+	
+// 	char query[MAX_RQ_LEN];
+	
 	char	*item, *modify_argument();
 
 	if ( sscanf(rq, "%s%s", cmd, arg) != 2 ){
@@ -363,8 +366,11 @@ void process_rq(char *rq, FILE *fp)
 	}
 
 	item = modify_argument(arg, MAX_RQ_LEN);
-// 	if ( strcmp(cmd, "HEAD") == 0 )
-// 	    do_head(fp);
+	item = parse_query(item);
+	
+	if ( strcmp(cmd, "HEAD") == 0 )
+	    setenv("REQUEST_METHOD", "HEAD", 1);
+
 	if ( strcmp(cmd,"GET") != 0 )
 		cannot_do(fp);
 	else if ( not_exist( item ) )
@@ -379,6 +385,36 @@ void process_rq(char *rq, FILE *fp)
 	else
 		do_cat( item, fp );
 }
+
+char *
+parse_query(char *line)
+{
+    char *query = strrchr(line, '?');
+    
+    char *arg = malloc(LINELEN);
+    
+    if (arg == NULL)
+        oops("memory error", 1);
+    
+    
+//     char *query = strrchr(prog, '?');
+//     char arg[LINELEN];
+
+    if(query != NULL)
+    {
+        strncpy(arg, line, (strlen(line) - strlen(query)));    //file without query
+        query++;    //trim the leading ?
+        
+        printf("in parse_query, query is... %s\n", query);
+        setenv("QUERY_STRING", query, 1);
+    }
+
+    setenv("REQUEST_METHOD", "GET", 1);
+    
+    printf("arg minuse query is... %s\n", arg);
+    return arg;
+}
+
 
 /*
  * modify_argument
@@ -701,17 +737,6 @@ do_exec( char *prog, FILE *fp)
 {
 	int	fd = fileno(fp);
 
-    char *query = strrchr(prog, '?');
-    char file[LINELEN];
-
-    if(query != NULL)
-    {
-        strncpy(file, prog, (strlen(prog) - strlen(query)));    //file without query
-        query++;    //trim the leading ?
-        setenv("QUERY_STRING", query, 1);
-    }
-
-    setenv("REQUEST_METHOD", "GET", 1);
 
 	header(fp, 200, "OK", NULL);
 	fflush(fp);
