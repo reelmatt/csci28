@@ -11,6 +11,8 @@
 #include	<signal.h>
 #include	"socklib.h"
 
+#include	<dirent.h>
+
 /*
  * wsng.c - a web server
  *
@@ -437,8 +439,8 @@ do_403(char *item, FILE *fp)
 	header(fp, 403, "Forbidden", "text/plain");
 	fprintf(fp, "\r\n");
 
-	fprintf(fp, "You do not have permission to access %s on this \
-	            server\r\n", item);
+	fprintf(fp, "You do not have permission to access %s on this server\r\n",
+	            item);
 }
 
 void
@@ -472,8 +474,44 @@ int
 no_access(char *f)
 {
 	struct stat info;
+	char path[LINELEN];
 
-	return( stat(f,&info) == -1 && errno == EACCES );
+/*	DIR * dp = opendir(f);
+	if( dp == NULL )
+	{
+		printf("dp is NULL\n");
+		return 1;
+	}
+*/
+	strcpy(path, "./");
+	strcat(path, f);
+	strcat(path, "/");
+	printf("in no_access, path is %s\n", path);
+
+	if( stat(path, &info) != -1 )
+	{
+		if(! (S_IRUSR & info.st_mode) )
+		{
+			printf("read permsission denied\n");
+			return 1;
+		}
+		else if(! (S_IXUSR & info.st_mode) )
+		{
+			printf("execute permission denied\n");
+			return 1;
+		}
+/*		if( errno == EACCES )
+			printf("access error\n");
+		else
+		{
+			printf("other errno\n");
+			perror(path);
+		}
+		return 1; */
+	}
+	return 0;
+
+//	return( stat(f,&info) == -1 && errno == EACCES );
 }
 
 void
@@ -484,10 +522,10 @@ process_dir(char *dir, FILE *fp)
     char cgi[LINELEN];
     
     strcpy(html, dir);
-    strcat(html, "index.html");
+    strcat(html, "/index.html");
     
     strcpy(cgi, dir);
-    strcat(cgi, "index.cgi");
+    strcat(cgi, "/index.cgi");
     
     printf("in process_dir, strings created are...\n");
     printf("%s\t%s\n", html, cgi);
