@@ -330,7 +330,7 @@ void process_config_file(char *conf_file, int *portnump)
 void process_config_type(char param[PARAM_LEN], char val[VALUE_LEN], char type[CONTENT_LEN])
 {
 	printf("in process_config_type\n");
-	printf("param is %s, val is %s\n", param, val, type);
+	printf("param is %s, val is %s, type is %s\n", param, val, type);
 	
 	if(type)
 		strcpy(content_default, type);
@@ -433,27 +433,29 @@ void process_rq(char *rq, FILE *fp)
 char *
 parse_query(char *line)
 {
+	char arg[LINELEN];
     char *query = strrchr(line, '?');
     
-    char *arg = malloc(LINELEN);
+//     char *arg = malloc(LINELEN);
+//     
+//     if (arg == NULL)
+//         oops("memory error", 1);
     
-    if (arg == NULL)
-        oops("memory error", 1);
-    
-    if(query != NULL)
-    {
-        strncpy(arg, line, (strlen(line) - strlen(query) - 2));    //file without query
-        query++;    //trim the leading ?
-        
-        printf("in parse_query, query is... %s\n", query);
-		printf("query len is %lu, line len is %lu\n", strlen(query), strlen(line));
-        setenv("QUERY_STRING", query, 1);
-    }
-	else
-	{
-		return line;
-	}
+    if(query == NULL)	// no query
+    	return line;	// don't touch original line
+
+	
+
+	strncpy(arg, line, (strlen(line) - strlen(query) - 2));    //file without query
+	query++;    //trim the leading ?
+	
+	printf("in parse_query, query is... %s\n", query);
+	printf("query len is %lu, line len is %lu\n", strlen(query), strlen(line));
+
+	// set environment variables
+	setenv("QUERY_STRING", query, 1);
     setenv("REQUEST_METHOD", "GET", 1);
+    
     arg[16] = '\0';
     printf("arg minus query is... %s\n", arg);
 //    free(arg);
@@ -648,7 +650,6 @@ process_dir(char *dir, FILE *fp)
     strcpy(cgi, dir);
     strcat(cgi, "/index.cgi");
 
-	    
     if(stat(html, &info) == 0 )		// html exists
         do_cat(html, fp);
     else if (stat(cgi, &info) == 0)	// cgi exists
@@ -671,12 +672,10 @@ do_ls(char *dir, FILE *fp)
     int cmd_len = strlen(dir) + 7;
     char command[cmd_len];
     
+    // construct command with directory name
     snprintf(command, cmd_len, "%s %s", "ls -l", dir);
-    printf("dir is %s\n", dir);
-    printf("in do_ls, command is: %s\n", command);
 
     FILE *pp = popen(command, "r");
-
     if (pp == NULL)
     {
         perror(dir);
@@ -689,20 +688,7 @@ do_ls(char *dir, FILE *fp)
     output_listing(pp, fp, dir);
     
 	if(pclose(pp) == -1)
-    {
         perror("oops");
-    }
-/*
-	header(fp, 200, "OK", "text/plain");
-	fprintf(fp,"\r\n");
-	fflush(fp);
-
-	fd = fileno(fp);
-	dup2(fd,1);
-	dup2(fd,2);
-	execlp("/bin/ls","ls","-l",dir,NULL);
-	perror(dir);
-*/
 }
 
 /*
@@ -775,7 +761,6 @@ void
 do_exec( char *prog, FILE *fp)
 {
 	int	fd = fileno(fp);
-
 
 	header(fp, 200, "OK", NULL);
 	fflush(fp);
