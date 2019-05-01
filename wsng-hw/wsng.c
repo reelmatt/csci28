@@ -813,7 +813,7 @@ void set_content_type(char *ext, char *val)
 	{
 		if(strcmp(ext, table[i].extension) == 0)
 		{
-			table[i].value = val;
+			strcpy(table[i].value, val);
 			return;
 		}
 	}
