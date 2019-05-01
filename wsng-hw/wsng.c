@@ -36,6 +36,7 @@
 #define	SERVER_ROOT	"."
 #define	CONFIG_FILE	"wsng.conf"
 #define	VERSION		"1"
+#define SERVER_NAME	"WSNG"
 
 #define	MAX_RQ_LEN	4096
 #define	LINELEN		1024
@@ -95,6 +96,7 @@ int	read_request(FILE *, char *, int);
 char	*readline(char *, int, FILE *);
 void sigchld_handler(int s);
 char *parse_query(char *line);
+void process_config_type(char param[PARAM_LEN], char val[VALUE_LEN]);
 
 int	mysocket = -1;		/* for SIGINT handler */
 
@@ -116,7 +118,7 @@ main(int ac, char *av[])
 		fd    = accept( sock, NULL, NULL );	/* take a call	*/
 		if ( fd == -1 )
 		{
-            if( errno == EINTR)
+            if( errno == EINTR)		/* check if intr from sigchld */
                 continue;
                 
             perror("accept");
@@ -128,6 +130,12 @@ main(int ac, char *av[])
 	/* never end */
 }
 
+/*
+ *	sigchld_handler()
+ *	Purpose: Handle exit statuses from child process to prevent zombies
+ *	Note: taken from the 'zombierace' page provided with the assignment
+ *		  materials for the assignment.
+ */
 void
 sigchld_handler(int s)
 {
@@ -265,7 +273,7 @@ int startup(int ac, char *av[], char host[], int *portnump)
 	strcpy(myhost, full_hostname());
 	*portnump = portnum;
 	
-	signal(SIGCHLD, sigchld_handler);
+	signal(SIGCHLD, sigchld_handler);	/* handler for zombies */
 	
 	return sock;
 }
@@ -299,12 +307,14 @@ void process_config_file(char *conf_file, int *portnump)
 			strcpy(rootdir, value);
 		if ( strcasecmp(param,"port") == 0 )
 			port = atoi(value);
+		if ( strcasecmp(param,"type") == 0)
+			process_config_type(param, value);
 // 		if ( strcasecmp(param,"type") == 0)
 // 		    type[type] = value;
 	}
 	fclose(fp);
 
-    strcpy(content_default, "text/plain");
+//     strcpy(content_default, "text/plain");
 //     content_default = "text/plain";
 
 	/* act on the settings */
@@ -312,6 +322,14 @@ void process_config_file(char *conf_file, int *portnump)
 		oops("cannot change to rootdir", 2);
 	*portnump = port;
 	return;
+}
+
+void process_config_type(char param[PARAM_LEN], char val[VALUE_LEN])
+{
+	printf("in process_config_type\n");
+	printf("param is %s, val is %s\n", param, val);
+	
+	strcpy(content_default, "text/plain");
 }
 
 /*
@@ -355,9 +373,6 @@ int read_param(FILE *fp, char *name, int nlen, char* value, int vlen)
 void process_rq(char *rq, FILE *fp)
 {
 	char	cmd[MAX_RQ_LEN], arg[MAX_RQ_LEN];
-	
-// 	char query[MAX_RQ_LEN];
-	
 	char	*item, *modify_argument();
 
 	if ( sscanf(rq, "%s%s", cmd, arg) != 2 ){
@@ -379,13 +394,19 @@ void process_rq(char *rq, FILE *fp)
 	    do_403(item, fp);
 	else if ( isadir( item ) )
         process_dir( item, fp );
-// 		do_ls( item, fp );
 	else if ( ends_in_cgi( item ) )
 		do_exec( item, fp );
 	else
 		do_cat( item, fp );
 }
 
+/*
+ *	parse_query()
+ *	Purpose: Parse the line and if a query, set QUERY_STRING
+ *	  Input: line, the argument to parse
+ *	 Return: If there is a query, store it in the QUERY_STRING env
+ *			 variable. Return the rest of the argument, minus the query.
+ */
 char *
 parse_query(char *line)
 {
@@ -396,23 +417,20 @@ parse_query(char *line)
     if (arg == NULL)
         oops("memory error", 1);
     
-    
-//     char *query = strrchr(prog, '?');
-//     char arg[LINELEN];
-
     if(query != NULL)
     {
         strncpy(arg, line, (strlen(line) - strlen(query) - 2));    //file without query
         query++;    //trim the leading ?
         
         printf("in parse_query, query is... %s\n", query);
-	printf("query len is %lu, line len is %lu\n", strlen(query), strlen(line));
+		printf("query len is %lu, line len is %lu\n", strlen(query), strlen(line));
         setenv("QUERY_STRING", query, 1);
     }
 
     setenv("REQUEST_METHOD", "GET", 1);
     arg[16] = '\0';
-    printf("arg minuse query is... %s\n", arg);
+    printf("arg minus query is... %s\n", arg);
+    free(arg);
     return arg;
 }
 
@@ -470,14 +488,12 @@ modify_argument(char *arg, int len)
 void
 header( FILE *fp, int code, char *msg, char *content_type )
 {
+	//from web-time.c
     char * rfc822_time(time_t thetime);
-	fprintf(fp, "HTTP/1.0 %d %s\r\n", code, msg);
 
-	
-	//added for assignment part 1
-// 	fprintf(fp, "Date: %s\r\n", "Sun, 06 Nov 1994 08:49:37 GMT");
+	fprintf(fp, "HTTP/1.0 %d %s\r\n", code, msg);
     fprintf(fp, "Date: %s\r\n", rfc822_time(time(0L)));
-	fprintf(fp, "Server: %s/%s\r\n", myhost, VERSION);
+	fprintf(fp, "Server: %s/%s\r\n", SERVER_NAME, VERSION);
 	
 	if ( content_type )
 		fprintf(fp, "Content-Type: %s\r\n", content_type );
@@ -485,9 +501,10 @@ header( FILE *fp, int code, char *msg, char *content_type )
 
 /* ------------------------------------------------------ *
    simple functions first:
-	bad_request(fp)     bad request syntax
-        cannot_do(fp)       unimplemented HTTP command
-    and do_404(item,fp)     no such object
+   bad_request(fp)     bad request syntax
+     cannot_do(fp)     unimplemented HTTP command
+   do_404(item,fp)     no such object
+   do_403(item,fp)	   wrong permissions (added by MT)
    ------------------------------------------------------ */
 
 void
@@ -535,7 +552,13 @@ do_head(FILE * fp)
 /* ------------------------------------------------------ *
    the directory listing section
    isadir() uses stat, not_exist() uses stat
-   do_ls runs ls. It should not
+   no_access() checks permissions of dir using stat
+   process_dir() checks if an 'index.html' or 'index.cgi'
+   		file exists. If yes, it outputs that, otherwise
+   		calls do_ls().
+   do_ls() opens a pipe to a listing of the directory.
+   		For each entry, it formats the line with a link
+   		to that file.
    ------------------------------------------------------ */
 
 int
@@ -553,48 +576,32 @@ not_exist(char *f)
 	return( stat(f,&info) == -1 && errno == ENOENT );
 }
 
+/*
+ *	no_access()
+ *	Purpose: check permissions of page/file trying to be loaded
+ *	  Input: f, the name of the file
+ *	 Return: 1, if not allowed to access; 0 otherwise
+ */
 int
 no_access(char *f)
 {
 	struct stat info;
 	char path[LINELEN];
 
-/*	DIR * dp = opendir(f);
-	if( dp == NULL )
-	{
-		printf("dp is NULL\n");
-		return 1;
-	}
-*/
 	strcpy(path, "./");
-	strcat(path, f);
-	strcat(path, "/");
+	snprintf(path, LINELEN, "%s/", f);
+	
 	printf("in no_access, path is %s\n", path);
+// 	strcat(path, f);
+// 	strcat(path, "/");
 
 	if( stat(path, &info) != -1 )
 	{
-		if(! (S_IRUSR & info.st_mode) )
-		{
-			printf("read permsission denied\n");
+		if(! (S_IRUSR & info.st_mode) || ! (S_IXUSR & info.st_mode) )
 			return 1;
-		}
-		else if(! (S_IXUSR & info.st_mode) )
-		{
-			printf("execute permission denied\n");
-			return 1;
-		}
-/*		if( errno == EACCES )
-			printf("access error\n");
-		else
-		{
-			printf("other errno\n");
-			perror(path);
-		}
-		return 1; */
 	}
 	return 0;
 
-//	return( stat(f,&info) == -1 && errno == EACCES );
 }
 
 void
@@ -610,8 +617,8 @@ process_dir(char *dir, FILE *fp)
     strcpy(cgi, dir);
     strcat(cgi, "/index.cgi");
     
-    printf("in process_dir, strings created are...\n");
-    printf("%s\t%s\n", html, cgi);
+//     printf("in process_dir, strings created are...\n");
+//     printf("%s\t%s\n", html, cgi);
     
     if(stat(html, &info) == 0 )
     {
@@ -632,6 +639,8 @@ process_dir(char *dir, FILE *fp)
 /*
  * lists the directory named by 'dir' 
  * sends the listing to the stream at fp
+ *
+ * Note: Modified for the assignment. 
  */
 void
 do_ls(char *dir, FILE *fp)
@@ -668,6 +677,14 @@ do_ls(char *dir, FILE *fp)
 */
 }
 
+/*
+ *	output_listing()
+ *	Purpose: Take output from an `ls` command and format with links
+ *	  Input: pp, pointer to pipe FILE
+ *			 fp, pointer to socket FILE
+ *			 dir, parent directory to use for link paths
+ *
+ */
 void
 output_listing(FILE * pp, FILE * fp, char *dir)
 {
@@ -694,7 +711,7 @@ output_listing(FILE * pp, FILE * fp, char *dir)
             printf("before linking... %s\n", copy);
             char link[LINELEN];
             snprintf(link, LINELEN, "<a href='%s/%s'>%s</a><br/>\n", dir, file, file);
-            printf("linke is %s\n", link);
+            printf("link is %s\n", link);
             strncat(copy, link, LINELEN);
         }
 
@@ -752,26 +769,18 @@ do_exec( char *prog, FILE *fp)
    sends back contents after a header
    ------------------------------------------------------ */
 
+/*
+ *	Modified from starter code. Moved Content-Type from if/else
+ *	switch, to a table-driven design. See get_content_type().
+ */
 void
 do_cat(char *f, FILE *fpsock)
 {
 	char	*extension = file_type(f);
-	
-	char *content = get_content_type(extension);
-// 	char	*content = "text/plain";
-	
-	
+	char	*content = get_content_type(extension);
+
 	FILE	*fpfile;
 	int	c;
-
-// 	if ( strcmp(extension,"html") == 0 )
-// 		content = "text/html";
-// 	else if ( strcmp(extension, "gif") == 0 )
-// 		content = "image/gif";
-// 	else if ( strcmp(extension, "jpg") == 0 )
-// 		content = "image/jpeg";
-// 	else if ( strcmp(extension, "jpeg") == 0 )
-// 		content = "image/jpeg";
 
 	fpfile = fopen( f , "r");
 	if ( fpfile != NULL )
@@ -784,6 +793,14 @@ do_cat(char *f, FILE *fpsock)
 	}
 }
 
+/*
+ *	get_content_type()
+ *	Purpose: Look up a given `ext` to see if there is a Content-Type match
+ *	  Input: ext, the file extension to lookup
+ *	 Method: Search the table of `struct content_type` to see if a match
+ *			 exists for `ext`. If there is a match, return that type.
+ *			 Otherwise, return the default.
+ */
 char *
 get_content_type(char *ext)
 {
