@@ -96,6 +96,7 @@ int	read_request(FILE *, char *, int);
 char	*readline(char *, int, FILE *);
 void sigchld_handler(int s);
 char *parse_query(char *line);
+void set_content_type(char *ext, char *val);
 void process_config_type(char [PARAM_LEN], char [VALUE_LEN], char [CONTENT_LEN]);
 
 int	mysocket = -1;		/* for SIGINT handler */
@@ -332,10 +333,10 @@ void process_config_type(char param[PARAM_LEN], char val[VALUE_LEN], char type[C
 	printf("in process_config_type\n");
 	printf("param is %s, val is %s, type is %s\n", param, val, type);
 	
-	if(type)
+	if (strcmp(val, "DEFAULT") && type)
 		strcpy(content_default, type);
-	
-// 	strcpy(content_default, "text/plain");
+	else
+		set_content_type(val, type);	
 }
 
 /*
@@ -358,8 +359,6 @@ read_param (FILE *fp,
 	int	c;
 	char	fmt[100] ;
 
-// 	sprintf(fmt, "%%%ds%%%ds", nlen, vlen);
-
 	sprintf(fmt, "%%%ds%%%ds%%%ds", nlen, vlen, clen);
 
 	/* read in next line and if the line is too long, read until \n */
@@ -373,9 +372,9 @@ read_param (FILE *fp,
 		printf("num_args is %d\n", num_args);
 		printf("they are: 1) %s, 2) %s, and 3) %s\n", name, value, type);
 		
-		if ( (num_args == 2 || num_args == 3) )
+		if ( (num_args == 2 || num_args == 3) && *name != '#')
 		{
-			if(*name != '#')
+// 			if(*name != '#')
 				return 1;
 		}
 		
@@ -433,34 +432,17 @@ void process_rq(char *rq, FILE *fp)
 char *
 parse_query(char *line)
 {
-	char arg[LINELEN];
     char *query = strrchr(line, '?');
-    
-//     char *arg = malloc(LINELEN);
-//     
-//     if (arg == NULL)
-//         oops("memory error", 1);
-    
-    if(query == NULL)	// no query
-    	return line;	// don't touch original line
 
+	if (query != NULL)
+	{
+		// set environment variables
+		setenv("QUERY_STRING", (query + 1), 1);
+		setenv("REQUEST_METHOD", "GET", 1);
+		
+		*query = '\0';	// terminate at the '?'
+	}
 	
-
-
-// 	query++;    //trim the leading ?
-
-	// set environment variables
-	setenv("QUERY_STRING", (query + 1), 1);
-    setenv("REQUEST_METHOD", "GET", 1);
-    
-    
-// 	strncpy(arg, line, (strlen(line) - strlen(query) - 2));    //file without query
-//     arg[16] = '\0';
-	*query = '\0';
-    printf("arg minus query is... %s\n", line);
-//    free(arg);
-
-
     return line;
 }
 
@@ -822,6 +804,21 @@ get_content_type(char *ext)
     
     return content_default;
 }
+
+void set_content_type(char *ext, char *val)
+{
+	int i;
+	
+	for(i = 0; table[i].extension != NULL; i++)
+	{
+		if(strcmp(ext, table[i].extension) == 0)
+		{
+			table[i].value = val;
+			return;
+		}
+	}
+}
+
 
 char *
 full_hostname()
