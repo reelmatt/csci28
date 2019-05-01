@@ -301,6 +301,8 @@ void process_config_file(char *conf_file, int *portnump)
 	if ( (fp = fopen(conf_file,"r")) == NULL )
 		fatal("Cannot open config file %s", conf_file);
 
+	printf("reading the config file...\n");
+
 	/* extract the settings */
 	while( read_param(fp, param, PARAM_LEN, value, VALUE_LEN, type, CONTENT_LEN) != EOF )
 	{
@@ -367,10 +369,15 @@ read_param (FILE *fp,
 			while( (c = getc(fp)) != '\n' && c != EOF )
 				;
 
-		int num_args = sscanf(line, fmt, name, value );
+		int num_args = sscanf(line, fmt, name, value, type );
+		printf("num_args is %d\n", num_args);
+		printf("they are: 1) %s, 2) %s, and 3) %s\n", name, value, type);
 		
-		if ( (num_args == 2 || num_args == 3) && *name != '#' )
-			return 1;
+		if ( (num_args == 2 || num_args == 3) )
+		{
+			if(*name != '#')
+				return 1;
+		}
 		
 		// if ( sscanf(line, fmt, name, value ) == 2 && *name != '#' )
 // 			return 1;
