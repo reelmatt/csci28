@@ -447,17 +447,14 @@ parse_query(char *line)
 	
 
 
-	query++;    //trim the leading ?
-	
-	printf("in parse_query, query is... %s\n", query);
-	printf("query len is %lu, line len is %lu\n", strlen(query), strlen(line));
+// 	query++;    //trim the leading ?
 
 	// set environment variables
-	setenv("QUERY_STRING", query, 1);
+	setenv("QUERY_STRING", (query + 1), 1);
     setenv("REQUEST_METHOD", "GET", 1);
     
     
-	strncpy(arg, line, (strlen(line) - strlen(query) - 2));    //file without query
+// 	strncpy(arg, line, (strlen(line) - strlen(query) - 2));    //file without query
 //     arg[16] = '\0';
 	*query = '\0';
     printf("arg minus query is... %s\n", line);
