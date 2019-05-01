@@ -96,7 +96,7 @@ int	read_request(FILE *, char *, int);
 char	*readline(char *, int, FILE *);
 void sigchld_handler(int s);
 char *parse_query(char *line);
-void process_config_type(char param[PARAM_LEN], char val[VALUE_LEN]);
+void process_config_type(char [PARAM_LEN], char [VALUE_LEN], char [CONTENT_LEN]);
 
 int	mysocket = -1;		/* for SIGINT handler */
 
@@ -295,7 +295,7 @@ void process_config_file(char *conf_file, int *portnump)
 	char	value[VALUE_LEN];
 	char	type[CONTENT_LEN];
 	int	port;
-	int	read_param(FILE *, char *, int, char *, int );
+	int	read_param(FILE *, char *, int, char *, int, char *, int );
 
 	/* open the file */
 	if ( (fp = fopen(conf_file,"r")) == NULL )
