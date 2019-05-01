@@ -1,0 +1,60 @@
+  Author: Matthew Thomas
+    Date: 5/2/2019
+Contains: Design details for CSCI E-215 homework 6
+==================================================
+Project: wsng
+
+Purpose: Implement a limited feature-set for a web server.
+
+Outline:
+    Given the disparate nature of the features added to the small-shell
+    written for the assignment, this Plan will tackle each kind of feature
+    separately. The high-level overview is that smsh is meant to behave like
+    dash on the nice servers. smsh adds features in the following categories:
+    	1) New built-in functions
+    	2) Shell scripts
+    	3) Variables and substitution
+    	4) Control structures
+
+Program flow:
+	A shell can be thought of as a combination of several different tools
+	and features. To implement and handle these tasks, there needs to exist
+	a main control loop that looks for input and acts on that input. This loop
+	acts in the following way:
+	   1a - Setup the shell by loading in any environment variables and
+			ignoring interupt and quit signals. The shell is how you execute
+			commands and programs. To stop it from running, you must execute
+			the 'exit' built-in function.
+	   1b - Setup also assigns the prompt the user will see at the command 
+	   		line and where input will come from. Input can be interactive
+	   		(stdin), or from a shell script specified at the command line.
+		2 - At this point, the shell runs until 'exit' is called, or 'EOF' is
+			reached. If in interactive mode, a user could also type the 'EOF'
+			control-character specified by 'stty' to quit the shell.
+	 Loop - 1) Read in a line (from stdin or file).
+	 		2) If in for-loop control, load the for-loop (execute on 'done').
+	 		3) Otherwise, run the command.
+	 		4) Read next command (back to Loop step 1).
+  Command - 1) Perform variable substitution (also remove any comments).
+  			2) Split the substituted command line into whitespace-separated
+  			   values.
+  			3) Check if the line contains the start of an if- or for-control
+  			   flow. If it does, check the syntax and update the current
+  			   state. Otherwise, check if the command is okay to execute given
+  			   the current state.
+  			4) Command execution can be either a) a built-in command; or b) an
+  			   external program.
+
+Interface:
+
+
+
+Error handling:
+	The shell is mostly responsible for handling syntax errors, which occur
+	during the built-in functions, or processing of control-flow commands.
+	As man page standards dictate, a syntax error will have an exit status of
+	2. The helper function syn_err() in controlflow.c returns -1 on error (or
+	fatal when in SCRIPTED mode), not 2. Later, in the run_command() function
+	of ./smsh, if the result was -1 it is changed to a status of 2 and stored
+	as the last_exit value.
+	
