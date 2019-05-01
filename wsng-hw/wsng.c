@@ -293,6 +293,7 @@ void process_config_file(char *conf_file, int *portnump)
 	char	rootdir[VALUE_LEN] = SERVER_ROOT;
 	char	param[PARAM_LEN];
 	char	value[VALUE_LEN];
+	char	type[CONTENT_LEN];
 	int	port;
 	int	read_param(FILE *, char *, int, char *, int );
 
@@ -301,14 +302,14 @@ void process_config_file(char *conf_file, int *portnump)
 		fatal("Cannot open config file %s", conf_file);
 
 	/* extract the settings */
-	while( read_param(fp, param, PARAM_LEN, value, VALUE_LEN) != EOF )
+	while( read_param(fp, param, PARAM_LEN, value, VALUE_LEN, type, CONTENT_LEN) != EOF )
 	{
 		if ( strcasecmp(param,"server_root") == 0 )
 			strcpy(rootdir, value);
 		if ( strcasecmp(param,"port") == 0 )
 			port = atoi(value);
 		if ( strcasecmp(param,"type") == 0)
-			process_config_type(param, value);
+			process_config_type(param, value, type);
 // 		if ( strcasecmp(param,"type") == 0)
 // 		    type[type] = value;
 	}
@@ -324,12 +325,15 @@ void process_config_file(char *conf_file, int *portnump)
 	return;
 }
 
-void process_config_type(char param[PARAM_LEN], char val[VALUE_LEN])
+void process_config_type(char param[PARAM_LEN], char val[VALUE_LEN], char type[CONTENT_LEN])
 {
 	printf("in process_config_type\n");
-	printf("param is %s, val is %s\n", param, val);
+	printf("param is %s, val is %s\n", param, val, type);
 	
-	strcpy(content_default, "text/plain");
+	if(type)
+		strcpy(content_default, type);
+	
+// 	strcpy(content_default, "text/plain");
 }
 
 /*
@@ -342,13 +346,19 @@ void process_config_type(char param[PARAM_LEN], char val[VALUE_LEN])
  *   returns -- EOF at eof and 1 on good data
  *
  */
-int read_param(FILE *fp, char *name, int nlen, char* value, int vlen)
+int
+read_param (FILE *fp, 
+			char *name, int nlen,	// place to store name
+			char* value, int vlen,	// place to store value
+			char* type, int clen)	// place to store content-type
 {
 	char	line[LINELEN];
 	int	c;
 	char	fmt[100] ;
 
-	sprintf(fmt, "%%%ds%%%ds", nlen, vlen);
+// 	sprintf(fmt, "%%%ds%%%ds", nlen, vlen);
+
+	sprintf(fmt, "%%%ds%%%ds%%%ds", nlen, vlen, clen);
 
 	/* read in next line and if the line is too long, read until \n */
 	while( fgets(line, LINELEN, fp) != NULL )
@@ -356,8 +366,14 @@ int read_param(FILE *fp, char *name, int nlen, char* value, int vlen)
 		if ( line[strlen(line)-1] != '\n' )
 			while( (c = getc(fp)) != '\n' && c != EOF )
 				;
-		if ( sscanf(line, fmt, name, value ) == 2 && *name != '#' )
+
+		int num_args = sscanf(line, fmt, name, value );
+		
+		if ( (num_args == 2 || num_args == 3) && *name != '#' )
 			return 1;
+		
+		// if ( sscanf(line, fmt, name, value ) == 2 && *name != '#' )
+// 			return 1;
 	}
 	return EOF;
 }
@@ -591,15 +607,14 @@ no_access(char *f)
 	struct stat info;
 	char path[LINELEN];
 
+	// construct the path to the file
 	strcpy(path, "./");
 	snprintf(path, LINELEN, "%s/", f);
-	
-	printf("in no_access, path is %s\n", path);
-// 	strcat(path, f);
-// 	strcat(path, "/");
 
+	// get the permissions info
 	if( stat(path, &info) != -1 )
 	{
+		// there is no access allowed, return 1 to direct to a 403
 		if(! (S_IRUSR & info.st_mode) || ! (S_IXUSR & info.st_mode) )
 			return 1;
 	}
@@ -607,6 +622,10 @@ no_access(char *f)
 
 }
 
+/*
+ *	process_dir()
+ *	Purpose: check the current directory to see if an index file exists
+ */
 void
 process_dir(char *dir, FILE *fp)
 {
@@ -614,27 +633,21 @@ process_dir(char *dir, FILE *fp)
     char html[LINELEN];
     char cgi[LINELEN];
     
+    // create a path to check HTML index
     strcpy(html, dir);
     strcat(html, "/index.html");
     
+    // create a path to check CGI index
     strcpy(cgi, dir);
     strcat(cgi, "/index.cgi");
-    
-//     printf("in process_dir, strings created are...\n");
-//     printf("%s\t%s\n", html, cgi);
-    
-    if(stat(html, &info) == 0 )
-    {
+
+	    
+    if(stat(html, &info) == 0 )		// html exists
         do_cat(html, fp);
-    }
-    else if (stat(cgi, &info) == 0)
-    {
+    else if (stat(cgi, &info) == 0)	// cgi exists
         do_exec(cgi, fp);
-    }
-    else
-    {
+    else							// no index, output listing
         do_ls(dir, fp);
-    }
     
     return;
 }
@@ -648,7 +661,6 @@ process_dir(char *dir, FILE *fp)
 void
 do_ls(char *dir, FILE *fp)
 {
-//	int	fd;	/* file descriptor of stream */
     int cmd_len = strlen(dir) + 7;
     char command[cmd_len];
     
@@ -663,10 +675,16 @@ do_ls(char *dir, FILE *fp)
         perror(dir);
         return;
     }
+
 	header(fp, 200, "OK", "text/html");
 	fprintf(fp,"\r\n");
     
     output_listing(pp, fp, dir);
+    
+	if(pclose(pp) == -1)
+    {
+        perror("oops");
+    }
 /*
 	header(fp, 200, "OK", "text/plain");
 	fprintf(fp,"\r\n");
@@ -692,43 +710,36 @@ void
 output_listing(FILE * pp, FILE * fp, char *dir)
 {
     int num_files = -1;
-    char line[LINELEN];
-    char copy[LINELEN];
+    char line[LINELEN], copy[LINELEN];
 
     while(fgets(line, LINELEN, pp) != NULL)
     {
-        num_files++;
-        if (num_files == 0)
+		// skip the first line of `ls` displaying `total #`
+        if (++num_files == 0)
             continue;
 
-        printf("line: %s\n", line);
+        char *file = strrchr(line, ' ');	// get the last arg
+        file[strlen(file) - 1] = '\0';		// terminate
 
-        char *file = strrchr(line, ' ');
-        file[strlen(file) - 1] = '\0';
-        printf("got a file..., it is %s\n", file);
-
-        if(file != NULL)
+        if(file != NULL)					// check there was an arg
         {
-            file++;
+            file++;							// strip the space
+			
+            char link[LINELEN];				// construct the link
+            snprintf(link, LINELEN, "<a href='%s/%s'>%s</a><br/>\n",
+            		 dir, file, file);
+            		 
+            // construct the whole line
             strncpy( copy, line, (strlen(line) - strlen(file)) );
-            printf("before linking... %s\n", copy);
-            char link[LINELEN];
-            snprintf(link, LINELEN, "<a href='%s/%s'>%s</a><br/>\n", dir, file, file);
-            printf("link is %s\n", link);
             strncat(copy, link, LINELEN);
         }
 
-        printf("made new string. it is %s\n", copy);
+		// send to the socket
         fprintf(fp, "%s", copy);
+        
+        //reset
         memset(copy, 0, LINELEN);
     }
-    
-    if(pclose(pp) == -1)
-    {
-        perror("oops");
-
-    }
-    
     return;
 }
 
