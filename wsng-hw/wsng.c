@@ -426,11 +426,14 @@ parse_query(char *line)
 		printf("query len is %lu, line len is %lu\n", strlen(query), strlen(line));
         setenv("QUERY_STRING", query, 1);
     }
-
+	else
+	{
+		return line;
+	}
     setenv("REQUEST_METHOD", "GET", 1);
     arg[16] = '\0';
     printf("arg minus query is... %s\n", arg);
-    free(arg);
+//    free(arg);
     return arg;
 }
 
