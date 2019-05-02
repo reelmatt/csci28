@@ -523,7 +523,7 @@ header( FILE *fp, int code, char *msg, char *content_type )
     fprintf(fp, "Date: %s\r\n", rfc822_time(time(0L)));
 	fprintf(fp, "Server: %s/%s\r\n", SERVER_NAME, VERSION);
 	
-	if ( content_type )
+	if ( content_type != NULL && strcmp(content_type, "") != 0 )
 		fprintf(fp, "Content-Type: %s\r\n", content_type );
 	else
 		fprintf(fp, "Content-Type: %s\r\n", CONTENT_DEFAULT);
