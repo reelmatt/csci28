@@ -297,7 +297,7 @@ void process_config_file(char *conf_file, int *portnump)
 	char	type[CONTENT_LEN];
 	int	port;
 	int	read_param(FILE *, char *, int, char *, int, char *, int, int* );
-	int *params_read = NULL;
+	int params_read;
 
 	/* open the file */
 	if ( (fp = fopen(conf_file,"r")) == NULL )
@@ -307,14 +307,14 @@ void process_config_file(char *conf_file, int *portnump)
 	while( read_param(fp, param, PARAM_LEN,
 						  value, VALUE_LEN,
 						  type, CONTENT_LEN,
-						  params_read) != EOF )
+						  &params_read) != EOF )
 	{
 		if ( strcasecmp(param,"server_root") == 0 )
 			strcpy(rootdir, value);
 		if ( strcasecmp(param,"port") == 0 )
 			port = atoi(value);
 		if ( strcasecmp(param,"type") == 0)
-			process_config_type(param, value, type, params_read);
+			process_config_type(param, value, type, &params_read);
 	}
 	fclose(fp);
 
