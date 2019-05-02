@@ -104,7 +104,8 @@ void process_config_type(char [PARAM_LEN], char [VALUE_LEN], char [CONTENT_LEN],
 
 void table_header(FILE *fp);
 void table_close(FILE *fp);
-void table_rows(FILE *fp, char *dir);
+void print_rows(FILE *fp, char *dir);
+void table_row(FILE *fp, struct dirent * dp, struct stat *info);
 
 //from web-time.c
 char * rfc822_time(time_t thetime);
@@ -333,9 +334,6 @@ void process_config_file(char *conf_file, int *portnump)
 	}
 	fclose(fp);
 
-//     strcpy(content_default, "text/plain");
-//     content_default = "text/plain";
-
 	/* act on the settings */
 	if (chdir(rootdir) == -1)
 		oops("cannot change to rootdir", 2);
@@ -348,9 +346,6 @@ void process_config_type(char param[PARAM_LEN],
 						char type[CONTENT_LEN],
 						int *num)
 {
-	printf("in process_config_type\n");
-	printf("param is %s, val is %s, type is %s\n", param, val, type);
-	printf("PROCESS_CONFIG_TYPE num is %d\n", *num);
 	// param and val are definite
 	// type may or may not exist
 	
@@ -361,12 +356,6 @@ void process_config_type(char param[PARAM_LEN],
 	}
 
 	VLstore(val, type);
-/*
-	if (strcmp(val, "DEFAULT") && type)
-		strcpy(content_default, type);
-	else
-		set_content_type(val, type);	
-*/
 }
 
 /*
@@ -399,20 +388,12 @@ read_param (FILE *fp,
 			while( (c = getc(fp)) != '\n' && c != EOF )
 				;
 
-		int num_args = sscanf(line, fmt, name, value, type );
-		printf("num_args is %d\n", num_args);
-		printf("they are: 1) %s, 2) %s, and 3) %s\n", name, value, type);
+		*num = sscanf(line, fmt, name, value, type );
+
 		
-		*num = num_args;
-		
-		if ( (num_args == 2 || num_args == 3) && *name != '#')
-		{
-// 			if(*name != '#')
-				return 1;
-		}
-		
-		// if ( sscanf(line, fmt, name, value ) == 2 && *name != '#' )
-// 			return 1;
+		if ( (*num == 2 || *num == 3) && *name != '#')
+			return 1;
+
 	}
 	return EOF;
 }
@@ -538,8 +519,6 @@ modify_argument(char *arg, int len)
 void
 header( FILE *fp, int code, char *msg, char *content_type )
 {
-
-
 	fprintf(fp, "HTTP/1.0 %d %s\r\n", code, msg);
     fprintf(fp, "Date: %s\r\n", rfc822_time(time(0L)));
 	fprintf(fp, "Server: %s/%s\r\n", SERVER_NAME, VERSION);
@@ -692,34 +671,14 @@ do_dir(char *dir, FILE *fp)
 void
 do_ls(char *dir, FILE *fp)
 {
-//     int cmd_len = strlen(dir) + 7;
-//     char command[cmd_len];
-    
     header(fp, 200, "OK", "text/html");
 	fprintf(fp,"\r\n");
+    
     table_header(fp);
     
-    table_rows(fp, dir);
+    print_rows(fp, dir);
     
     table_close(fp);
-    
-    
-    // construct command with directory name
-//     snprintf(command, cmd_len, "%s %s", "ls -l", dir);
-// 
-//     FILE *pp = popen(command, "r");
-//     if (pp == NULL)
-//     {
-//         perror(dir);
-//         return;
-//     }
-// 
-// 	
-//     
-//     output_listing(pp, fp, dir);
-//     
-// 	if(pclose(pp) == -1)
-//         perror("oops");
 }
 
 /*
@@ -737,6 +696,7 @@ do_ls(char *dir, FILE *fp)
  *			 2) if parent or child has trailing or leading '/',
  *			 	respectively, do not copy an extra '/'; or
  *			 3) concatenate "parent/child"
+ *	   Note: This function was copied from my pfind.c assignment as-is.
  */
 char * construct_path(char *parent, char *child)
 {
@@ -767,7 +727,7 @@ char * construct_path(char *parent, char *child)
 }
 
 void
-table_rows(FILE *fp, char *dir)
+print_rows(FILE *fp, char *dir)
 {
 	DIR* list = opendir(dir);
 	
@@ -781,6 +741,7 @@ table_rows(FILE *fp, char *dir)
 	struct stat info;
 	char *path = NULL;
 	
+	// output a row for each file
 	while( (dp = readdir(list)) != NULL)
 	{
 		path = construct_path(dir, dp->d_name);
@@ -791,26 +752,49 @@ table_rows(FILE *fp, char *dir)
 			continue;
 		}
 		
-		fprintf(fp, "<tr><td>");
-		
-		if(S_ISDIR(info.st_mode))
-			fprintf(fp, "<a href='%s/'>%s</a>", dp->d_name, dp->d_name);
-		else
-			fprintf(fp, "<a href='%s'>%s</a>", dp->d_name, dp->d_name);
-		
-		fprintf(fp, "</td>");
-		
-		fprintf(fp, "<td>");
-		fprintf(fp, "%s", table_time(info.st_mtime));
-		fprintf(fp, "</td>");
-		
-		fprintf(fp, "<td>");
-		fprintf(fp, "%lld", info.st_size);
-		fprintf(fp, "</td></tr>");
+		table_row(fp, dp, &info);
+// 		fprintf(fp, "<tr><td>");
+// 		
+// 		if(S_ISDIR(info.st_mode))
+// 			fprintf(fp, "<a href='%s/'>%s</a>", dp->d_name, dp->d_name);
+// 		else
+// 			fprintf(fp, "<a href='%s'>%s</a>", dp->d_name, dp->d_name);
+// 		
+// 		fprintf(fp, "</td>");
+// 		
+// 		fprintf(fp, "<td>");
+// 		fprintf(fp, "%s", table_time(info.st_mtime));
+// 		fprintf(fp, "</td>");
+// 		
+// 		fprintf(fp, "<td>");
+// 		fprintf(fp, "%d", (int) info.st_size);
+// 		fprintf(fp, "</td></tr>");
 		
 		if(path != NULL)
 			free(path);		//prevent memory leaks
 	}
+	
+}
+
+void
+table_row(FILE *fp, struct dirent * dp, struct stat *info)
+{
+	fprintf(fp, "<tr><td>");
+		
+	if(S_ISDIR(info->st_mode))
+		fprintf(fp, "<a href='%s/'>%s</a>", dp->d_name, dp->d_name);
+	else
+		fprintf(fp, "<a href='%s'>%s</a>", dp->d_name, dp->d_name);
+	
+	fprintf(fp, "</td>");
+	
+	fprintf(fp, "<td>");
+	fprintf(fp, "%s", table_time(info->st_mtime));
+	fprintf(fp, "</td>");
+	
+	fprintf(fp, "<td>");
+	fprintf(fp, "%d", (int) info->st_size);
+	fprintf(fp, "</td></tr>");
 	
 }
 
@@ -828,51 +812,6 @@ void
 table_close(FILE *fp)
 {
 	fprintf(fp, "</tbody></table>\n");
-}
-
-/*
- *	output_listing()
- *	Purpose: Take output from an `ls` command and format with links
- *	  Input: pp, pointer to pipe FILE
- *			 fp, pointer to socket FILE
- *			 dir, parent directory to use for link paths
- *
- */
-void
-output_listing(FILE * pp, FILE * fp, char *dir)
-{
-    int num_files = -1;
-    char line[LINELEN], copy[LINELEN];
-
-    while(fgets(line, LINELEN, pp) != NULL)
-    {
-		// skip the first line of `ls` displaying `total #`
-        if (++num_files == 0)
-            continue;
-
-        char *file = strrchr(line, ' ');	// get the last arg
-        file[strlen(file) - 1] = '\0';		// terminate
-
-        if(file != NULL)					// check there was an arg
-        {
-            file++;							// strip the space
-			
-            char link[LINELEN];				// construct the link
-            snprintf(link, LINELEN, "<a href='%s/%s'>%s</a><br/>\n",
-            		 dir, file, file);
-            		 
-            // construct the whole line
-            strncpy( copy, line, (strlen(line) - strlen(file)) );
-            strncat(copy, link, LINELEN);
-        }
-
-		// send to the socket
-        fprintf(fp, "%s", copy);
-        
-        //reset
-        memset(copy, 0, LINELEN);
-    }
-    return;
 }
 
 /* ------------------------------------------------------ *
