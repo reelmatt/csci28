@@ -13,6 +13,7 @@
 #include	"socklib.h"
 #include	"varlib.h"
 #include	<time.h>
+#include	<dirent.h>
 
 /*
  * wsng.c - a web server
@@ -82,7 +83,7 @@ void    do_head(FILE * fp);
 void	do_cat(char *f, FILE *fpsock);
 void	do_exec( char *prog, FILE *fp);
 void	do_ls(char *dir, FILE *fp);
-void process_dir(char *dir, FILE *fp);
+void do_dir(char *dir, FILE *fp);
 void    output_listing(FILE * pp, FILE * fp, char *dir);
 char *get_content_type(char *ext);
 int	ends_in_cgi(char *f);
@@ -101,7 +102,17 @@ char *parse_query(char *line);
 void set_content_type(char *ext, char *val);
 void process_config_type(char [PARAM_LEN], char [VALUE_LEN], char [CONTENT_LEN], int *);
 
+void table_header(FILE *fp);
+void table_close(FILE *fp);
+void table_rows(FILE *fp, char *dir);
+
+	//from web-time.c
+    char * rfc822_time(time_t thetime);
+
+
 int	mysocket = -1;		/* for SIGINT handler */
+
+
 
 int
 main(int ac, char *av[])
@@ -442,7 +453,7 @@ void process_rq(char *rq, FILE *fp)
 	else if ( no_access( item) )
 	    do_403(item, fp);
 	else if ( isadir( item ) )
-        process_dir( item, fp );
+        do_dir( item, fp );
 	else if ( ends_in_cgi( item ) )
 		do_exec( item, fp );
 	else
@@ -527,8 +538,7 @@ modify_argument(char *arg, int len)
 void
 header( FILE *fp, int code, char *msg, char *content_type )
 {
-	//from web-time.c
-    char * rfc822_time(time_t thetime);
+
 
 	fprintf(fp, "HTTP/1.0 %d %s\r\n", code, msg);
     fprintf(fp, "Date: %s\r\n", rfc822_time(time(0L)));
@@ -594,7 +604,7 @@ do_head(FILE * fp)
    the directory listing section
    isadir() uses stat, not_exist() uses stat
    no_access() checks permissions of dir using stat
-   process_dir() checks if an 'index.html' or 'index.cgi'
+   do_dir() checks if an 'index.html' or 'index.cgi'
    		file exists. If yes, it outputs that, otherwise
    		calls do_ls().
    do_ls() opens a pipe to a listing of the directory.
@@ -645,11 +655,11 @@ no_access(char *f)
 }
 
 /*
- *	process_dir()
+ *	do_dir()
  *	Purpose: check the current directory to see if an index file exists
  */
 void
-process_dir(char *dir, FILE *fp)
+do_dir(char *dir, FILE *fp)
 {
     struct stat info;
     char html[LINELEN];
@@ -682,26 +692,137 @@ process_dir(char *dir, FILE *fp)
 void
 do_ls(char *dir, FILE *fp)
 {
-    int cmd_len = strlen(dir) + 7;
-    char command[cmd_len];
+//     int cmd_len = strlen(dir) + 7;
+//     char command[cmd_len];
+    
+    header(fp, 200, "OK", "text/html");
+	fprintf(fp,"\r\n");
+    table_header(fp);
+    
+    table_rows(fp, dir);
+    
+    table_close(fp);
+    
     
     // construct command with directory name
-    snprintf(command, cmd_len, "%s %s", "ls -l", dir);
+//     snprintf(command, cmd_len, "%s %s", "ls -l", dir);
+// 
+//     FILE *pp = popen(command, "r");
+//     if (pp == NULL)
+//     {
+//         perror(dir);
+//         return;
+//     }
+// 
+// 	
+//     
+//     output_listing(pp, fp, dir);
+//     
+// 	if(pclose(pp) == -1)
+//         perror("oops");
+}
 
-    FILE *pp = popen(command, "r");
-    if (pp == NULL)
-    {
-        perror(dir);
-        return;
-    }
+/*
+ *	construct_path()
+ *	Purpose: concatenate a parent and child into a full path name
+ *	  Input: parent, current path to the open directory
+ *			 child, name of the last entry read by readdir()
+ *	 Return: pointer to full path string allocated by malloc()
+ *   Errors: if malloc() or sprintf() fail, return NULL. This will
+ *			 cause lstat() to output an error back in process_file or
+ *			 process_dir().
+ *   Method: Start by malloc()ing enough memory to store the combined
+ *			 path. If sucessful, call sprintf() to copy into "newstr":
+ *			 1) just the parent, if parent and child are the same;
+ *			 2) if parent or child has trailing or leading '/',
+ *			 	respectively, do not copy an extra '/'; or
+ *			 3) concatenate "parent/child"
+ */
+char * construct_path(char *parent, char *child)
+{
+	int rv;
+	int path_size = 1 + strlen(parent) + 1 + strlen(child);
+	char *newstr = malloc(path_size);
 
-	header(fp, 200, "OK", "text/html");
-	fprintf(fp,"\r\n");
-    
-    output_listing(pp, fp, dir);
-    
-	if(pclose(pp) == -1)
-        perror("oops");
+	//Check malloc() returned memory. If no, lstat() will output error
+	if (newstr == NULL)
+		return NULL;
+
+	//Concatenate "parent/child", see Method above for how
+	if (strcmp(parent, child) == 0)
+		rv = sprintf(newstr, "%s", parent);
+	else if (parent[strlen(parent) - 1] == '/' || child[0] == '/')
+		rv = sprintf(newstr, "%s%s", parent, child);
+	else
+		rv = sprintf(newstr, "%s/%s", parent, child);
+
+	//check for sprintf error --or-- overflow error
+	if ( rv < 0 || rv > (path_size - 1) )
+	{
+		free(newstr);		//failed to construct path
+		return NULL;		//return will cause lstat() error
+	}
+
+	return newstr;
+}
+
+void
+table_rows(FILE *fp, char *dir)
+{
+	DIR* list = opendir(dir);
+	
+	if(list == NULL)
+	{
+		fprintf(stderr, "Couldn't open directory\n");
+		return;
+	}
+	
+	struct dirent *dp = NULL;
+	struct stat info;
+	char *path = NULL;
+	
+	while( (dp = readdir(list)) != NULL)
+	{
+		path = construct_path(dir, dp->d_name);
+		
+		if (lstat(path, &info) == -1)
+		{
+			fprintf(stderr, "error with %s\n", path);
+			continue;
+		}
+		
+		fprintf(fp, "<tr><td>");
+		fprintf(fp, "<a href=\"%s\">%s</a>", dp->d_name, dp->d_name);
+		fprintf(fp, "</td></tr>");
+		
+		fprintf(fp, "<tr><td>");
+		fprintf(fp, "%s", rfc822_time(info.st_mtime));
+		fprintf(fp, "</td></tr>");
+		
+		fprintf(fp, "<tr><td>");
+		fprintf(fp, "%lld", info.st_size);
+		fprintf(fp, "</td></tr>");
+		
+		if(path != NULL)
+			free(path);		//prevent memory leaks
+	}
+	
+}
+
+void
+table_header(FILE *fp)
+{
+	fprintf(fp, "<table>\n<tbody>\n<tr>");
+	fprintf(fp, "<th>Name</th>");
+	fprintf(fp, "<th>Last Modified</th>");
+	fprintf(fp, "<th>Size</th>");
+	fprintf(fp, "</tr>\n");
+}
+
+void
+table_close(FILE *fp)
+{
+	fprintf(fp, "</tbody></table>\n");
 }
 
 /*
@@ -790,14 +911,13 @@ do_exec( char *prog, FILE *fp)
 
 /*
  *	Modified from starter code. Moved Content-Type from if/else
- *	switch, to a table-driven design. See get_content_type().
+ *	switch, to a table-driven design. See varlib.c for more.
  */
 void
 do_cat(char *f, FILE *fpsock)
 {
 	char	*extension = file_type(f);
 	char	*content = VLlookup(extension);
-// 	char	*content = get_content_type(extension);
 
 	FILE	*fpfile;
 	int	c;
@@ -812,43 +932,6 @@ do_cat(char *f, FILE *fpsock)
 		fclose(fpfile);
 	}
 }
-
-/*
- *	get_content_type()
- *	Purpose: Look up a given `ext` to see if there is a Content-Type match
- *	  Input: ext, the file extension to lookup
- *	 Method: Search the table of `struct content_type` to see if a match
- *			 exists for `ext`. If there is a match, return that type.
- *			 Otherwise, return the default.
- */
-// char *
-// get_content_type(char *ext)
-// {
-//     int i;
-//     
-//     for(i = 0; table[i].extension != NULL; i++)
-//     {
-//         if(strcmp(ext, table[i].extension) == 0)
-//             return table[i].value;
-//     }
-//     
-//     return content_default;
-// }
-// 
-// void set_content_type(char *ext, char *val)
-// {
-// 	int i;
-// 	
-// 	for(i = 0; table[i].extension != NULL; i++)
-// 	{
-// 		if(strcmp(ext, table[i].extension) == 0)
-// 		{
-// 			strcpy(table[i].value, val);
-// 			return;
-// 		}
-// 	}
-// }
-
 
 char *
 full_hostname()
