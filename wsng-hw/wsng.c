@@ -11,7 +11,7 @@
 #include    <sys/wait.h>
 #include	<signal.h>
 #include	"socklib.h"
-
+#include	"varlib.h"
 #include	<time.h>
 
 /*
@@ -97,7 +97,7 @@ char	*readline(char *, int, FILE *);
 void sigchld_handler(int s);
 char *parse_query(char *line);
 void set_content_type(char *ext, char *val);
-void process_config_type(char [PARAM_LEN], char [VALUE_LEN], char [CONTENT_LEN]);
+void process_config_type(char [PARAM_LEN], char [VALUE_LEN], char [CONTENT_LEN], int *);
 
 int	mysocket = -1;		/* for SIGINT handler */
 
@@ -296,25 +296,25 @@ void process_config_file(char *conf_file, int *portnump)
 	char	value[VALUE_LEN];
 	char	type[CONTENT_LEN];
 	int	port;
-	int	read_param(FILE *, char *, int, char *, int, char *, int );
+	int	read_param(FILE *, char *, int, char *, int, char *, int, int* );
+	int *params_read = NULL;
 
 	/* open the file */
 	if ( (fp = fopen(conf_file,"r")) == NULL )
 		fatal("Cannot open config file %s", conf_file);
 
-	printf("reading the config file...\n");
-
 	/* extract the settings */
-	while( read_param(fp, param, PARAM_LEN, value, VALUE_LEN, type, CONTENT_LEN) != EOF )
+	while( read_param(fp, param, PARAM_LEN,
+						  value, VALUE_LEN,
+						  type, CONTENT_LEN,
+						  params_read) != EOF )
 	{
 		if ( strcasecmp(param,"server_root") == 0 )
 			strcpy(rootdir, value);
 		if ( strcasecmp(param,"port") == 0 )
 			port = atoi(value);
 		if ( strcasecmp(param,"type") == 0)
-			process_config_type(param, value, type);
-// 		if ( strcasecmp(param,"type") == 0)
-// 		    type[type] = value;
+			process_config_type(param, value, type, params_read);
 	}
 	fclose(fp);
 
@@ -328,10 +328,21 @@ void process_config_file(char *conf_file, int *portnump)
 	return;
 }
 
-void process_config_type(char param[PARAM_LEN], char val[VALUE_LEN], char type[CONTENT_LEN])
+void process_config_type(char param[PARAM_LEN],
+						char val[VALUE_LEN],
+						char type[CONTENT_LEN],
+						int *num)
 {
 	printf("in process_config_type\n");
 	printf("param is %s, val is %s, type is %s\n", param, val, type);
+	
+	// param and val are definite
+	// type may or may not exist
+	
+	if (*num != 3)
+	{
+		printf("3 params not read, no type.\n");
+	}
 	
 	if (strcmp(val, "DEFAULT") && type)
 		strcpy(content_default, type);
@@ -353,7 +364,8 @@ int
 read_param (FILE *fp, 
 			char *name, int nlen,	// place to store name
 			char* value, int vlen,	// place to store value
-			char* type, int clen)	// place to store content-type
+			char* type, int clen,	// place to store content-type
+			int *num)
 {
 	char	line[LINELEN];
 	int	c;
@@ -371,6 +383,8 @@ read_param (FILE *fp,
 		int num_args = sscanf(line, fmt, name, value, type );
 		printf("num_args is %d\n", num_args);
 		printf("they are: 1) %s, 2) %s, and 3) %s\n", name, value, type);
+		
+		*num = num_args;
 		
 		if ( (num_args == 2 || num_args == 3) && *name != '#')
 		{
@@ -405,12 +419,17 @@ void process_rq(char *rq, FILE *fp)
 	item = modify_argument(arg, MAX_RQ_LEN);
 	item = parse_query(item);
 	
-	if ( strcmp(cmd, "HEAD") == 0 )
+	if ( strcmp(cmd, "GET") == 0)
+		setenv("REQUEST_METHOD", "GET", 1);
+	else if ( strcmp(cmd, "HEAD") == 0 )
 	    setenv("REQUEST_METHOD", "HEAD", 1);
-
-	if ( strcmp(cmd,"GET") != 0 )
+	else
+	{
 		cannot_do(fp);
-	else if ( not_exist( item ) )
+		return;
+	}
+
+	if ( not_exist( item ) )
 		do_404(item, fp );
 	else if ( no_access( item) )
 	    do_403(item, fp);
@@ -436,11 +455,11 @@ parse_query(char *line)
 
 	if (query != NULL)
 	{
-		// set environment variables
+		// set environment variable
 		setenv("QUERY_STRING", (query + 1), 1);
-		setenv("REQUEST_METHOD", "GET", 1);
 		
-		*query = '\0';	// terminate at the '?'
+		// terminate at the '?'
+		*query = '\0';
 	}
 	
     return line;
