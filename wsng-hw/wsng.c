@@ -793,13 +793,13 @@ table_rows(FILE *fp, char *dir)
 		
 		fprintf(fp, "<tr><td>");
 		fprintf(fp, "<a href=\"%s\">%s</a>", dp->d_name, dp->d_name);
-		fprintf(fp, "</td></tr>");
+		fprintf(fp, "</td>");
 		
-		fprintf(fp, "<tr><td>");
+		fprintf(fp, "<td>");
 		fprintf(fp, "%s", rfc822_time(info.st_mtime));
-		fprintf(fp, "</td></tr>");
+		fprintf(fp, "</td>");
 		
-		fprintf(fp, "<tr><td>");
+		fprintf(fp, "<td>");
 		fprintf(fp, "%lld", info.st_size);
 		fprintf(fp, "</td></tr>");
 		
