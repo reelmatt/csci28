@@ -12,9 +12,12 @@ This submission contains the files:
      my_script.sh -- My sample test script, to compile wsng
            wsng.c -- Core logic for web server
         wsng.conf -- Header file for smsh.c
-       web-time.c -- Unmodified from starter code
+       web-time.c -- Displays formatted times; function added to starter code
         socklib.c -- Unmodified from starter code
         socklib.h -- Unmodified from starter code
+         varlib.c -- Copied from smsh assignment; unmodified
+         varlib.h -- Copied from smsh assignment; unmodified
+         
 
 Notes:
     A few files were taken from the sample code for this assignment, and

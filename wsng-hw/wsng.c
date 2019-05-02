@@ -523,10 +523,15 @@ header( FILE *fp, int code, char *msg, char *content_type )
     fprintf(fp, "Date: %s\r\n", rfc822_time(time(0L)));
 	fprintf(fp, "Server: %s/%s\r\n", SERVER_NAME, VERSION);
 	
-	if ( content_type != NULL && strcmp(content_type, "") != 0 )
-		fprintf(fp, "Content-Type: %s\r\n", content_type );
-	else
+	// do not include if NULL
+	if (content_type == NULL)
+		return;
+	// the content_type wasn't found, return the DEFAULT
+	else if ( strcmp(content_type, "") == 0 )
 		fprintf(fp, "Content-Type: %s\r\n", CONTENT_DEFAULT);
+	// print as-is
+	else
+		fprintf(fp, "Content-Type: %s\r\n", content_type );
 }
 
 /* ------------------------------------------------------ *
@@ -726,6 +731,12 @@ char * construct_path(char *parent, char *child)
 	return newstr;
 }
 
+/*
+ *	print_rows() -- open the directory specified by "dir", and call on
+ *		table_row() for each file it finds.
+ *	Note: This code was copied from my pfind assignment. The while loop
+ *		processing was altered to fit the webserver requirements.
+ */
 void
 print_rows(FILE *fp, char *dir)
 {
@@ -752,35 +763,25 @@ print_rows(FILE *fp, char *dir)
 			continue;
 		}
 		
+		// format the row data
 		table_row(fp, dp, &info);
-// 		fprintf(fp, "<tr><td>");
-// 		
-// 		if(S_ISDIR(info.st_mode))
-// 			fprintf(fp, "<a href='%s/'>%s</a>", dp->d_name, dp->d_name);
-// 		else
-// 			fprintf(fp, "<a href='%s'>%s</a>", dp->d_name, dp->d_name);
-// 		
-// 		fprintf(fp, "</td>");
-// 		
-// 		fprintf(fp, "<td>");
-// 		fprintf(fp, "%s", table_time(info.st_mtime));
-// 		fprintf(fp, "</td>");
-// 		
-// 		fprintf(fp, "<td>");
-// 		fprintf(fp, "%d", (int) info.st_size);
-// 		fprintf(fp, "</td></tr>");
 		
+		// prevent memory leaks
 		if(path != NULL)
-			free(path);		//prevent memory leaks
+			free(path);
 	}
-	
 }
 
+/*
+ *	table_row() -- output an HTML formatted table row containing:
+ *			Name (with link to file), Last Modified time, and file size
+ */
 void
 table_row(FILE *fp, struct dirent * dp, struct stat *info)
 {
 	fprintf(fp, "<tr><td>");
-		
+	
+	// add a trailing '/' if the file is a directory
 	if(S_ISDIR(info->st_mode))
 		fprintf(fp, "<a href='%s/'>%s</a>", dp->d_name, dp->d_name);
 	else
@@ -788,16 +789,22 @@ table_row(FILE *fp, struct dirent * dp, struct stat *info)
 	
 	fprintf(fp, "</td>");
 	
+	// output Last Modified time
 	fprintf(fp, "<td>");
 	fprintf(fp, "%s", table_time(info->st_mtime));
 	fprintf(fp, "</td>");
 	
+	// out file size
 	fprintf(fp, "<td>");
 	fprintf(fp, "%d", (int) info->st_size);
 	fprintf(fp, "</td></tr>");
 	
 }
 
+/*
+ *	table_header() -- Output opening tags for an HTML table and header row
+ *		containing: Name, Last Modified, and Size
+ */
 void
 table_header(FILE *fp)
 {
@@ -808,6 +815,9 @@ table_header(FILE *fp)
 	fprintf(fp, "</tr>\n");
 }
 
+/*
+ *	table_close() -- output closing HTML table tags
+ */
 void
 table_close(FILE *fp)
 {
