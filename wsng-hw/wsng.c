@@ -309,6 +309,8 @@ void process_config_file(char *conf_file, int *portnump)
 						  type, CONTENT_LEN,
 						  &params_read) != EOF )
 	{
+
+		printf("in while loop, params_read is %d\n", params_read);
 		if ( strcasecmp(param,"server_root") == 0 )
 			strcpy(rootdir, value);
 		if ( strcasecmp(param,"port") == 0 )
@@ -335,19 +337,23 @@ void process_config_type(char param[PARAM_LEN],
 {
 	printf("in process_config_type\n");
 	printf("param is %s, val is %s, type is %s\n", param, val, type);
-	
+	printf("PROCESS_CONFIG_TYPE num is %d\n", *num);
 	// param and val are definite
 	// type may or may not exist
 	
 	if (*num != 3)
 	{
-		printf("3 params not read, no type.\n");
+		fprintf(stderr, "No type specified for \"%s\"\n", val);
+		return;
 	}
-	
+
+	VLstore(val, type);
+/*
 	if (strcmp(val, "DEFAULT") && type)
 		strcpy(content_default, type);
 	else
 		set_content_type(val, type);	
+*/
 }
 
 /*
