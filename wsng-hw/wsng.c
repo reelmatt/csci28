@@ -37,6 +37,7 @@
 #define	CONFIG_FILE	"wsng.conf"
 #define	VERSION		"1"
 #define SERVER_NAME	"WSNG"
+#define CONTENT_DEFAULT "text/plain"
 
 #define	MAX_RQ_LEN	4096
 #define	LINELEN		1024
@@ -44,22 +45,23 @@
 #define	VALUE_LEN	512
 #define CONTENT_LEN 64
 
+
 /* Content-Types */
-struct content_type { char *extension; char *value; };
-struct content_type table[] = {
-    {"html", "text/html"},
-    {"jpg", "image/jpeg"},
-    {"jpeg", "image/jpeg"},
-    {"css", "text/css"},
-    {"gif", "image/gif"},
-    {"png", "image/png"},
-    {"txt", "text/plain"},
-    {"js", "text/javascript"},
-    {NULL, NULL},
-};
+// struct content_type { char *extension; char *value; };
+// struct content_type table[] = {
+//     {"html", "text/html"},
+//     {"jpg", "image/jpeg"},
+//     {"jpeg", "image/jpeg"},
+//     {"css", "text/css"},
+//     {"gif", "image/gif"},
+//     {"png", "image/png"},
+//     {"txt", "text/plain"},
+//     {"js", "text/javascript"},
+//     {NULL, NULL},
+// };
 
 char	myhost[MAXHOSTNAMELEN];
-char    content_default[CONTENT_LEN];
+// char    content_default[CONTENT_LEN];
 int	myport;
 char	*full_hostname();
 
@@ -534,6 +536,8 @@ header( FILE *fp, int code, char *msg, char *content_type )
 	
 	if ( content_type )
 		fprintf(fp, "Content-Type: %s\r\n", content_type );
+	else
+		fprintf(fp, "Content-Type: %s\r\n", CONTENT_DEFAULT);
 }
 
 /* ------------------------------------------------------ *
@@ -792,7 +796,8 @@ void
 do_cat(char *f, FILE *fpsock)
 {
 	char	*extension = file_type(f);
-	char	*content = get_content_type(extension);
+	char	*content = VLlookup(extension);
+// 	char	*content = get_content_type(extension);
 
 	FILE	*fpfile;
 	int	c;
@@ -816,33 +821,33 @@ do_cat(char *f, FILE *fpsock)
  *			 exists for `ext`. If there is a match, return that type.
  *			 Otherwise, return the default.
  */
-char *
-get_content_type(char *ext)
-{
-    int i;
-    
-    for(i = 0; table[i].extension != NULL; i++)
-    {
-        if(strcmp(ext, table[i].extension) == 0)
-            return table[i].value;
-    }
-    
-    return content_default;
-}
-
-void set_content_type(char *ext, char *val)
-{
-	int i;
-	
-	for(i = 0; table[i].extension != NULL; i++)
-	{
-		if(strcmp(ext, table[i].extension) == 0)
-		{
-			strcpy(table[i].value, val);
-			return;
-		}
-	}
-}
+// char *
+// get_content_type(char *ext)
+// {
+//     int i;
+//     
+//     for(i = 0; table[i].extension != NULL; i++)
+//     {
+//         if(strcmp(ext, table[i].extension) == 0)
+//             return table[i].value;
+//     }
+//     
+//     return content_default;
+// }
+// 
+// void set_content_type(char *ext, char *val)
+// {
+// 	int i;
+// 	
+// 	for(i = 0; table[i].extension != NULL; i++)
+// 	{
+// 		if(strcmp(ext, table[i].extension) == 0)
+// 		{
+// 			strcpy(table[i].value, val);
+// 			return;
+// 		}
+// 	}
+// }
 
 
 char *
