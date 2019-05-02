@@ -794,9 +794,9 @@ table_rows(FILE *fp, char *dir)
 		fprintf(fp, "<tr><td>");
 		
 		if(S_ISDIR(info.st_mode))
-			fprintf(fp, "<a href=\"%s/\">%s</a>", dp->d_name, dp->d_name);
+			fprintf(fp, "<a href='%s/'>%s</a>", dp->d_name, dp->d_name);
 		else
-			fprintf(fp, "<a href=\"%s\">%s</a>", dp->d_name, dp->d_name);
+			fprintf(fp, "<a href='%s'>%s</a>", dp->d_name, dp->d_name);
 		
 		fprintf(fp, "</td>");
 		
