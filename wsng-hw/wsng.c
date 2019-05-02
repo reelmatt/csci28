@@ -323,8 +323,6 @@ void process_config_file(char *conf_file, int *portnump)
 						  type, CONTENT_LEN,
 						  &params_read) != EOF )
 	{
-
-		printf("in while loop, params_read is %d\n", params_read);
 		if ( strcasecmp(param,"server_root") == 0 )
 			strcpy(rootdir, value);
 		if ( strcasecmp(param,"port") == 0 )
@@ -390,7 +388,6 @@ read_param (FILE *fp,
 
 		*num = sscanf(line, fmt, name, value, type );
 
-		
 		if ( (*num == 2 || *num == 3) && *name != '#')
 			return 1;
 
