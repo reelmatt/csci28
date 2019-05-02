@@ -1,3 +1,20 @@
+/*
+ * wsng.c - a web server
+ *
+ *    usage: ws [ -c configfilenmame ]
+ * features: supports the GET command only
+ *           runs in the current directory
+ *           forks a new child to handle each request
+ *           needs many additional features 
+ *
+ *  compile: cc ws.c socklib.c -o ws
+ *  history: 2018-04-21 added SIGINT handling (mk had it)
+ *  history: 2012-04-23 removed extern declaration for fdopen (it's in stdio.h)
+ *  history: 2012-04-21 more minor cleanups, expanded some fcn comments
+ *  history: 2010-04-24 cleaned code, merged some of MK's ideas
+ *  history: 2008-05-01 removed extra fclose that was causing double free
+ */
+ 
 #include	<stdio.h>
 #include	<stdlib.h>
 #include	<strings.h>
@@ -15,24 +32,6 @@
 #include	<time.h>
 #include	<dirent.h>
 
-/*
- * wsng.c - a web server
- *
- *    usage: ws [ -c configfilenmame ]
- * features: supports the GET command only
- *           runs in the current directory
- *           forks a new child to handle each request
- *           needs many additional features 
- *
- *  compile: cc ws.c socklib.c -o ws
- *  history: 2018-04-21 added SIGINT handling (mk had it)
- *  history: 2012-04-23 removed extern declaration for fdopen (it's in stdio.h)
- *  history: 2012-04-21 more minor cleanups, expanded some fcn comments
- *  history: 2010-04-24 cleaned code, merged some of MK's ideas
- *  history: 2008-05-01 removed extra fclose that was causing double free
- */
-
-
 #define	PORTNUM	80
 #define	SERVER_ROOT	"."
 #define	CONFIG_FILE	"wsng.conf"
@@ -46,24 +45,8 @@
 #define	VALUE_LEN	512
 #define CONTENT_LEN 64
 
-
-/* Content-Types */
-// struct content_type { char *extension; char *value; };
-// struct content_type table[] = {
-//     {"html", "text/html"},
-//     {"jpg", "image/jpeg"},
-//     {"jpeg", "image/jpeg"},
-//     {"css", "text/css"},
-//     {"gif", "image/gif"},
-//     {"png", "image/png"},
-//     {"txt", "text/plain"},
-//     {"js", "text/javascript"},
-//     {NULL, NULL},
-// };
-
 char	myhost[MAXHOSTNAMELEN];
-// char    content_default[CONTENT_LEN];
-int	myport;
+int myport;
 char	*full_hostname();
 
 #define	oops(m,x)	{ perror(m); exit(x); }
@@ -71,7 +54,6 @@ char	*full_hostname();
 /*
  * prototypes
  */
-
 int	startup(int, char *a[], char [], int *);
 void	read_til_crnl(FILE *);
 void	process_rq( char *, FILE *);
@@ -79,41 +61,36 @@ void	bad_request(FILE *);
 void	cannot_do(FILE *fp);
 void	do_404(char *item, FILE *fp);
 void	do_403(char *item, FILE *fp);
-void    do_head(FILE * fp);
 void	do_cat(char *f, FILE *fpsock);
 void	do_exec( char *prog, FILE *fp);
 void	do_ls(char *dir, FILE *fp);
-void do_dir(char *dir, FILE *fp);
+void    do_dir(char *dir, FILE *fp);
 void    output_listing(FILE * pp, FILE * fp, char *dir);
-char *get_content_type(char *ext);
+char    *get_content_type(char *ext);
 int	ends_in_cgi(char *f);
 char 	*file_type(char *f);
 void	header( FILE *fp, int code, char *msg, char *content_type );
 int	isadir(char *f);
 char	*modify_argument(char *arg, int len);
-int	not_exist(char *f);
+int not_exist(char *f);
 int no_access(char *f);
 void	fatal(char *, char *);
 void	handle_call(int);
-int	read_request(FILE *, char *, int);
+int read_request(FILE *, char *, int);
 char	*readline(char *, int, FILE *);
-void sigchld_handler(int s);
-char *parse_query(char *line);
-void set_content_type(char *ext, char *val);
-void process_config_type(char [PARAM_LEN], char [VALUE_LEN], char [CONTENT_LEN], int *);
-
-void table_header(FILE *fp);
-void table_close(FILE *fp);
-void print_rows(FILE *fp, char *dir);
-void table_row(FILE *fp, struct dirent * dp, struct stat *info);
+void    sigchld_handler(int s);
+char    *parse_query(char *line);
+void    process_config_type(char [PARAM_LEN], char [VALUE_LEN], char [CONTENT_LEN], int *);
+void    table_header(FILE *fp);
+void    table_close(FILE *fp);
+void    print_rows(FILE *fp, char *dir);
+void    table_row(FILE *fp, struct dirent * dp, struct stat *info);
 
 //from web-time.c
 char * rfc822_time(time_t thetime);
 char * table_time(time_t thetime);
 
 int	mysocket = -1;		/* for SIGINT handler */
-
-
 
 int
 main(int ac, char *av[])
@@ -339,14 +316,17 @@ void process_config_file(char *conf_file, int *portnump)
 	return;
 }
 
+/*
+ *  process_config_type()
+ *  Purpose: Store a name=value pair of extension=Content-Type
+ *   Errors: If the num is not equal to three, the config file was
+ *           setup wrong, or there was an error with read_param.
+ */
 void process_config_type(char param[PARAM_LEN],
-						char val[VALUE_LEN],
-						char type[CONTENT_LEN],
-						int *num)
+						 char val[VALUE_LEN],
+						 char type[CONTENT_LEN],
+						 int *num)
 {
-	// param and val are definite
-	// type may or may not exist
-	
 	if (*num != 3)
 	{
 		fprintf(stderr, "No type specified for \"%s\"\n", val);
@@ -386,8 +366,10 @@ read_param (FILE *fp,
 			while( (c = getc(fp)) != '\n' && c != EOF )
 				;
 
+        // store the number of arguments read to access later
 		*num = sscanf(line, fmt, name, value, type );
 
+        // good data if not a comment (#) and either 2 or 3 args
 		if ( (*num == 2 || *num == 3) && *name != '#')
 			return 1;
 
@@ -416,13 +398,14 @@ void process_rq(char *rq, FILE *fp)
 	item = modify_argument(arg, MAX_RQ_LEN);
 	item = parse_query(item);
 	
+	// set the request type
 	if ( strcmp(cmd, "GET") == 0)
 		setenv("REQUEST_METHOD", "GET", 1);
 	else if ( strcmp(cmd, "HEAD") == 0 )
 	    setenv("REQUEST_METHOD", "HEAD", 1);
 	else
 	{
-		cannot_do(fp);
+		cannot_do(fp);      // only supports GET or HEAD
 		return;
 	}
 
@@ -471,7 +454,6 @@ parse_query(char *line)
  *  returns: pointer to modified string
  *     args: array containing arg and length of that array
  */
-
 char *
 modify_argument(char *arg, int len)
 {
@@ -575,12 +557,6 @@ do_403(char *item, FILE *fp)
 	            item);
 }
 
-void
-do_head(FILE * fp)
-{
-    header(fp, 200, "OK", "text/plain");
-}
-
 /* ------------------------------------------------------ *
    the directory listing section
    isadir() uses stat, not_exist() uses stat
@@ -613,6 +589,7 @@ not_exist(char *f)
  *	Purpose: check permissions of page/file trying to be loaded
  *	  Input: f, the name of the file
  *	 Return: 1, if not allowed to access; 0 otherwise
+ *     Note: added by MT, used to detect 403 error
  */
 int
 no_access(char *f)
