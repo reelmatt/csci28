@@ -106,9 +106,9 @@ void table_header(FILE *fp);
 void table_close(FILE *fp);
 void table_rows(FILE *fp, char *dir);
 
-	//from web-time.c
-    char * rfc822_time(time_t thetime);
-
+//from web-time.c
+char * rfc822_time(time_t thetime);
+char * table_time(time_t thetime);
 
 int	mysocket = -1;		/* for SIGINT handler */
 
@@ -792,11 +792,16 @@ table_rows(FILE *fp, char *dir)
 		}
 		
 		fprintf(fp, "<tr><td>");
-		fprintf(fp, "<a href=\"%s\">%s</a>", dp->d_name, dp->d_name);
+		
+		if(S_ISDIR(info.st_mode))
+			fprintf(fp, "<a href=\"%s/\">%s</a>", dp->d_name, dp->d_name);
+		else
+			fprintf(fp, "<a href=\"%s\">%s</a>", dp->d_name, dp->d_name);
+		
 		fprintf(fp, "</td>");
 		
 		fprintf(fp, "<td>");
-		fprintf(fp, "%s", rfc822_time(info.st_mtime));
+		fprintf(fp, "%s", table_time(info.st_mtime));
 		fprintf(fp, "</td>");
 		
 		fprintf(fp, "<td>");

@@ -24,6 +24,18 @@ rfc822_time(time_t thetime)
 	return retval;
 }
 
+char *
+table_time(time_t thetime)
+{
+	struct tm *t ;
+	static char retval[36];
+	
+	t = localtime( &thetime );
+	
+	strftime(retval, 36, "%d-%b-%Y %H:%M", t);
+	return retval;
+}
+
 #ifdef STANDALONE
 int main()
 {
